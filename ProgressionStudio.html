@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Progression Lab">
+  <title>Guitar Chord Progression Studio</title>
+  
+  <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #18181b;
+      --card-border: #27272a;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --accent-glow: rgba(245, 158, 11, 0.15);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --subtle: #52525b;
+      --danger: #ef4444;
+      --danger-bg: #2a1215;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 16px max(24px, env(safe-area-inset-bottom)) 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    header {
+      padding: 16px 0 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+      background: #27272a;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 24px 0 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Builder View */
+    .builder-chords {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      min-height: 64px;
+      align-items: center;
+      scrollbar-width: thin;
+      scrollbar-color: var(--card-border) transparent;
+    }
+
+    .chord-tag {
+      background: linear-gradient(180deg, #27272a 0%, #1f1f23 100%);
+      border: 1px solid var(--accent);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .chord-tag:active {
+      transform: scale(0.96);
+    }
+
+    .chord-tag .remove {
+      color: var(--danger);
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .chord-tag .remove:hover {
+      opacity: 1;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    button:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    button.secondary {
+      background: #27272a;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    button.danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    select {
+      background: #27272a;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      flex: 1;
+    }
+
+    /* Preset Grid */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .preset-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-card:active {
+      transform: scale(0.98);
+      background: #202023;
+    }
+
+    .preset-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .preset-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin: 4px 0 10px;
+      line-height: 1.3;
+    }
+
+    .preset-chords {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Favorites List */
+    .favorites-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .favorite-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+    }
+
+    /* Settings Modal Drawer */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: #18181b;
+      width: 100%;
+      max-width: 600px;
+      border-radius: 20px 20px 0 0;
+      border: 1px solid var(--card-border);
+      border-bottom: none;
+      padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .setting-group {
+      margin-bottom: 20px;
+    }
+
+    .setting-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .setting-control {
+      width: 100%;
+    }
+
+    .instrument-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .instrument-btn {
+      background: #27272a;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .instrument-btn span.icon {
+      font-size: 1.4rem;
+    }
+
+    .instrument-btn.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>🎸 Progression Studio</h1>
+      <div class="subtitle">Songwriting & Sound Design Lab</div>
+    </div>
+    <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+  </header>
+
+  <div class="section-title">Progression Builder</div>
+  <div class="card">
+    <div id="builder-display" class="builder-chords">
+      <span style="color: var(--muted); font-size: 0.85rem;">Select chords below or tap a preset...</span>
+    </div>
+    
+    <div style="margin-top: 14px; display: flex; gap: 8px; align-items: center;">
+      <select id="root-select">
+        <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
+        <option value="Eb">Eb</option><option value="E">E</option><option value="F">F</option>
+        <option value="F#">F# / Gb</option><option value="G">G</option><option value="Ab">Ab</option>
+        <option value="A">A</option><option value="Bb">Bb</option><option value="B">B</option>
+      </select>
+      <select id="quality-select">
+        <option value="">Major (maj)</option>
+        <option value="m">Minor (m)</option>
+        <option value="7">Dominant 7th (7)</option>
+        <option value="maj7">Major 7th (maj7)</option>
+        <option value="m7">Minor 7th (m7)</option>
+        <option value="dim">Diminished (dim)</option>
+        <option value="sus4">Suspended 4th (sus4)</option>
+      </select>
+      <button class="secondary" onclick="addChord()">+ Add</button>
+    </div>
+
+    <div class="controls-row">
+      <button onclick="playCurrentProgression()">▶ Play Sequence</button>
+      <button class="secondary" onclick="saveFavorite()">★ Save Favorite</button>
+      <button class="danger" onclick="clearBuilder()">Clear</button>
+    </div>
+  </div>
+
+  <div class="section-title">Classic Progressions & Examples</div>
+  <div class="preset-grid" id="preset-container"></div>
+
+  <div class="section-title">Saved Favorites</div>
+  <div class="favorites-list" id="favorites-container">
+    <div style="font-size: 0.85rem; color: var(--muted);">No saved progressions yet.</div>
+  </div>
+
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Audio & Instrument Settings</h2>
+        <button class="icon-btn" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label"><span>Instrument Preset</span></div>
+        <div class="instrument-options">
+          <button class="instrument-btn selected" id="inst-guitar" onclick="selectInstrument('guitar')">
+            <span class="icon">🎸</span>
+            <span>Acoustic/Electric</span>
+          </button>
+          <button class="instrument-btn" id="inst-piano" onclick="selectInstrument('piano')">
+            <span class="icon">🎹</span>
+            <span>Grand Piano</span>
+          </button>
+          <button class="instrument-btn" id="inst-epiano" onclick="selectInstrument('epiano')">
+            <span class="icon">🎛️</span>
+            <span>Clean E-Piano</span>
+          </button>
+          <button class="instrument-btn" id="inst-synth" onclick="selectInstrument('synth')">
+            <span class="icon">🌌</span>
+            <span>Warm Synth Pad</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">
+          <span>Strum Speed / Articulation</span>
+          <span id="strum-val">25 ms</span>
+        </div>
+        <input type="range" id="strum-slider" min="5" max="100" value="25" oninput="updateSettingsUI()">
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">
+          <span>Master Volume</span>
+          <span id="volume-val">80%</span>
+        </div>
+        <input type="range" id="volume-slider" min="0" max="100" value="80" oninput="updateSettingsUI()">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 24px;">
+        <button class="secondary" style="flex: 1;" onclick="testSound()">🔊 Test Sound</button>
+        <button style="flex: 1;" onclick="closeSettings()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Polyphonic Synthesizer Engine (Web Audio API) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    // Settings State
+    let currentInstrument = 'guitar';
+    let strumSpeedMs = 25;
+    let masterVolume = 0.8;
+
+    const NOTE_FREQS = {
+      "C3": 130.81, "C#3": 138.59, "D3": 146.83, "Eb3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "Ab3": 207.65, "A3": 220.00, "Bb3": 233.08, "B3": 246.94,
+      "C4": 261.63, "C#4": 277.18, "D4": 293.66, "Eb4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "Ab4": 415.30, "A4": 440.00, "Bb4": 466.16, "B4": 493.88,
+      "C5": 523.25
+    };
+
+    const CHORD_INTERVALS = {
+      "": [0, 4, 7],         // Major
+      "m": [0, 3, 7],        // Minor
+      "7": [0, 4, 7, 10],    // Dominant 7
+      "maj7": [0, 4, 7, 11], // Major 7
+      "m7": [0, 3, 7, 10],   // Minor 7
+      "dim": [0, 3, 6],      // Diminished
+      "sus4": [0, 5, 7]      // Sus4
+    };
+
+    const NOTES_ORDER = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+
+    function getChordFrequencies(chordStr) {
+      const match = chordStr.match(/^([A-G][#b]?)(.*)$/);
+      if (!match) return [];
+      const root = match[1];
+      const quality = match[2];
+
+      const rootIdx = NOTES_ORDER.indexOf(root);
+      if (rootIdx === -1) return [];
+
+      const intervals = CHORD_INTERVALS[quality] || [0, 4, 7];
+      return intervals.map(interval => {
+        const noteIdx = (rootIdx + interval) % 12;
+        const octave = (rootIdx + interval >= 12) ? 4 : 3;
+        const noteName = NOTES_ORDER[noteIdx] + octave;
+        return NOTE_FREQS[noteName] || 261.63;
+      });
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Advanced Synthesis Envelopes per Instrument Tone
+    function playTone(freq, startTime, duration) {
+      if (!audioCtx) return;
+      const masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(masterVolume, startTime);
+      masterGain.connect(audioCtx.destination);
+
+      if (currentInstrument === 'guitar') {
+        // Plucked String Simulation (Triangle + Subtle Saw Body)
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc1.type = 'triangle';
+        osc2.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(freq, startTime);
+        osc2.frequency.setValueAtTime(freq, startTime);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3000, startTime);
+        filter.frequency.exponentialRampToValueAtTime(400, startTime + duration);
+
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(0.35, startTime + 0.02); // Pluck Attack
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+
+        osc1.start(startTime);
+        osc2.start(startTime);
+        osc1.stop(startTime + duration);
+        osc2.stop(startTime + duration);
+
+      } else if (currentInstrument === 'piano') {
+        // Grand Piano Harmonic Stack
+        const osc = audioCtx.createOscillator();
+        const harmonic = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        harmonic.type = 'triangle';
+        
+        osc.frequency.setValueAtTime(freq, startTime);
+        harmonic.frequency.setValueAtTime(freq * 2, startTime); // 2nd Harmonic
+
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01); // Sharp attack
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 1.2);
+
+        osc.connect(gain);
+        harmonic.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start(startTime);
+        harmonic.start(startTime);
+        osc.stop(startTime + duration * 1.2);
+        harmonic.stop(startTime + duration * 1.2);
+
+      } else if (currentInstrument === 'epiano') {
+        // Clean Rhodes-style E-Piano
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+
+      } else if (currentInstrument === 'synth') {
+        // Warm Ambient Synth Pad
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, startTime);
+
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.linearRampToValueAtTime(0.2, startTime + 0.2); // Soft Slow Attack
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 1.5);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration * 1.5);
+      }
+    }
+
+    function playChord(chordStr, startTime = 0, duration = 1.3) {
+      initAudio();
+      const freqs = getChordFrequencies(chordStr);
+      const now = startTime || audioCtx.currentTime;
+      const stagger = strumSpeedMs / 1000;
+
+      freqs.forEach((freq, idx) => {
+        playTone(freq, now + (idx * stagger), duration);
+      });
+    }
+
+    // --- State & UI Engine ---
+    let currentSequence = [];
+    const PRESETS = [
+      { name: "Pop/Rock (I–V–vi–IV)", chords: ["C", "G", "Am", "F"], desc: "Let It Be, No Woman No Cry, Don't Stop Believin'" },
+      { name: "Doo-Wop / 50s (I–vi–IV–V)", chords: ["C", "Am", "F", "G"], desc: "Stand By Me, Earth Angel, Unchained Melody" },
+      { name: "Sensitive Female (vi–IV–I–V)", chords: ["Am", "F", "C", "G"], desc: "Building a Mystery, Grenade, Despacito" },
+      { name: "Andalusian Cadence (i–VII–VI–V)", chords: ["Am", "G", "F", "E"], desc: "Sultans of Swing, Smooth, Stray Cat Strut" },
+      { name: "12-Bar Minor Blues", chords: ["Am", "Am", "Dm", "Am", "Em", "Dm", "Am", "E7"], desc: "Thrill Is Gone, Black Magic Woman" },
+      { name: "Jazz Turnaround (I–vi–ii–V)", chords: ["Cmaj7", "Am7", "Dm7", "G7"], desc: "Fly Me to the Moon, Autumn Leaves base" }
+    ];
+
+    function renderPresets() {
+      const container = document.getElementById("preset-container");
+      container.innerHTML = PRESETS.map((p, i) => `
+        <div class="preset-card" onclick="loadPreset(${i})">
+          <div>
+            <div class="preset-title">${p.name}</div>
+            <div class="preset-desc">${p.desc}</div>
+          </div>
+          <div class="preset-chords">${p.chords.join(" — ")}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderBuilder() {
+      const display = document.getElementById("builder-display");
+      if (currentSequence.length === 0) {
+        display.innerHTML = `<span style="color: var(--muted); font-size: 0.85rem;">Select chords below or tap a preset...</span>`;
+        return;
+      }
+      display.innerHTML = currentSequence.map((chord, idx) => `
+        <div class="chord-tag" onclick="playChord('${chord}')">
+          <span>${chord}</span>
+          <span class="remove" onclick="event.stopPropagation(); removeChord(${idx})">✕</span>
+        </div>
+      `).join("");
+    }
+
+    function addChord() {
+      const root = document.getElementById("root-select").value;
+      const quality = document.getElementById("quality-select").value;
+      const chord = root + quality;
+      currentSequence.push(chord);
+      renderBuilder();
+      playChord(chord);
+    }
+
+    function removeChord(idx) {
+      currentSequence.splice(idx, 1);
+      renderBuilder();
+    }
+
+    function clearBuilder() {
+      currentSequence = [];
+      renderBuilder();
+    }
+
+    function loadPreset(idx) {
+      currentSequence = [...PRESETS[idx].chords];
+      renderBuilder();
+      playCurrentProgression();
+    }
+
+    function playCurrentProgression() {
+      if (currentSequence.length === 0) return;
+      initAudio();
+      let now = audioCtx.currentTime;
+      currentSequence.forEach((chord) => {
+        playChord(chord, now, 1.2);
+        now += 1.1;
+      });
+    }
+
+    // --- Favorites Storage ---
+    function saveFavorite() {
+      if (currentSequence.length === 0) return;
+      const favs = JSON.parse(localStorage.getItem("prog_lab_favs") || "[]");
+      const progStr = currentSequence.join(" — ");
+      if (!favs.includes(progStr)) {
+        favs.push(progStr);
+        localStorage.setItem("prog_lab_favs", JSON.stringify(favs));
+        renderFavorites();
+      }
+    }
+
+    function renderFavorites() {
+      const favs = JSON.parse(localStorage.getItem("prog_lab_favs") || "[]");
+      const container = document.getElementById("favorites-container");
+      if (favs.length === 0) {
+        container.innerHTML = `<div style="font-size: 0.85rem; color: var(--muted);">No saved progressions yet.</div>`;
+        return;
+      }
+      container.innerHTML = favs.map((f, i) => `
+        <div class="favorite-item">
+          <span style="font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 700; color: var(--accent);">${f}</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="loadFavorite('${f}')">Load</button>
+            <button class="danger" style="padding: 6px 10px; font-size: 0.85rem;" onclick="deleteFavorite(${i})">✕</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function loadFavorite(progStr) {
+      currentSequence = progStr.split(" — ");
+      renderBuilder();
+      playCurrentProgression();
+    }
+
+    function deleteFavorite(idx) {
+      const favs = JSON.parse(localStorage.getItem("prog_lab_favs") || "[]");
+      favs.splice(idx, 1);
+      localStorage.setItem("prog_lab_favs", JSON.stringify(favs));
+      renderFavorites();
+    }
+
+    // --- Settings Modal & Controls ---
+    function openSettings() {
+      document.getElementById("settings-modal").classList.add("active");
+    }
+
+    function closeSettings() {
+      document.getElementById("settings-modal").classList.remove("active");
+    }
+
+    function selectInstrument(type) {
+      currentInstrument = type;
+      document.querySelectorAll(".instrument-btn").forEach(btn => btn.classList.remove("selected"));
+      document.getElementById(`inst-${type}`).classList.add("selected");
+    }
+
+    function updateSettingsUI() {
+      strumSpeedMs = parseInt(document.getElementById("strum-slider").value);
+      masterVolume = parseInt(document.getElementById("volume-slider").value) / 100;
+
+      document.getElementById("strum-val").textContent = `${strumSpeedMs} ms`;
+      document.getElementById("volume-val").textContent = `${Math.round(masterVolume * 100)}%`;
+    }
+
+    function testSound() {
+      playChord("Cmaj7");
+    }
+
+    // Init
+    renderPresets();
+    renderFavorites();
+  </script>
+</body>
+</html>

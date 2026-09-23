@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="My Web Tools">
+  <title>App Suite &amp; Web Tools Index</title>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --card-bg: #1a1a1e;
+      --card-hover: #242429;
+      --accent: #f39c12;
+      --accent-glow: rgba(243, 156, 18, 0.15);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --border: #2c2c2e;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 800px;
+      padding: 32px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .grid-container {
+      width: 100%;
+      max-width: 800px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .app-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-card:active, .app-card:hover {
+      background: var(--card-hover);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .app-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .app-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .app-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .placeholder-card {
+      border: 1px dashed var(--border);
+      background: transparent;
+      opacity: 0.6;
+    }
+
+    .placeholder-card .app-icon {
+      background: #2c2c2e;
+      border-color: #3a3a3c;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 32px 0 16px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Atomic Forge &amp; by Atomic StormWorks</h1>
+    <div class="subtitle">Songwriting & Guitar Tools</div>
+  </header>
+
+  <main class="grid-container">
+    
+    <!-- Active App: Progression Studio -->
+    <a href="./ProgressionStudio/" class="app-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🎸</div>
+          <div class="app-title">Progression Studio</div>
+        </div>
+        <div class="app-desc">
+          Interactive songwriter progression studio with real-time polyphonic audio synth, customizable timbres, and song presets.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Launch App</span>
+        <span>→</span>
+      </div>
+    </a>
+
+    <!-- Active App: Chord Studio -->
+    <a href="./chord-studio/" class="app-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🎸</div>
+          <div class="app-title">Chord Studio</div>
+        </div>
+        <div class="app-desc">
+          Chord finder and helper with the Circle of Fifths.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Launch App</span>
+        <span>→</span>
+      </div>
+    </a>
+
+    <!-- Active App: Fretboard Art -->
+    <a href="./FretboardArt/" class="app-card">
+        <div>
+        <div class="card-header">
+          <div class="app-icon">🥁</div>
+          <div class="app-title">Fretboard Art</div>
+        </div>
+        <div class="app-desc">
+            Graphical guitar fretboard art creator; for use in logging your song chord and scale fingerings quickly and easily.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Launch App</span>
+        <span>→</span>
+      </div>
+    </div>
+
+    <a href="./chord-studio/" class="app-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🎛️</div>
+          <div class="app-title">Lyric-Ally</div>
+        </div>
+        <div class="app-desc">
+          Lyric writing helper with syllable / beats counter, stanza controls and AI rhyming and word-finding utilities.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Launch App</span>
+        <span>→</span>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    Standalone iOS Web App Suite
+  </footer>
+
+</body>
+</html>
