@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChordWheel App</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #151a2c;
+      --accent: #ffcc66;
+      --accent-soft: #ffebc2;
+      --text: #f5f7ff;
+      --text-soft: #c3c7dd;
+      --danger: #ff6666;
+      --good: #66ff99;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: radial-gradient(circle at top, #20284a 0, #050814 55%, #000000 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      padding: 12px 20px;
+      border-bottom: 1px solid #262b40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(5, 8, 20, 0.9);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    header small {
+      color: var(--text-soft);
+      font-size: 12px;
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
+      gap: 16px;
+      padding: 16px;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: rgba(10, 14, 30, 0.95);
+      border-radius: 14px;
+      border: 1px solid #262b40;
+      padding: 14px 14px 10px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-soft);
+    }
+    .card h3 {
+      margin: 10px 0 6px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+    }
+    .subtext {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, button, input[type="number"] {
+      background: #101426;
+      border-radius: 999px;
+      border: 1px solid #343a5a;
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+    select:focus, button:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(255, 204, 102, 0.4);
+    }
+    button {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 999px;
+    }
+    button.primary {
+      background: linear-gradient(135deg, #ffcc66, #ff9966);
+      color: #1a1200;
+      border-color: transparent;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #151a2c;
+      color: var(--text-soft);
+    }
+    button.danger {
+      background: #2b1111;
+      color: var(--danger);
+      border-color: #ff6666;
+    }
+    button.small {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid #343a5a;
+      color: var(--text-soft);
+    }
+    .pill.good {
+      border-color: var(--good);
+      color: var(--good);
+    }
+    .pill.bad {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    /* Circle of Fifths */
+    .wheel-container {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      margin-bottom: 10px;
+    }
+    .wheel-svg {
+      position: absolute;
+      inset: 0;
+    }
+    .wheel-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      text-align: center;
+    }
+    .wheel-label .key {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .wheel-label .mode {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-soft);
+    }
+    .wheel-label .scale-notes {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-soft);
+      max-width: 80%;
+    }
+    .wheel-note {
+      cursor: pointer;
+      transition: fill 0.18s ease, stroke 0.18s ease, transform 0.18s ease;
+    }
+    .wheel-note text {
+      pointer-events: none;
+      font-size: 11px;
+      fill: var(--text-soft);
+    }
+    .wheel-note.active {
+      transform: scale(1.06);
+    }
+    .wheel-note.active circle {
+      fill: #ffcc66;
+      stroke: #ff9966;
+    }
+    .wheel-note.active text {
+      fill: #1a1200;
+      font-weight: 600;
+    }
+    /* Diatonic chords */
+    .chord-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .chord-chip {
+      background: #101426;
+      border-radius: 10px;
+      border: 1px solid #343a5a;
+      padding: 4px 6px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+    }
+    .chord-chip:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .chord-chip-name {
+      font-weight: 600;
+      color: var(--accent-soft);
+    }
+    .chord-chip-degree {
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+    }
+    .chord-chip-type {
+      color: var(--text-soft);
+      font-size: 10px;
+    }
+    /* Progression builder */
+    .progression-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      min-height: 26px;
+    }
+    .progression-item {
+      background: #151a2c;
+      border-radius: 999px;
+      border: 1px solid #343a5a;
+      padding: 4px 8px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .progression-item span.degree {
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .progression-item button {
+      border: none;
+      background: transparent;
+      color: var(--danger);
+      padding: 0;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .progression-empty {
+      font-size: 11px;
+      color: #555b7a;
+    }
+    /* Fretboard (simple) */
+    .fretboard {
+      margin-top: 8px;
+      border-radius: 10px;
+      border: 1px solid #343a5a;
+      padding: 6px;
+      background: #101426;
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+    .fretboard-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .fret {
+      flex: 1;
+      text-align: center;
+      padding: 2px 0;
+      border-radius: 4px;
+      border: 1px solid #262b40;
+    }
+    .fret.active {
+      background: #ffcc66;
+      color: #1a1200;
+      border-color: #ff9966;
+      font-weight: 600;
+    }
+    .fretboard-label {
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+      color: var(--text-soft);
+    }
+    /* Footer */
+    footer {
+      padding: 8px 16px 12px;
+      font-size: 11px;
+      color: #555b7a;
+      text-align: center;
+      border-top: 1px solid #262b40;
+      background: rgba(5, 8, 20, 0.9);
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ChordWheel</h1>
+    <small>Circle of Fifths • Diatonic chords • Progressions • Simple fretboard</small>
+  </div>
+  <div class="row">
+    <span class="pill">HTML Single-File App</span>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: Circle of Fifths -->
+  <section class="card">
+    <h2>Circle of Fifths</h2>
+    <p class="subtext">
+      Tap a key on the wheel, choose a mode, and explore its scale and diatonic chords.
+    </p>
+
+    <div class="row" style="margin-bottom:8px;">
+      <div class="pill good" id="currentKeyPill">Key: C</div>
+      <select id="modeSelect">
+        <option value="ionian">Ionian (Major)</option>
+        <option value="aeolian">Aeolian (Natural minor)</option>
+        <option value="dorian">Dorian</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="lydian">Lydian</option>
+        <option value="phrygian">Phrygian</option>
+        <option value="locrian">Locrian</option>
+      </select>
+      <button class="secondary small" id="playScaleBtn">Play Scale</button>
+    </div>
+
+    <div class="wheel-container">
+      <svg class="wheel-svg" viewBox="0 0 200 200">
+        <defs>
+          <radialGradient id="wheelBg" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#151a2c"/>
+            <stop offset="100%" stop-color="#050814"/>
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#wheelBg)" stroke="#343a5a" stroke-width="1.5"/>
+        <!-- Notes will be injected by JS -->
+        <g id="wheelNotes"></g>
+      </svg>
+      <div class="wheel-label">
+        <div class="key" id="wheelKeyLabel">C</div>
+        <div class="mode" id="wheelModeLabel">Ionian (Major)</div>
+        <div class="scale-notes" id="wheelScaleNotes">C D E F G A B</div>
+      </div>
+    </div>
+
+    <h3>Diatonic chords</h3>
+    <p class="subtext">
+      Click a chord to add it to the progression and hear it.
+    </p>
+    <div class="chord-grid" id="chordGrid"></div>
+
+    <h3>Simple guitar fretboard (scale tones)</h3>
+    <div class="fretboard">
+      <div class="fretboard-label">E standard • First 5 frets • Scale tones highlighted</div>
+      <div id="fretboardContainer"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: Progression & practice -->
+  <section class="card">
+    <h2>Progression builder</h2>
+    <p class="subtext">
+      Build a chord progression in the current key, loop it, and experiment with different modes.
+    </p>
+
+    <div class="row" style="margin-bottom:8px;">
+      <button class="primary small" id="playProgressionBtn">Play progression</button>
+      <button class="secondary small" id="stopAudioBtn">Stop audio</button>
+      <button class="danger small" id="clearProgressionBtn">Clear progression</button>
+      <label style="font-size:11px;color:var(--text-soft);display:flex;align-items:center;gap:4px;">
+        Tempo
+        <input type="number" id="tempoInput" value="90" min="40" max="200" style="width:60px;">
+        bpm
+      </label>
+    </div>
+
+    <h3>Current progression</h3>
+    <div class="progression-list" id="progressionList">
+      <span class="progression-empty">No chords yet. Tap chords on the left to add them.</span>
+    </div>
+
+    <h3>Mode hints</h3>
+    <p class="subtext" id="modeHints">
+      Ionian: stable major center. Try ii–V–I (Dm–G–C) or I–vi–IV–V (C–Am–F–G).
+    </p>
+
+    <h3>Key relationships</h3>
+    <p class="subtext" id="keyRelationships">
+      Relative minor of C major is A minor. Closely related keys: G, F, Am, Em, Dm.
+    </p>
+  </section>
+</main>
+
+<footer>
+  Built as a single HTML file. No external libraries. You can edit, extend, or host this as-is.
+</footer>
+
+<script>
+  // --- Music theory core ---
+  const FIFTHS = ["C","G","D","A","E","B","F#","C#","Ab","Eb","Bb","F"];
+  const NOTE_ORDER = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const MODE_PATTERNS = {
+    ionian:       [2,2,1,2,2,2,1],
+    dorian:       [2,1,2,2,2,1,2],
+    phrygian:     [1,2,2,2,1,2,2],
+    lydian:       [2,2,2,1,2,2,1],
+    mixolydian:   [2,2,1,2,2,1,2],
+    aeolian:      [2,1,2,2,1,2,2],
+    locrian:      [1,2,2,1,2,2,2]
+  };
+  const MODE_LABELS = {
+    ionian: "Ionian (Major)",
+    aeolian: "Aeolian (Natural minor)",
+    dorian: "Dorian",
+    mixolydian: "Mixolydian",
+    lydian: "Lydian",
+    phrygian: "Phrygian",
+    locrian: "Locrian"
+  };
+  const DEGREE_LABELS = ["I","ii","iii","IV","V","vi","vii°"];
+
+  function rotateArray(arr, startIndex) {
+    const out = [];
+    for (let i = 0; i < arr.length; i++) {
+      out.push(arr[(startIndex + i) % arr.length]);
+    }
+    return out;
+  }
+
+  function buildScale(root, mode) {
+    const pattern = MODE_PATTERNS[mode] || MODE_PATTERNS.ionian;
+    const startIndex = NOTE_ORDER.indexOf(root);
+    if (startIndex === -1) return [];
+    const notes = [NOTE_ORDER[startIndex]];
+    let idx = startIndex;
+    for (let step of pattern.slice(0,6)) {
+      idx = (idx + step) % NOTE_ORDER.length;
+      notes.push(NOTE_ORDER[idx]);
+    }
+    return notes;
+  }
+
+  function buildDiatonicChords(scale, mode) {
+    // Very simplified: triads only, major/minor/dim based on Ionian pattern
+    const qualitiesIonian = ["maj","min","min","maj","maj","min","dim"];
+    // For now, reuse Ionian qualities for all modes (you can refine later)
+    const qualities = qualitiesIonian;
+    const chords = [];
+    for (let i = 0; i < 7; i++) {
+      const root = scale[i];
+      const quality = qualities[i];
+      chords.push({
+        name: root + (quality === "maj" ? "" : quality === "min" ? "m" : "dim"),
+        degree: DEGREE_LABELS[i],
+        quality
+      });
+    }
+    return chords;
+  }
+
+  function getRelativeMinor(key) {
+    // Relative minor: 6th degree of major scale
+    const scale = buildScale(key, "ionian");
+    return scale[5] || "N/A";
+  }
+
+  function getCloseKeys(key) {
+    const idx = FIFTHS.indexOf(key);
+    if (idx === -1) return [];
+    const left = FIFTHS[(idx - 1 + FIFTHS.length) % FIFTHS.length];
+    const right = FIFTHS[(idx + 1) % FIFTHS.length];
+    const relMinor = getRelativeMinor(key);
+    return [right, left, relMinor];
+  }
+
+  // --- Audio (simple WebAudio sine chords) ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function noteToFreq(note) {
+    // Map note to frequency (A4 = 440)
+    const semitoneMap = {
+      "C": -9, "C#": -8, "D": -7, "D#": -6, "E": -5,
+      "F": -4, "F#": -3, "G": -2, "G#": -1, "A": 0,
+      "A#": 1, "B": 2
+    };
+    const base = 440; // A4
+    const semitones = semitoneMap[note] ?? 0;
+    return base * Math.pow(2, semitones / 12);
+  }
+
+  function playChord(chordName, duration = 1.2) {
+    // Very simple: root + major/minor third + fifth
+    const match = chordName.match(/^([A-G]#?)(m|dim)?$/);
+    if (!match) return;
+    const root = match[1];
+    const type = match[2] || "";
+    const rootIndex = NOTE_ORDER.indexOf(root);
+    if (rootIndex === -1) return;
+    const intervals = type === "dim" ? [0, 3, 6] : type === "m" ? [0, 3, 7] : [0, 4, 7];
+    const now = audioCtx.currentTime;
+    intervals.forEach(semi => {
+      const idx = (rootIndex + semi) % NOTE_ORDER.length;
+      const note = NOTE_ORDER[idx];
+      const freq = noteToFreq(note);
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0.0, now + duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.1);
+    });
+  }
+
+  function playScale(notes, tempoBpm) {
+    const beat = 60 / tempoBpm;
+    const now = audioCtx.currentTime;
+    notes.forEach((note, i) => {
+      const freq = noteToFreq(note);
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const t = now + i * beat * 0.75;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.03);
+      gain.gain.linearRampToValueAtTime(0.0, t + beat * 0.7);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + beat * 0.8);
+    });
+  }
+
+  function stopAudio() {
+    audioCtx.close().then(() => {
+      // Recreate context
+      window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }).catch(() => {});
+  }
+
+  // --- UI wiring ---
+  let currentKey = "C";
+  let currentMode = "ionian";
+  let currentScale = buildScale(currentKey, currentMode);
+  let currentChords = buildDiatonicChords(currentScale, currentMode);
+  let progression = [];
+
+  const wheelNotesGroup = document.getElementById("wheelNotes");
+  const wheelKeyLabel = document.getElementById("wheelKeyLabel");
+  const wheelModeLabel = document.getElementById("wheelModeLabel");
+  const wheelScaleNotes = document.getElementById("wheelScaleNotes");
+  const chordGrid = document.getElementById("chordGrid");
+  const progressionList = document.getElementById("progressionList");
+  const modeSelect = document.getElementById("modeSelect");
+  const currentKeyPill = document.getElementById("currentKeyPill");
+  const playScaleBtn = document.getElementById("playScaleBtn");
+  const playProgressionBtn = document.getElementById("playProgressionBtn");
+  const clearProgressionBtn = document.getElementById("clearProgressionBtn");
+  const stopAudioBtn = document.getElementById("stopAudioBtn");
+  const tempoInput = document.getElementById("tempoInput");
+  const modeHints = document.getElementById("modeHints");
+  const keyRelationships = document.getElementById("keyRelationships");
+  const fretboardContainer = document.getElementById("fretboardContainer");
+
+  function renderWheel() {
+    wheelNotesGroup.innerHTML = "";
+    const cx = 100, cy = 100, r = 70;
+    FIFTHS.forEach((note, i) => {
+      const angle = (i / FIFTHS.length) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "wheel-note");
+      g.dataset.note = note;
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", 12);
+      circle.setAttribute("fill", "#151a2c");
+      circle.setAttribute("stroke", "#343a5a");
+      circle.setAttribute("stroke-width", "1");
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", x);
+      text.setAttribute("y", y + 3);
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = note;
+      g.appendChild(circle);
+      g.appendChild(text);
+      g.addEventListener("click", () => {
+        setKey(note);
+      });
+      wheelNotesGroup.appendChild(g);
+    });
+    updateWheelActive();
+  }
+
+  function updateWheelActive() {
+    const nodes = wheelNotesGroup.querySelectorAll(".wheel-note");
+    nodes.forEach(node => {
+      if (node.dataset.note === currentKey) {
+        node.classList.add("active");
+      } else {
+        node.classList.remove("active");
+      }
+    });
+  }
+
+  function setKey(key) {
+    currentKey = key;
+    currentScale = buildScale(currentKey, currentMode);
+    currentChords = buildDiatonicChords(currentScale, currentMode);
+    wheelKeyLabel.textContent = currentKey;
+    wheelModeLabel.textContent = MODE_LABELS[currentMode] || currentMode;
+    wheelScaleNotes.textContent = currentScale.join(" ");
+    currentKeyPill.textContent = "Key: " + currentKey;
+    updateWheelActive();
+    renderChords();
+    renderModeHints();
+    renderKeyRelationships();
+    renderFretboard();
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    currentScale = buildScale(currentKey, currentMode);
+    currentChords = buildDiatonicChords(currentScale, currentMode);
+    wheelModeLabel.textContent = MODE_LABELS[currentMode] || currentMode;
+    wheelScaleNotes.textContent = currentScale.join(" ");
+    renderChords();
+    renderModeHints();
+    renderFretboard();
+  }
+
+  function renderChords() {
+    chordGrid.innerHTML = "";
+    currentChords.forEach(ch => {
+      const div = document.createElement("div");
+      div.className = "chord-chip";
+      div.innerHTML = `
+        <div class="chord-chip-name">${ch.name}</div>
+        <div class="chord-chip-degree">${ch.degree}</div>
+        <div class="chord-chip-type">${ch.quality}</div>
+      `;
+      div.addEventListener("click", () => {
+        progression.push({ ...ch, key: currentKey, mode: currentMode });
+        renderProgression();
+        playChord(ch.name);
+      });
+      chordGrid.appendChild(div);
+    });
+  }
+
+  function renderProgression() {
+    progressionList.innerHTML = "";
+    if (progression.length === 0) {
+      const span = document.createElement("span");
+      span.className = "progression-empty";
+      span.textContent = "No chords yet. Tap chords on the left to add them.";
+      progressionList.appendChild(span);
+      return;
+    }
+    progression.forEach((ch, idx) => {
+      const item = document.createElement("div");
+      item.className = "progression-item";
+      item.innerHTML = `
+        <span>${ch.name}</span>
+        <span class="degree">${ch.degree}</span>
+      `;
+      const btn = document.createElement("button");
+      btn.textContent = "×";
+      btn.title = "Remove chord";
+      btn.addEventListener("click", () => {
+        progression.splice(idx, 1);
+        renderProgression();
+      });
+      item.appendChild(btn);
+      progressionList.appendChild(item);
+    });
+  }
+
+  function renderModeHints() {
+    let text = "";
+    switch (currentMode) {
+      case "ionian":
+        text = `${currentKey} Ionian: stable major center. Try ii–V–I or I–vi–IV–V.`;
+        break;
+      case "aeolian":
+        text = `${currentKey} Aeolian: natural minor. Try i–VI–VII or i–iv–v progressions.`;
+        break;
+      case "dorian":
+        text = `${currentKey} Dorian: minor with raised 6th. Great for funk and modal jams.`;
+        break;
+      case "mixolydian":
+        text = `${currentKey} Mixolydian: dominant flavor. Try I–bVII–IV or I–IV–V.`;
+        break;
+      case "lydian":
+        text = `${currentKey} Lydian: bright major with raised 4th. Float on I and II.`;
+        break;
+      case "phrygian":
+        text = `${currentKey} Phrygian: dark minor with b2. Good for heavy or exotic vibes.`;
+        break;
+      case "locrian":
+        text = `${currentKey} Locrian: unstable diminished center. Use sparingly for tension.`;
+        break;
+      default:
+        text = `Explore modal colors over ${currentKey}.`;
+    }
+    modeHints.textContent = text;
+  }
+
+  function renderKeyRelationships() {
+    const relMinor = getRelativeMinor(currentKey);
+    const close = getCloseKeys(currentKey);
+    keyRelationships.textContent =
+      `Relative minor of ${currentKey} is ${relMinor}. Closely related keys: ${close.join(", ")}.`;
+  }
+
+  function renderFretboard() {
+    // Very simple: 6 strings, 5 frets, highlight scale tones by note name only (no octave)
+    const strings = ["E","B","G","D","A","E"]; // from high to low visually
+    const fretsCount = 5;
+    fretboardContainer.innerHTML = "";
+    strings.forEach((openNote, sIdx) => {
+      const row = document.createElement("div");
+      row.className = "fretboard-row";
+      for (let f = 0; f <= fretsCount; f++) {
+        const idx = (NOTE_ORDER.indexOf(openNote) + f) % NOTE_ORDER.length;
+        const note = NOTE_ORDER[idx];
+        const div = document.createElement("div");
+        div.className = "fret";
+        div.textContent = f === 0 ? openNote : f;
+        if (currentScale.includes(note)) {
+          div.classList.add("active");
+        }
+        row.appendChild(div);
+      }
+      fretboardContainer.appendChild(row);
+    });
+  }
+
+  // --- Event handlers ---
+  modeSelect.addEventListener("change", e => {
+    setMode(e.target.value);
+  });
+
+  playScaleBtn.addEventListener("click", () => {
+    const tempo = parseInt(tempoInput.value, 10) || 90;
+    playScale(currentScale, tempo);
+  });
+
+  playProgressionBtn.addEventListener("click", () => {
+    if (progression.length === 0) return;
+    const tempo = parseInt(tempoInput.value, 10) || 90;
+    const beat = 60 / tempo;
+    const now = audioCtx.currentTime;
+    progression.forEach((ch, i) => {
+      const t = now + i * beat * 1.2;
+      setTimeout(() => playChord(ch.name), i * beat * 1200);
+    });
+  });
+
+  clearProgressionBtn.addEventListener("click", () => {
+    progression = [];
+    renderProgression();
+  });
+
+  stopAudioBtn.addEventListener("click", () => {
+    stopAudio();
+  });
+
+  // --- Init ---
+  renderWheel();
+  renderChords();
+  renderProgression();
+  renderModeHints();
+  renderKeyRelationships();
+  renderFretboard();
+</script>
+</body>
+</html>
