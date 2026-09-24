@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" data-color-mode="auto" data-light-theme="light" data-dark-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>airesponse - Guitar & Songwriting Tools</title>
+  
+  <meta name="description" content="Site for guitar and songwriting tools. Repository: airesponse/airesponse">
+  <meta property="og:title" content="airesponse/index.html at main · airesponse/airesponse · GitHub">
+  <meta property="og:url" content="https://github.com/airesponse/airesponse/blob/main/index.html">
+
+  <link rel="stylesheet" href="https://github.githubassets.com/assets/light-99f877e9ddfc0e51.css">
+  <link rel="stylesheet" href="https://github.githubassets.com/assets/dark-79ad2ace604703b3.css">
+  <link rel="stylesheet" href="https://github.githubassets.com/assets/primer-primitives-ed9ca172356fd545.css">
+  <link rel="stylesheet" href="https://github.githubassets.com/assets/primer-1d2c7f7b52a6068b.css">
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 24px;
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+    }
+    header {
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #58a6ff;
+      margin: 0 0 8px 0;
+    }
+    .repo-tag {
+      font-size: 14px;
+      color: #8b949e;
+    }
+    .tool-section {
+      background: #0d1117;
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid #21262d;
+      margin-top: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    select, button, input {
+      background-color: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+    button {
+      background-color: #238636;
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+    .output {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #161b22;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>AIRESPONSE</h1>
+      <div class="repo-tag">Repository: <strong>airesponse/airesponse</strong></div>
+      <p style="margin-top: 8px; color: #8b949e;">Site for guitar and songwriting tools.</p>
+    </header>
+
+    <main>
+      <div class="tool-section">
+        <h3>Guitar Tuning & Pitch Tool</h3>
+        <p style="font-size: 13px; color: #8b949e;">Select a tuning to reference note pitches and frequencies for songwriting.</p>
+        
+        <label for="tuningSelect">Select Tuning:</label>
+        <select id="tuningSelect">
+          <option value="standard">E Standard (E A D G B E)</option>
+          <option value="eb_standard">Eb Standard (Eb Ab Db Gb Bb Eb)</option>
+          <option value="c_sharp">C# Standard (C# F# B E G# C#)</option>
+          <option value="drop_d">Drop D (D A D G B E)</option>
+          <option value="open_d">Open D (D A D F# A D)</option>
+        </select>
+        <button id="calcBtn">Get Frequencies</button>
+
+        <div id="outputDisplay" class="output">Select a tuning and click 'Get Frequencies'...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const tunings = {
+      'standard': [
+        { note: 'E2', freq: '82.41 Hz' },
+        { note: 'A2', freq: '110.00 Hz' },
+        { note: 'D3', freq: '146.83 Hz' },
+        { note: 'G3', freq: '196.00 Hz' },
+        { note: 'B3', freq: '246.94 Hz' },
+        { note: 'E4', freq: '329.63 Hz' }
+      ],
+      'eb_standard': [
+        { note: 'Eb2', freq: '77.78 Hz' },
+        { note: 'Ab2', freq: '103.83 Hz' },
+        { note: 'Db3', freq: '138.59 Hz' },
+        { note: 'Gb3', freq: '185.00 Hz' },
+        { note: 'Bb3', freq: '233.08 Hz' },
+        { note: 'Eb4', freq: '311.13 Hz' }
+      ],
+      'c_sharp': [
+        { note: 'C#2', freq: '69.30 Hz' },
+        { note: 'F#2', freq: '92.50 Hz' },
+        { note: 'B2', freq: '123.47 Hz' },
+        { note: 'E3', freq: '164.81 Hz' },
+        { note: 'G#3', freq: '207.65 Hz' },
+        { note: 'C#4', freq: '277.18 Hz' }
+      ],
+      'drop_d': [
+        { note: 'D2', freq: '73.42 Hz' },
+        { note: 'A2', freq: '110.00 Hz' },
+        { note: 'D3', freq: '146.83 Hz' },
+        { note: 'G3', freq: '196.00 Hz' },
+        { note: 'B3', freq: '246.94 Hz' },
+        { note: 'E4', freq: '329.63 Hz' }
+      ],
+      'open_d': [
+        { note: 'D2', freq: '73.42 Hz' },
+        { note: 'A2', freq: '110.00 Hz' },
+        { note: 'F#3', freq: '185.00 Hz' },
+        { note: 'D3', freq: '146.83 Hz' },
+        { note: 'A3', freq: '220.00 Hz' },
+        { note: 'D4', freq: '293.66 Hz' }
+      ]
+    };
+
+    document.getElementById('calcBtn').addEventListener('click', () => {
+      const selected = document.getElementById('tuningSelect').value;
+      const notes = tunings[selected];
+      const resultText = notes.map((item, idx) => `String ${6 - idx}: ${item.note.padEnd(4)} -> ${item.freq}`).join('\n');
+      document.getElementById('outputDisplay').textContent = resultText;
+    });
+  </script>
+</body>
+</html>
