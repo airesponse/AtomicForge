@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fretboard Triad & Scale Visualizer</title>
+  <title>Fretboard Triad, Scale & Range Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -16,11 +16,12 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       
-      --color-root: #ef4444;    /* Red */
-      --color-third: #22c55e;   /* Green */
-      --color-fifth: #f97316;   /* Orange */
-      --color-seventh: #a855f7; /* Purple */
-      --color-scale: rgba(148, 163, 184, 0.35); /* Soft transparent scale tone */
+      --color-root: #ef4444;       /* Red */
+      --color-third: #22c55e;      /* Green */
+      --color-fifth: #f97316;      /* Orange */
+      --color-seventh: #a855f7;    /* Purple */
+      --color-scale: rgba(148, 163, 184, 0.35); /* Ghosted scale tone */
+      --color-diatonic: rgba(234, 179, 8, 0.4);  /* Ghosted diatonic tone (Yellow/Gold) */
     }
 
     * {
@@ -118,7 +119,7 @@
       color: var(--text-muted);
     }
 
-    select, input {
+    select, input[type="number"], input[type="text"] {
       width: 100%;
       background-color: var(--bg-dark);
       border: 1px solid var(--panel-border);
@@ -283,13 +284,14 @@
 
     .legend {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       padding: 10px 14px;
       background: var(--bg-dark);
       border-radius: 8px;
       border: 1px solid var(--panel-border);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
+      flex-wrap: wrap;
     }
 
     .legend-item {
@@ -384,6 +386,12 @@
     .icon-btn.delete:hover {
       color: var(--color-root);
     }
+
+    .range-inputs {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -393,7 +401,7 @@
       <i class="fa-solid fa-guitar logo-icon"></i>
       <div>
         <h1>Fretboard Triad Engine</h1>
-        <div class="subtitle">Interactive Diatonic, Scale & Voicing Explorer</div>
+        <div class="subtitle">Interactive Diatonic, Scale & Range Explorer</div>
       </div>
     </div>
     <div style="display:flex; gap:10px;">
@@ -408,7 +416,7 @@
     <div class="sidebar">
       
       <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-sliders"></i> Key & Mode</div>
+        <div class="panel-title"><i class="fa-solid fa-sliders"></i> Key & Progression</div>
         
         <div class="form-group">
           <label>Root Key</label>
@@ -466,7 +474,28 @@
         </div>
 
         <div class="form-group">
-          <label>Overlay Mode / Scale</label>
+          <label>Scale Root (Defaults to Chord Root)</label>
+          <div style="display:flex; gap:8px;">
+            <select id="scaleRootSelect" style="flex:1;">
+              <option value="AUTO" selected>Auto (Follows Chord Root)</option>
+              <option value="C">C</option>
+              <option value="C#">C# / Db</option>
+              <option value="D">D</option>
+              <option value="D#">D# / Eb</option>
+              <option value="E">E</option>
+              <option value="F">F</option>
+              <option value="F#">F# / Gb</option>
+              <option value="G">G</option>
+              <option value="G#">G# / Ab</option>
+              <option value="A">A</option>
+              <option value="A#">A# / Bb</option>
+              <option value="B">B</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Overlay Scale / Mode</label>
           <select id="scaleSelect">
             <option value="ionian">1. Major (Ionian)</option>
             <option value="dorian">2. Dorian</option>
@@ -481,6 +510,37 @@
             <option value="melodic_minor">Melodic Minor</option>
             <option value="blues">Blues Scale</option>
           </select>
+        </div>
+      </div>
+
+      <!-- DIATONIC TRIADS & FRET RANGE PANEL -->
+      <div class="panel">
+        <div class="panel-title"><i class="fa-solid fa-arrows-left-right"></i> Range & Diatonic Filters</div>
+
+        <div class="form-group">
+          <label>Show All Diatonic Triads</label>
+          <div class="toggle-group">
+            <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
+            <button class="btn-toggle" id="diatonicOnBtn">On</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Fret Range Limit</label>
+          <div class="toggle-group" style="margin-bottom:8px;">
+            <button class="btn-toggle active" id="rangeOffBtn">Full Neck</button>
+            <button class="btn-toggle" id="rangeOnBtn">Filter Range</button>
+          </div>
+          <div class="range-inputs" id="rangeControls" style="display:none;">
+            <div>
+              <label style="font-size:10px;">Start Fret</label>
+              <input type="number" id="startFretInput" min="0" max="12" value="3">
+            </div>
+            <div>
+              <label style="font-size:10px;">Span (Frets)</label>
+              <input type="number" id="fretSpanInput" min="3" max="12" value="5">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -508,6 +568,7 @@
             <div class="legend-item"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
             <div class="legend-item" id="legendScale"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
+            <div class="legend-item" id="legendDiatonic" style="display:none;"><div class="legend-dot" style="background: var(--color-diatonic); border: 1px solid #eab308;"></div> Diatonic Triad</div>
           </div>
         </div>
 
@@ -579,7 +640,12 @@
       voicingIndex: 0,
       labelMode: 'interval',
       showScaleOverlay: true,
+      scaleRoot: 'AUTO',
       selectedScale: 'ionian',
+      showDiatonicRun: false,
+      enableFretRange: false,
+      startFret: 3,
+      fretSpan: 5,
       favorites: []
     };
 
@@ -641,7 +707,7 @@
     }
 
     // --- VOICING GENERATOR ENGINE ---
-    function generateVoicings(key, degree, mode, type) {
+    function generateVoicings(key, degree, mode, type, rangeLimit = false, startFret = 0, span = 15) {
       const keyIdx = NOTES.indexOf(key);
       const scale = mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
       const chordRoot = (keyIdx + scale[degree]) % 12;
@@ -657,6 +723,8 @@
         [[0,1,2,3], [1,2,3,4], [2,3,4,5]] : 
         [[0,1,2], [1,2,3], [2,3,4], [3,4,5]];
 
+      const endFret = Math.min(15, startFret + span);
+
       stringSets.forEach(stringGroup => {
         function searchGroup(strIdx, currentFingering) {
           if (strIdx === stringGroup.length) {
@@ -671,7 +739,10 @@
           const s = stringGroup[strIdx];
           const openNote = TUNING[s];
 
-          for (let f = 0; f <= 15; f++) {
+          const minF = rangeLimit ? startFret : 0;
+          const maxF = rangeLimit ? endFret : 15;
+
+          for (let f = minF; f <= maxF; f++) {
             const pc = (openNote + f) % 12;
             if (targetPitchClasses.includes(pc)) {
               currentFingering.push({ string: s, fret: f, pc: pc });
@@ -687,13 +758,13 @@
         const frets = v.map(n => n.fret).filter(f => f > 0);
         const minFret = frets.length > 0 ? Math.min(...frets) : 0;
         const maxFret = frets.length > 0 ? Math.max(...frets) : 0;
-        const span = maxFret - minFret;
+        const currentSpan = maxFret - minFret;
 
-        let score = span;
-        if (span > 4) score += 100;
+        let score = currentSpan;
+        if (currentSpan > 4) score += 100;
         score += minFret * 0.2;
 
-        return { notes: v, span, minFret, maxFret, score };
+        return { notes: v, span: currentSpan, minFret, maxFret, score };
       }).filter(v => v.span <= 4);
 
       scored.sort((a, b) => a.score - b.score);
@@ -743,6 +814,20 @@
       ctx.fillStyle = 'rgba(255,255,255,0.02)';
       for (let i = 0; i < boardHeight; i += 4) {
         ctx.fillRect(marginX, marginY + i, boardWidth, 1.5);
+      }
+
+      // Draw Highlight Box for Fret Range if Enabled
+      if (state.enableFretRange) {
+        const startX = marginX + Math.max(0, state.startFret) * fretWidth;
+        const endX = marginX + Math.min(15, state.startFret + state.fretSpan) * fretWidth;
+        const rangeW = endX - startX;
+
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
+        ctx.fillRect(startX, marginY, rangeW, boardHeight);
+
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, marginY, rangeW, boardHeight);
       }
 
       // Nut
@@ -808,10 +893,10 @@
 
       // --- DRAW SCALE OVERLAY (BACKGROUND LAYER) ---
       if (state.showScaleOverlay) {
+        const activeScaleRoot = state.scaleRoot === 'AUTO' ? chordRoot : NOTES.indexOf(state.scaleRoot);
         const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
-        const scalePcs = scaleIntervals.map(i => (chordRoot + i) % 12);
+        const scalePcs = scaleIntervals.map(i => (activeScaleRoot + i) % 12);
 
-        // Active voicing keys to avoid double drawing
         const activeVoicingKeys = new Set(
           voicing ? voicing.notes.map(n => `${n.string}:${n.fret}`) : []
         );
@@ -834,7 +919,7 @@
               ctx.lineWidth = 1;
               ctx.stroke();
 
-              const intervalFromRoot = (pc - chordRoot + 12) % 12;
+              const intervalFromRoot = (pc - activeScaleRoot + 12) % 12;
               ctx.fillStyle = '#cbd5e1';
               ctx.font = '600 9px Inter';
               ctx.textAlign = 'center';
@@ -847,9 +932,45 @@
         }
       }
 
+      // --- DRAW ALL RELATED DIATONIC TRIADS OVERLAY ---
+      if (state.showDiatonicRun) {
+        const activeVoicingKeys = new Set(
+          voicing ? voicing.notes.map(n => `${n.string}:${n.fret}`) : []
+        );
+
+        // Gather all pitch classes across all 7 diatonic degree triads
+        const allDiatonicPcs = new Set();
+        for (let d = 0; d < 7; d++) {
+          const degRoot = (keyIdx + scale[d]) % 12;
+          const degIntervals = getChordIntervals(d, state.mode, 'triad');
+          degIntervals.forEach(i => allDiatonicPcs.add((degRoot + i.semitones) % 12));
+        }
+
+        for (let s = 0; s < 6; s++) {
+          const openNote = TUNING[s];
+          const y = marginY + s * stringSpacing;
+
+          for (let f = 0; f <= numFrets; f++) {
+            const pc = (openNote + f) % 12;
+            if (allDiatonicPcs.has(pc) && !activeVoicingKeys.has(`${s}:${f}`)) {
+              const x = f === 0 ? marginX - 18 : marginX + (f - 0.5) * fretWidth;
+
+              ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+              ctx.beginPath();
+              ctx.arc(x, y, 12, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.strokeStyle = '#eab308';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
       if (!voicing) return;
 
-      // --- DRAW CHORD VOICING NOTES (FOREGROUND LAYER) ---
+      // --- DRAW ACTIVE CHORD VOICING NOTES (FOREGROUND LAYER) ---
       voicing.notes.forEach(n => {
         const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
         const y = marginY + n.string * stringSpacing;
@@ -898,11 +1019,9 @@
       document.getElementById('chordTitle').innerHTML = `${chordName} <span class="chord-badge">${degreeText} Degree</span>`;
       document.getElementById('legendSeventh').style.display = state.chordType === '7th' ? 'flex' : 'none';
       document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
+      document.getElementById('legendDiatonic').style.display = state.showDiatonicRun ? 'flex' : 'none';
 
-      // Update Scale Selector to match current chord degree mode if user hasn't overridden
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
-      const suggestedScale = autoScaleMap[state.degreeIndex];
-      const scaleSelect = document.getElementById('scaleSelect');
 
       // Sync degree buttons
       const degreeContainer = document.getElementById('degreeButtons');
@@ -914,22 +1033,32 @@
         btn.onclick = () => {
           state.degreeIndex = idx;
           state.voicingIndex = 0;
-          state.selectedScale = autoScaleMap[idx];
-          scaleSelect.value = state.selectedScale;
+          if (state.scaleRoot === 'AUTO') {
+            state.selectedScale = autoScaleMap[idx];
+            document.getElementById('scaleSelect').value = state.selectedScale;
+          }
           updateApp();
         };
         degreeContainer.appendChild(btn);
       });
 
-      // Generate Voicings
-      const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, state.chordType);
+      // Generate Voicings with Optional Fret Range Filter
+      const voicings = generateVoicings(
+        state.key, 
+        state.degreeIndex, 
+        state.mode, 
+        state.chordType,
+        state.enableFretRange,
+        state.startFret,
+        state.fretSpan
+      );
 
       // Render Voicings List
       const voicingContainer = document.getElementById('voicingContainer');
       voicingContainer.innerHTML = '';
 
       if (voicings.length === 0) {
-        voicingContainer.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">No voicings available</div>';
+        voicingContainer.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:10px;">No playable voicings in this fret range</div>';
       } else {
         if (state.voicingIndex >= voicings.length) state.voicingIndex = 0;
 
@@ -1016,8 +1145,55 @@
       updateApp();
     });
 
+    document.getElementById('scaleRootSelect').addEventListener('change', (e) => {
+      state.scaleRoot = e.target.value;
+      updateApp();
+    });
+
     document.getElementById('scaleSelect').addEventListener('change', (e) => {
       state.selectedScale = e.target.value;
+      updateApp();
+    });
+
+    // Diatonic Run Controls
+    document.getElementById('diatonicOnBtn').addEventListener('click', () => {
+      state.showDiatonicRun = true;
+      document.getElementById('diatonicOnBtn').classList.add('active');
+      document.getElementById('diatonicOffBtn').classList.remove('active');
+      updateApp();
+    });
+
+    document.getElementById('diatonicOffBtn').addEventListener('click', () => {
+      state.showDiatonicRun = false;
+      document.getElementById('diatonicOffBtn').classList.add('active');
+      document.getElementById('diatonicOnBtn').classList.remove('active');
+      updateApp();
+    });
+
+    // Fret Range Controls
+    document.getElementById('rangeOnBtn').addEventListener('click', () => {
+      state.enableFretRange = true;
+      document.getElementById('rangeOnBtn').classList.add('active');
+      document.getElementById('rangeOffBtn').classList.remove('active');
+      document.getElementById('rangeControls').style.display = 'flex';
+      updateApp();
+    });
+
+    document.getElementById('rangeOffBtn').addEventListener('click', () => {
+      state.enableFretRange = false;
+      document.getElementById('rangeOffBtn').classList.add('active');
+      document.getElementById('rangeOnBtn').classList.remove('active');
+      document.getElementById('rangeControls').style.display = 'none';
+      updateApp();
+    });
+
+    document.getElementById('startFretInput').addEventListener('input', (e) => {
+      state.startFret = parseInt(e.target.value) || 0;
+      updateApp();
+    });
+
+    document.getElementById('fretSpanInput').addEventListener('input', (e) => {
+      state.fretSpan = parseInt(e.target.value) || 5;
       updateApp();
     });
 
@@ -1025,8 +1201,10 @@
       state.degreeIndex = (state.degreeIndex - 1 + 7) % 7;
       state.voicingIndex = 0;
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
-      state.selectedScale = autoScaleMap[state.degreeIndex];
-      document.getElementById('scaleSelect').value = state.selectedScale;
+      if (state.scaleRoot === 'AUTO') {
+        state.selectedScale = autoScaleMap[state.degreeIndex];
+        document.getElementById('scaleSelect').value = state.selectedScale;
+      }
       updateApp();
     });
 
@@ -1034,13 +1212,23 @@
       state.degreeIndex = (state.degreeIndex + 1) % 7;
       state.voicingIndex = 0;
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
-      state.selectedScale = autoScaleMap[state.degreeIndex];
-      document.getElementById('scaleSelect').value = state.selectedScale;
+      if (state.scaleRoot === 'AUTO') {
+        state.selectedScale = autoScaleMap[state.degreeIndex];
+        document.getElementById('scaleSelect').value = state.selectedScale;
+      }
       updateApp();
     });
 
     document.getElementById('cycleVoicingBtn').addEventListener('click', () => {
-      const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, state.chordType);
+      const voicings = generateVoicings(
+        state.key, 
+        state.degreeIndex, 
+        state.mode, 
+        state.chordType,
+        state.enableFretRange,
+        state.startFret,
+        state.fretSpan
+      );
       if (voicings.length > 0) {
         state.voicingIndex = (state.voicingIndex + 1) % voicings.length;
         updateApp();
@@ -1059,7 +1247,12 @@
         chordType: state.chordType,
         voicingIndex: state.voicingIndex,
         showScaleOverlay: state.showScaleOverlay,
-        selectedScale: state.selectedScale
+        scaleRoot: state.scaleRoot,
+        selectedScale: state.selectedScale,
+        showDiatonicRun: state.showDiatonicRun,
+        enableFretRange: state.enableFretRange,
+        startFret: state.startFret,
+        fretSpan: state.fretSpan
       };
 
       state.favorites.push(fav);
@@ -1092,11 +1285,19 @@
           state.chordType = fav.chordType;
           state.voicingIndex = fav.voicingIndex;
           state.showScaleOverlay = fav.showScaleOverlay ?? true;
+          state.scaleRoot = fav.scaleRoot ?? 'AUTO';
           state.selectedScale = fav.selectedScale ?? 'ionian';
+          state.showDiatonicRun = fav.showDiatonicRun ?? false;
+          state.enableFretRange = fav.enableFretRange ?? false;
+          state.startFret = fav.startFret ?? 3;
+          state.fretSpan = fav.fretSpan ?? 5;
 
           document.getElementById('keySelect').value = fav.key;
           document.getElementById('chordTypeSelect').value = fav.chordType;
+          document.getElementById('scaleRootSelect').value = state.scaleRoot;
           document.getElementById('scaleSelect').value = state.selectedScale;
+          document.getElementById('startFretInput').value = state.startFret;
+          document.getElementById('fretSpanInput').value = state.fretSpan;
 
           if (fav.mode === 'major') {
             document.getElementById('modeMajorBtn').click();
@@ -1105,11 +1306,21 @@
           }
 
           if (state.showScaleOverlay) {
-            document.getElementById('overlayOnBtn').classList.add('active');
-            document.getElementById('overlayOffBtn').classList.remove('active');
+            document.getElementById('overlayOnBtn').click();
           } else {
-            document.getElementById('overlayOffBtn').classList.add('active');
-            document.getElementById('overlayOnBtn').classList.remove('active');
+            document.getElementById('overlayOffBtn').click();
+          }
+
+          if (state.showDiatonicRun) {
+            document.getElementById('diatonicOnBtn').click();
+          } else {
+            document.getElementById('diatonicOffBtn').click();
+          }
+
+          if (state.enableFretRange) {
+            document.getElementById('rangeOnBtn').click();
+          } else {
+            document.getElementById('rangeOffBtn').click();
           }
 
           updateApp();
