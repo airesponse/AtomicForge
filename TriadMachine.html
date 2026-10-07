@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fretboard Triad & Chord Visualizer</title>
+  <title>Fretboard Triad & Scale Visualizer</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -20,7 +20,7 @@
       --color-third: #22c55e;   /* Green */
       --color-fifth: #f97316;   /* Orange */
       --color-seventh: #a855f7; /* Purple */
-      --color-ext: #06b6d4;     /* Cyan */
+      --color-scale: rgba(148, 163, 184, 0.35); /* Soft transparent scale tone */
     }
 
     * {
@@ -347,7 +347,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 250px;
+      max-height: 200px;
       overflow-y: auto;
     }
 
@@ -393,7 +393,7 @@
       <i class="fa-solid fa-guitar logo-icon"></i>
       <div>
         <h1>Fretboard Triad Engine</h1>
-        <div class="subtitle">Interactive Diatonic & Voicing Explorer</div>
+        <div class="subtitle">Interactive Diatonic, Scale & Voicing Explorer</div>
       </div>
     </div>
     <div style="display:flex; gap:10px;">
@@ -453,6 +453,37 @@
         </div>
       </div>
 
+      <!-- SCALE OVERLAY PANEL -->
+      <div class="panel">
+        <div class="panel-title"><i class="fa-solid fa-layer-group"></i> Scale Overlay</div>
+        
+        <div class="form-group">
+          <label>Overlay State</label>
+          <div class="toggle-group">
+            <button class="btn-toggle" id="overlayOffBtn">Off</button>
+            <button class="btn-toggle active" id="overlayOnBtn">On</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Overlay Mode / Scale</label>
+          <select id="scaleSelect">
+            <option value="ionian">1. Major (Ionian)</option>
+            <option value="dorian">2. Dorian</option>
+            <option value="phrygian">3. Phrygian</option>
+            <option value="lydian">4. Lydian</option>
+            <option value="mixolydian">5. Mixolydian</option>
+            <option value="aeolian">6. Natural Minor (Aeolian)</option>
+            <option value="locrian">7. Locrian</option>
+            <option value="pentatonic_major">Major Pentatonic</option>
+            <option value="pentatonic_minor">Minor Pentatonic</option>
+            <option value="harmonic_minor">Harmonic Minor</option>
+            <option value="melodic_minor">Melodic Minor</option>
+            <option value="blues">Blues Scale</option>
+          </select>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-title"><i class="fa-solid fa-star"></i> Saved Favorites</div>
         <div class="favorites-list" id="favoritesList">
@@ -476,6 +507,7 @@
             <div class="legend-item"><div class="legend-dot" style="background: var(--color-third)"></div> 3rd</div>
             <div class="legend-item"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
+            <div class="legend-item" id="legendScale"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
           </div>
         </div>
 
@@ -498,7 +530,7 @@
 
       <!-- AVAILABLE VOICINGS -->
       <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-layer-group"></i> All Playable Voicings (Ranked by Ease)</div>
+        <div class="panel-title"><i class="fa-solid fa-list-check"></i> All Playable Voicings (Ranked by Ease)</div>
         <div class="voicing-selector" id="voicingContainer">
           <!-- Dynamically populated -->
         </div>
@@ -511,7 +543,7 @@
   <script>
     // --- MUSIC THEORY ENGINE ---
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const TUNING = [4, 11, 7, 2, 9, 4]; // E4, B3, G3, D3, A2, E2 (High E to Low E)
+    const TUNING = [4, 11, 7, 2, 9, 4]; // E4, B3, G3, D3, A2, E2
     const STRING_NAMES = ['e', 'B', 'G', 'D', 'A', 'E'];
 
     const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
@@ -520,14 +552,34 @@
     const ROMAN_MAJOR = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
     const ROMAN_MINOR = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
 
+    const MODE_INTERVALS = {
+      'ionian': [0, 2, 4, 5, 7, 9, 11],
+      'dorian': [0, 2, 3, 5, 7, 9, 10],
+      'phrygian': [0, 1, 3, 5, 7, 8, 10],
+      'lydian': [0, 2, 4, 6, 7, 9, 11],
+      'mixolydian': [0, 2, 4, 5, 7, 9, 10],
+      'aeolian': [0, 2, 3, 5, 7, 8, 10],
+      'locrian': [0, 1, 3, 5, 6, 8, 10],
+      'pentatonic_major': [0, 2, 4, 7, 9],
+      'pentatonic_minor': [0, 3, 5, 7, 10],
+      'harmonic_minor': [0, 2, 3, 5, 7, 8, 11],
+      'melodic_minor': [0, 2, 3, 5, 7, 9, 11],
+      'blues': [0, 3, 5, 6, 7, 10]
+    };
+
+    const DEGREE_MODE_MAP_MAJOR = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian'];
+    const DEGREE_MODE_MAP_MINOR = ['aeolian', 'locrian', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian'];
+
     // State Variables
     let state = {
       key: 'G',
-      mode: 'major', // 'major' or 'minor'
+      mode: 'major',
       degreeIndex: 0,
-      chordType: 'triad', // 'triad' or '7th'
+      chordType: 'triad',
       voicingIndex: 0,
-      labelMode: 'interval', // 'interval' or 'note'
+      labelMode: 'interval',
+      showScaleOverlay: true,
+      selectedScale: 'ionian',
       favorites: []
     };
 
@@ -539,7 +591,6 @@
       const scale = mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
       const rootOffset = scale[degree];
       
-      // Calculate 3rd, 5th, and 7th relative to chord root
       const thirdOffset = (scale[(degree + 2) % 7] + (degree + 2 >= 7 ? 12 : 0)) - rootOffset;
       const fifthOffset = (scale[(degree + 4) % 7] + (degree + 4 >= 7 ? 12 : 0)) - rootOffset;
       const seventhOffset = (scale[(degree + 6) % 7] + (degree + 6 >= 7 ? 12 : 0)) - rootOffset;
@@ -598,21 +649,17 @@
 
       const targetPitchClasses = intervals.map(i => (chordRoot + i.semitones) % 12);
 
-      // Find options across strings
       let validVoicings = [];
       const is7th = type === '7th';
       const numNotes = is7th ? 4 : 3;
 
-      // Group adjacent 3 or 4 string sets
       const stringSets = is7th ? 
         [[0,1,2,3], [1,2,3,4], [2,3,4,5]] : 
         [[0,1,2], [1,2,3], [2,3,4], [3,4,5]];
 
       stringSets.forEach(stringGroup => {
-        // Find possible fingerings for this string group
         function searchGroup(strIdx, currentFingering) {
           if (strIdx === stringGroup.length) {
-            // Check if all intervals are represented
             const pcs = currentFingering.map(f => f.pc);
             const uniquePcs = new Set(pcs);
             if (uniquePcs.size === numNotes) {
@@ -636,24 +683,21 @@
         searchGroup(0, []);
       });
 
-      // Filter & Rank voicings by physical playability
       const scored = validVoicings.map(v => {
         const frets = v.map(n => n.fret).filter(f => f > 0);
         const minFret = frets.length > 0 ? Math.min(...frets) : 0;
         const maxFret = frets.length > 0 ? Math.max(...frets) : 0;
         const span = maxFret - minFret;
 
-        // Penalty for span > 4
         let score = span;
-        if (span > 4) score += 100; // unplayable
-        score += minFret * 0.2; // slight bias for lower position voicings
+        if (span > 4) score += 100;
+        score += minFret * 0.2;
 
         return { notes: v, span, minFret, maxFret, score };
       }).filter(v => v.span <= 4);
 
       scored.sort((a, b) => a.score - b.score);
       
-      // Deduplicate similar shapes
       const unique = [];
       const seen = new Set();
       scored.forEach(item => {
@@ -683,7 +727,7 @@
 
       ctx.scale(dpr, dpr);
 
-      // Background - Dark Fretboard Wood
+      // Background
       ctx.fillStyle = '#18181b';
       ctx.fillRect(0, 0, width, height);
 
@@ -695,7 +739,7 @@
       const fretWidth = boardWidth / numFrets;
       const stringSpacing = boardHeight / 5;
 
-      // Draw Wood Grain Texture (Subtle)
+      // Wood Grain Texture
       ctx.fillStyle = 'rgba(255,255,255,0.02)';
       for (let i = 0; i < boardHeight; i += 4) {
         ctx.fillRect(marginX, marginY + i, boardWidth, 1.5);
@@ -705,7 +749,7 @@
       ctx.fillStyle = '#e2e8f0';
       ctx.fillRect(marginX - 6, marginY - 2, 6, boardHeight + 4);
 
-      // Inlay Markers (3, 5, 7, 9, 12, 15)
+      // Inlay Markers
       const inlays = [3, 5, 7, 9, 12, 15];
       ctx.fillStyle = '#3f3f46';
       inlays.forEach(fret => {
@@ -732,7 +776,6 @@
         ctx.lineTo(x, marginY + boardHeight);
         ctx.stroke();
 
-        // Fret Numbers
         if (i > 0) {
           ctx.fillStyle = '#71717a';
           ctx.font = '600 11px Inter';
@@ -741,10 +784,10 @@
         }
       }
 
-      // Strings (Top to bottom: High E -> Low E)
+      // Strings
       for (let i = 0; i < 6; i++) {
         const y = marginY + i * stringSpacing;
-        const thickness = 1 + (i * 0.4); // Gauges
+        const thickness = 1 + (i * 0.4);
         ctx.strokeStyle = '#a1a1aa';
         ctx.lineWidth = thickness;
         ctx.beginPath();
@@ -752,57 +795,92 @@
         ctx.lineTo(marginX + boardWidth, y);
         ctx.stroke();
 
-        // String Names
         ctx.fillStyle = '#a1a1aa';
         ctx.font = '600 12px Inter';
         ctx.textAlign = 'right';
         ctx.fillText(STRING_NAMES[i], marginX - 12, y + 4);
       }
 
-      if (!voicing) return;
-
-      // Draw Notes
       const keyIdx = NOTES.indexOf(state.key);
       const scale = state.mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
       const chordRoot = (keyIdx + scale[state.degreeIndex]) % 12;
       const intervals = getChordIntervals(state.degreeIndex, state.mode, state.chordType);
 
+      // --- DRAW SCALE OVERLAY (BACKGROUND LAYER) ---
+      if (state.showScaleOverlay) {
+        const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
+        const scalePcs = scaleIntervals.map(i => (chordRoot + i) % 12);
+
+        // Active voicing keys to avoid double drawing
+        const activeVoicingKeys = new Set(
+          voicing ? voicing.notes.map(n => `${n.string}:${n.fret}`) : []
+        );
+
+        for (let s = 0; s < 6; s++) {
+          const openNote = TUNING[s];
+          const y = marginY + s * stringSpacing;
+
+          for (let f = 0; f <= numFrets; f++) {
+            const pc = (openNote + f) % 12;
+            if (scalePcs.includes(pc) && !activeVoicingKeys.has(`${s}:${f}`)) {
+              const x = f === 0 ? marginX - 18 : marginX + (f - 0.5) * fretWidth;
+
+              ctx.fillStyle = 'rgba(148, 163, 184, 0.25)';
+              ctx.beginPath();
+              ctx.arc(x, y, 11, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.strokeStyle = '#64748b';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              const intervalFromRoot = (pc - chordRoot + 12) % 12;
+              ctx.fillStyle = '#cbd5e1';
+              ctx.font = '600 9px Inter';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              
+              const label = state.labelMode === 'interval' ? `${intervalFromRoot}` : getNoteName(pc);
+              ctx.fillText(label, x, y);
+            }
+          }
+        }
+      }
+
+      if (!voicing) return;
+
+      // --- DRAW CHORD VOICING NOTES (FOREGROUND LAYER) ---
       voicing.notes.forEach(n => {
         const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
         const y = marginY + n.string * stringSpacing;
 
-        // Determine Interval Type
         const intervalObj = intervals.find(i => (chordRoot + i.semitones) % 12 === n.pc);
         let color = '#3b82f6';
         let labelText = '';
 
         if (intervalObj) {
-          if (intervalObj.type === 'root') color = '#ef4444';      // Red
-          else if (intervalObj.type === 'third') color = '#22c55e'; // Green
-          else if (intervalObj.type === 'fifth') color = '#f97316'; // Orange
-          else if (intervalObj.type === 'seventh') color = '#a855f7'; // Purple
+          if (intervalObj.type === 'root') color = '#ef4444';
+          else if (intervalObj.type === 'third') color = '#22c55e';
+          else if (intervalObj.type === 'fifth') color = '#f97316';
+          else if (intervalObj.type === 'seventh') color = '#a855f7';
 
           labelText = state.labelMode === 'interval' ? intervalObj.name : getNoteName(n.pc);
         }
 
-        // Dot Shadow
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         ctx.shadowBlur = 6;
         ctx.shadowOffsetY = 2;
 
-        // Draw Marker Circle
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(x, y, 14, 0, Math.PI * 2);
         ctx.fill();
 
-        // White Border
         ctx.shadowBlur = 0;
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Label Text inside Dot
         ctx.fillStyle = '#ffffff';
         ctx.font = '700 11px Inter';
         ctx.textAlign = 'center';
@@ -819,8 +897,14 @@
 
       document.getElementById('chordTitle').innerHTML = `${chordName} <span class="chord-badge">${degreeText} Degree</span>`;
       document.getElementById('legendSeventh').style.display = state.chordType === '7th' ? 'flex' : 'none';
+      document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
 
-      // Update Degree Buttons
+      // Update Scale Selector to match current chord degree mode if user hasn't overridden
+      const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
+      const suggestedScale = autoScaleMap[state.degreeIndex];
+      const scaleSelect = document.getElementById('scaleSelect');
+
+      // Sync degree buttons
       const degreeContainer = document.getElementById('degreeButtons');
       degreeContainer.innerHTML = '';
       romanList.forEach((deg, idx) => {
@@ -830,6 +914,8 @@
         btn.onclick = () => {
           state.degreeIndex = idx;
           state.voicingIndex = 0;
+          state.selectedScale = autoScaleMap[idx];
+          scaleSelect.value = state.selectedScale;
           updateApp();
         };
         degreeContainer.appendChild(btn);
@@ -868,7 +954,7 @@
         });
       }
 
-      // Render Fretboard
+      // Render Canvas
       renderFretboard(voicings[state.voicingIndex]);
     }
 
@@ -880,6 +966,8 @@
 
     document.getElementById('modeMajorBtn').addEventListener('click', () => {
       state.mode = 'major';
+      state.selectedScale = DEGREE_MODE_MAP_MAJOR[state.degreeIndex];
+      document.getElementById('scaleSelect').value = state.selectedScale;
       document.getElementById('modeMajorBtn').classList.add('active');
       document.getElementById('modeMinorBtn').classList.remove('active');
       updateApp();
@@ -887,6 +975,8 @@
 
     document.getElementById('modeMinorBtn').addEventListener('click', () => {
       state.mode = 'minor';
+      state.selectedScale = DEGREE_MODE_MAP_MINOR[state.degreeIndex];
+      document.getElementById('scaleSelect').value = state.selectedScale;
       document.getElementById('modeMinorBtn').classList.add('active');
       document.getElementById('modeMajorBtn').classList.remove('active');
       updateApp();
@@ -912,15 +1002,40 @@
       updateApp();
     });
 
+    document.getElementById('overlayOnBtn').addEventListener('click', () => {
+      state.showScaleOverlay = true;
+      document.getElementById('overlayOnBtn').classList.add('active');
+      document.getElementById('overlayOffBtn').classList.remove('active');
+      updateApp();
+    });
+
+    document.getElementById('overlayOffBtn').addEventListener('click', () => {
+      state.showScaleOverlay = false;
+      document.getElementById('overlayOffBtn').classList.add('active');
+      document.getElementById('overlayOnBtn').classList.remove('active');
+      updateApp();
+    });
+
+    document.getElementById('scaleSelect').addEventListener('change', (e) => {
+      state.selectedScale = e.target.value;
+      updateApp();
+    });
+
     document.getElementById('prevChordBtn').addEventListener('click', () => {
       state.degreeIndex = (state.degreeIndex - 1 + 7) % 7;
       state.voicingIndex = 0;
+      const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
+      state.selectedScale = autoScaleMap[state.degreeIndex];
+      document.getElementById('scaleSelect').value = state.selectedScale;
       updateApp();
     });
 
     document.getElementById('nextChordBtn').addEventListener('click', () => {
       state.degreeIndex = (state.degreeIndex + 1) % 7;
       state.voicingIndex = 0;
+      const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
+      state.selectedScale = autoScaleMap[state.degreeIndex];
+      document.getElementById('scaleSelect').value = state.selectedScale;
       updateApp();
     });
 
@@ -942,7 +1057,9 @@
         mode: state.mode,
         degreeIndex: state.degreeIndex,
         chordType: state.chordType,
-        voicingIndex: state.voicingIndex
+        voicingIndex: state.voicingIndex,
+        showScaleOverlay: state.showScaleOverlay,
+        selectedScale: state.selectedScale
       };
 
       state.favorites.push(fav);
@@ -974,13 +1091,25 @@
           state.degreeIndex = fav.degreeIndex;
           state.chordType = fav.chordType;
           state.voicingIndex = fav.voicingIndex;
+          state.showScaleOverlay = fav.showScaleOverlay ?? true;
+          state.selectedScale = fav.selectedScale ?? 'ionian';
 
           document.getElementById('keySelect').value = fav.key;
           document.getElementById('chordTypeSelect').value = fav.chordType;
+          document.getElementById('scaleSelect').value = state.selectedScale;
+
           if (fav.mode === 'major') {
             document.getElementById('modeMajorBtn').click();
           } else {
             document.getElementById('modeMinorBtn').click();
+          }
+
+          if (state.showScaleOverlay) {
+            document.getElementById('overlayOnBtn').classList.add('active');
+            document.getElementById('overlayOffBtn').classList.remove('active');
+          } else {
+            document.getElementById('overlayOffBtn').classList.add('active');
+            document.getElementById('overlayOnBtn').classList.remove('active');
           }
 
           updateApp();
