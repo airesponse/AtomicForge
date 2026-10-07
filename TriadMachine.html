@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fretboard Triad, Scale & Range Engine</title>
+  <title>The Atomic StormWorks Triad Machine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -413,15 +413,47 @@
       font-weight: 700;
       color: #fff;
     }
+
+    .notes-row-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--bg-dark);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .note-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #1e293b;
+      border: 1px solid var(--panel-border);
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .note-pill span.sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+    }
   </style>
 </head>
 <body>
 
   <header>
     <div class="logo-container">
-      <i class="fa-solid fa-guitar logo-icon"></i>
+      <i class="fa-solid fa-bolt logo-icon"></i>
       <div>
-        <h1>Fretboard Triad Engine</h1>
+        <h1>The Atomic StormWorks Triad Machine</h1>
         <div class="subtitle">Interactive Diatonic, Scale & Range Explorer</div>
       </div>
     </div>
@@ -596,9 +628,10 @@
           <canvas id="fretboardCanvas" width="1100" height="220"></canvas>
         </div>
 
-        <!-- TRIAD COLOR KEY (VISIBLE WHEN 8 DIATONIC TRIADS IS ON) -->
+        <!-- TRIAD COLOR KEY & NOTE NAMES BAR (VISIBLE WHEN 8 DIATONIC TRIADS IS ON) -->
         <div id="triadLegendContainer" style="display:none;">
           <div class="triad-legend-bar" id="triadLegendBar"></div>
+          <div class="notes-row-bar" id="notesRowBar"></div>
         </div>
 
         <div class="controls-bar">
@@ -1162,24 +1195,37 @@
       document.getElementById('legendSeventh').style.display = (!isDiatonic && state.chordType === '7th') ? 'flex' : 'none';
       document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
 
-      // Diatonic Triads Legend Bar
+      // Diatonic Triads Legend Bar & Note Breakdown Row
       const triadLegendContainer = document.getElementById('triadLegendContainer');
       const triadLegendBar = document.getElementById('triadLegendBar');
+      const notesRowBar = document.getElementById('notesRowBar');
 
       if (isDiatonic) {
         triadLegendContainer.style.display = 'block';
         triadLegendBar.innerHTML = '<span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:6px;">8 Triads Key:</span>';
+        notesRowBar.innerHTML = '<span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:6px;">Triad Notes Breakdown:</span>';
 
         const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, 'triad', state.enableFretRange, state.startFret, state.fretSpan);
         const activeVoicing = voicings[state.voicingIndex] || voicings[0];
         const run = getEightDiatonicTriads(activeVoicing);
 
         run.forEach(t => {
+          // Add Triad Tag
           const tag = document.createElement('div');
           tag.className = 'triad-tag';
           tag.style.backgroundColor = t.color;
           tag.innerText = `${t.roman}: ${t.name}`;
           triadLegendBar.appendChild(tag);
+
+          // Add Note Names Pill
+          const sortedNotes = [...t.notes].sort((a, b) => b.string - a.string);
+          const noteNamesStr = sortedNotes.map(n => getNoteName(n.pc)).join(' - ');
+          
+          const pill = document.createElement('div');
+          pill.className = 'note-pill';
+          pill.style.borderLeft = `4px solid ${t.color}`;
+          pill.innerHTML = `<span>${t.roman}</span> <span class="sub">(${noteNamesStr})</span>`;
+          notesRowBar.appendChild(pill);
         });
       } else {
         triadLegendContainer.style.display = 'none';
