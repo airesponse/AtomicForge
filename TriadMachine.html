@@ -21,7 +21,6 @@
       --color-fifth: #f97316;      /* Orange */
       --color-seventh: #a855f7;    /* Purple */
       --color-scale: rgba(148, 163, 184, 0.35); /* Ghosted scale tone */
-      --color-diatonic: rgba(234, 179, 8, 0.5);  /* Ghosted diatonic tone */
     }
 
     * {
@@ -392,6 +391,28 @@
       gap: 10px;
       align-items: center;
     }
+
+    .triad-legend-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--bg-dark);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      align-items: center;
+    }
+
+    .triad-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -468,8 +489,8 @@
         <div class="form-group">
           <label>Overlay State</label>
           <div class="toggle-group">
-            <button class="btn-toggle" id="overlayOffBtn">Off</button>
-            <button class="btn-toggle active" id="overlayOnBtn">On</button>
+            <button class="btn-toggle active" id="overlayOffBtn">Off</button>
+            <button class="btn-toggle" id="overlayOnBtn">On</button>
           </div>
         </div>
 
@@ -518,7 +539,7 @@
         <div class="panel-title"><i class="fa-solid fa-arrows-left-right"></i> Range & Diatonic Filters</div>
 
         <div class="form-group">
-          <label>Show Continuous Diatonic Triads (I-VIII Run)</label>
+          <label>Show Continuous Diatonic Triads (8 Triads I to VIII)</label>
           <div class="toggle-group">
             <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
             <button class="btn-toggle" id="diatonicOnBtn">On</button>
@@ -563,17 +584,21 @@
             <h2 id="chordTitle">G Major <span class="chord-badge" id="chordDegreeBadge">I Degree</span></h2>
           </div>
           <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background: var(--color-root)"></div> Root</div>
-            <div class="legend-item"><div class="legend-dot" style="background: var(--color-third)"></div> 3rd</div>
-            <div class="legend-item"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
+            <div class="legend-item" id="legendRoot"><div class="legend-dot" style="background: var(--color-root)"></div> Root</div>
+            <div class="legend-item" id="legendThird"><div class="legend-dot" style="background: var(--color-third)"></div> 3rd</div>
+            <div class="legend-item" id="legendFifth"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
-            <div class="legend-item" id="legendScale"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
-            <div class="legend-item" id="legendDiatonic" style="display:none;"><div class="legend-dot" style="background: var(--color-diatonic); border: 1px solid #eab308;"></div> Diatonic Run (I–VIII)</div>
+            <div class="legend-item" id="legendScale" style="display:none;"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
           </div>
         </div>
 
         <div class="canvas-container">
           <canvas id="fretboardCanvas" width="1100" height="220"></canvas>
+        </div>
+
+        <!-- TRIAD COLOR KEY (VISIBLE WHEN 8 DIATONIC TRIADS IS ON) -->
+        <div id="triadLegendContainer" style="display:none;">
+          <div class="triad-legend-bar" id="triadLegendBar"></div>
         </div>
 
         <div class="controls-bar">
@@ -610,8 +635,19 @@
     const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
     const MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
 
-    const ROMAN_MAJOR = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-    const ROMAN_MINOR = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII'];
+    const ROMAN_MAJOR = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°', 'VIII'];
+    const ROMAN_MINOR = ['i', 'ii°', 'III', 'iv', 'v', 'VI', 'VII', 'VIII'];
+
+    const TRIAD_COLORS = [
+      '#ef4444', // Red (I)
+      '#f97316', // Orange (ii)
+      '#eab308', // Yellow (iii)
+      '#22c55e', // Green (IV)
+      '#06b6d4', // Cyan (V)
+      '#3b82f6', // Blue (vi)
+      '#a855f7', // Purple (vii°)
+      '#ec4899'  // Pink (VIII)
+    ];
 
     const MODE_INTERVALS = {
       'ionian': [0, 2, 4, 5, 7, 9, 11],
@@ -628,8 +664,8 @@
       'blues': [0, 3, 5, 6, 7, 10]
     };
 
-    const DEGREE_MODE_MAP_MAJOR = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian'];
-    const DEGREE_MODE_MAP_MINOR = ['aeolian', 'locrian', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian'];
+    const DEGREE_MODE_MAP_MAJOR = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
+    const DEGREE_MODE_MAP_MINOR = ['aeolian', 'locrian', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian'];
 
     // State Variables
     let state = {
@@ -639,7 +675,7 @@
       chordType: 'triad',
       voicingIndex: 0,
       labelMode: 'interval',
-      showScaleOverlay: true,
+      showScaleOverlay: false,
       scaleRoot: 'AUTO',
       selectedScale: 'ionian',
       showDiatonicRun: false,
@@ -782,39 +818,32 @@
       return unique;
     }
 
-    // --- CONTINUOUS DIATONIC TRIAD RUN GENERATOR ---
-    // Finds exactly 8 similar-shaped contiguous triads ascending the neck from Degree I to VIII
-    function getContinuousDiatonicRun(activeVoicing) {
+    // --- GENERATE ALL 8 DIATONIC TRIADS (I THROUGH VIII) ---
+    function getEightDiatonicTriads(activeVoicing) {
       if (!activeVoicing) return [];
 
       const stringSetKey = activeVoicing.notes.map(n => n.string).sort().join(',');
-      const keyIdx = NOTES.indexOf(state.key);
-      const scale = state.mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
+      const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
-      let runNotes = [];
+      let triadsRun = [];
       let lastAvgFret = -1;
 
       for (let d = 0; d < 8; d++) {
         const degIndex = d % 7;
-        const octaveOffset = d >= 7 ? 12 : 0;
-
         const voicings = generateVoicings(state.key, degIndex, state.mode, 'triad', false, 0, 15);
         
-        // Filter voicings on the exact same string set
         const sameStringVoicings = voicings.filter(v => 
           v.notes.map(n => n.string).sort().join(',') === stringSetKey
         );
 
         if (sameStringVoicings.length === 0) continue;
 
-        // Choose the voicing that ascends logically up the fretboard from previous step
         let bestVoicing = sameStringVoicings[0];
         let minDiff = 999;
 
         sameStringVoicings.forEach(v => {
           const avgFret = v.notes.reduce((sum, n) => sum + n.fret, 0) / v.notes.length;
           if (lastAvgFret < 0) {
-            // First chord (I degree): match as close as possible to the active selected voicing
             const activeAvg = activeVoicing.notes.reduce((sum, n) => sum + n.fret, 0) / activeVoicing.notes.length;
             const diff = Math.abs(avgFret - activeAvg);
             if (diff < minDiff) {
@@ -822,7 +851,6 @@
               bestVoicing = v;
             }
           } else {
-            // Ascending step: pick the voicing that is just above the previous step
             if (avgFret >= lastAvgFret) {
               const diff = avgFret - lastAvgFret;
               if (diff < minDiff) {
@@ -834,10 +862,17 @@
         });
 
         lastAvgFret = bestVoicing.notes.reduce((sum, n) => sum + n.fret, 0) / bestVoicing.notes.length;
-        runNotes.push(...bestVoicing.notes);
+        
+        triadsRun.push({
+          degree: d,
+          roman: romanList[d],
+          name: getChordName(state.key, degIndex, state.mode, 'triad'),
+          color: TRIAD_COLORS[d],
+          notes: bestVoicing.notes
+        });
       }
 
-      return runNotes;
+      return triadsRun;
     }
 
     // --- CANVAS RENDERER ---
@@ -868,13 +903,13 @@
       const fretWidth = boardWidth / numFrets;
       const stringSpacing = boardHeight / 5;
 
-      // Wood Grain Texture
+      // Wood Grain
       ctx.fillStyle = 'rgba(255,255,255,0.02)';
       for (let i = 0; i < boardHeight; i += 4) {
         ctx.fillRect(marginX, marginY + i, boardWidth, 1.5);
       }
 
-      // Draw Highlight Box for Fret Range if Enabled
+      // Fret Range Highlight
       if (state.enableFretRange) {
         const startX = marginX + Math.max(0, state.startFret) * fretWidth;
         const endX = marginX + Math.min(15, state.startFret + state.fretSpan) * fretWidth;
@@ -949,15 +984,20 @@
       const chordRoot = (keyIdx + scale[state.degreeIndex]) % 12;
       const intervals = getChordIntervals(state.degreeIndex, state.mode, state.chordType);
 
-      // --- DRAW SCALE OVERLAY (BACKGROUND LAYER) ---
+      // --- Collect all active note keys to filter scale overlay if diatonic run is off ---
+      const activeDiatonicRun = state.showDiatonicRun ? getEightDiatonicTriads(voicing) : [];
+      const diatonicNoteKeys = new Set();
+      if (state.showDiatonicRun) {
+        activeDiatonicRun.forEach(t => {
+          t.notes.forEach(n => diatonicNoteKeys.add(`${n.string}:${n.fret}`));
+        });
+      }
+
+      // --- 1. SCALE OVERLAY LAYER ---
       if (state.showScaleOverlay) {
         const activeScaleRoot = state.scaleRoot === 'AUTO' ? chordRoot : NOTES.indexOf(state.scaleRoot);
         const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
         const scalePcs = scaleIntervals.map(i => (activeScaleRoot + i) % 12);
-
-        const activeVoicingKeys = new Set(
-          voicing ? voicing.notes.map(n => `${n.string}:${n.fret}`) : []
-        );
 
         for (let s = 0; s < 6; s++) {
           const openNote = TUNING[s];
@@ -965,7 +1005,13 @@
 
           for (let f = 0; f <= numFrets; f++) {
             const pc = (openNote + f) % 12;
-            if (scalePcs.includes(pc) && !activeVoicingKeys.has(`${s}:${f}`)) {
+            const noteKey = `${s}:${f}`;
+
+            // Exclude positions occupied by the active chord or the diatonic run
+            const isChordNote = voicing && voicing.notes.some(n => n.string === s && n.fret === f);
+            const isDiatonicNote = state.showDiatonicRun && diatonicNoteKeys.has(noteKey);
+
+            if (scalePcs.includes(pc) && !isChordNote && !isDiatonicNote) {
               const x = f === 0 ? marginX - 18 : marginX + (f - 0.5) * fretWidth;
 
               ctx.fillStyle = 'rgba(148, 163, 184, 0.25)';
@@ -990,38 +1036,77 @@
         }
       }
 
-      // --- DRAW CONTINUOUS DIATONIC RUN (8 SIMILAR-SHAPED TRIADS I to VIII) ---
-      if (state.showDiatonicRun && voicing) {
-        const activeVoicingKeys = new Set(voicing.notes.map(n => `${n.string}:${n.fret}`));
-        const diatonicRunNotes = getContinuousDiatonicRun(voicing);
+      // --- 2. DIATONIC TRIADS RUN (WHEN ON: ONLY SHOW THESE 8 TRIADS) ---
+      if (state.showDiatonicRun && activeDiatonicRun.length > 0) {
+        // Group notes by string/fret to handle overlapping triad notes seamlessly
+        const noteMap = new Map();
 
-        diatonicRunNotes.forEach(n => {
-          const key = `${n.string}:${n.fret}`;
-          if (!activeVoicingKeys.has(key)) {
-            const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
-            const y = marginY + n.string * stringSpacing;
-
-            ctx.fillStyle = 'rgba(234, 179, 8, 0.25)';
-            ctx.beginPath();
-            ctx.arc(x, y, 12, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#eab308';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            ctx.fillStyle = '#fef08a';
-            ctx.font = '600 9px Inter';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(getNoteName(n.pc), x, y);
-          }
+        activeDiatonicRun.forEach(triad => {
+          triad.notes.forEach(n => {
+            const key = `${n.string}:${n.fret}`;
+            if (!noteMap.has(key)) {
+              noteMap.set(key, { string: n.string, fret: n.fret, pc: n.pc, triads: [] });
+            }
+            noteMap.get(key).triads.push(triad);
+          });
         });
+
+        noteMap.forEach(item => {
+          const x = item.fret === 0 ? marginX - 18 : marginX + (item.fret - 0.5) * fretWidth;
+          const y = marginY + item.string * stringSpacing;
+
+          const numTriads = item.triads.length;
+
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 2;
+
+          if (numTriads === 1) {
+            // Single triad note: solid color dot
+            const triad = item.triads[0];
+            ctx.fillStyle = triad.color;
+            ctx.beginPath();
+            ctx.arc(x, y, 14, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Overlapping note between multiple triads: split color slices
+            const angleStep = (Math.PI * 2) / numTriads;
+            item.triads.forEach((triad, idx) => {
+              const startAngle = idx * angleStep - Math.PI / 2;
+              const endAngle = startAngle + angleStep;
+
+              ctx.fillStyle = triad.color;
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.arc(x, y, 14, startAngle, endAngle);
+              ctx.closePath();
+              ctx.fill();
+            });
+          }
+
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Label
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '700 11px Inter';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          const labelText = state.labelMode === 'interval' ? getNoteName(item.pc) : getNoteName(item.pc);
+          ctx.fillText(labelText, x, y);
+        });
+
+        return; // Complete render when 8 Diatonic Triads mode is active
       }
 
+      // --- 3. SINGLE CHORD VOICING (WHEN DIATONIC RUN IS OFF) ---
       if (!voicing) return;
 
-      // --- DRAW ACTIVE CHORD VOICING NOTES (FOREGROUND LAYER) ---
       voicing.notes.forEach(n => {
         const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
         const y = marginY + n.string * stringSpacing;
@@ -1068,13 +1153,41 @@
       const degreeText = romanList[state.degreeIndex];
 
       document.getElementById('chordTitle').innerHTML = `${chordName} <span class="chord-badge">${degreeText} Degree</span>`;
-      document.getElementById('legendSeventh').style.display = state.chordType === '7th' ? 'flex' : 'none';
+      
+      // Update Legend Displays based on state
+      const isDiatonic = state.showDiatonicRun;
+      document.getElementById('legendRoot').style.display = isDiatonic ? 'none' : 'flex';
+      document.getElementById('legendThird').style.display = isDiatonic ? 'none' : 'flex';
+      document.getElementById('legendFifth').style.display = isDiatonic ? 'none' : 'flex';
+      document.getElementById('legendSeventh').style.display = (!isDiatonic && state.chordType === '7th') ? 'flex' : 'none';
       document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
-      document.getElementById('legendDiatonic').style.display = state.showDiatonicRun ? 'flex' : 'none';
+
+      // Diatonic Triads Legend Bar
+      const triadLegendContainer = document.getElementById('triadLegendContainer');
+      const triadLegendBar = document.getElementById('triadLegendBar');
+
+      if (isDiatonic) {
+        triadLegendContainer.style.display = 'block';
+        triadLegendBar.innerHTML = '<span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:6px;">8 Triads Key:</span>';
+
+        const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, 'triad', state.enableFretRange, state.startFret, state.fretSpan);
+        const activeVoicing = voicings[state.voicingIndex] || voicings[0];
+        const run = getEightDiatonicTriads(activeVoicing);
+
+        run.forEach(t => {
+          const tag = document.createElement('div');
+          tag.className = 'triad-tag';
+          tag.style.backgroundColor = t.color;
+          tag.innerText = `${t.roman}: ${t.name}`;
+          triadLegendBar.appendChild(tag);
+        });
+      } else {
+        triadLegendContainer.style.display = 'none';
+      }
 
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
 
-      // Sync degree buttons
+      // Sync degree buttons (Showing I to VIII)
       const degreeContainer = document.getElementById('degreeButtons');
       degreeContainer.innerHTML = '';
       romanList.forEach((deg, idx) => {
@@ -1093,10 +1206,10 @@
         degreeContainer.appendChild(btn);
       });
 
-      // Generate Voicings with Optional Fret Range Filter
+      // Generate Voicings for Current Chord
       const voicings = generateVoicings(
         state.key, 
-        state.degreeIndex, 
+        state.degreeIndex % 7, 
         state.mode, 
         state.chordType,
         state.enableFretRange,
@@ -1104,7 +1217,7 @@
         state.fretSpan
       );
 
-      // Render Voicings List
+      // Render Voicings Selector List
       const voicingContainer = document.getElementById('voicingContainer');
       voicingContainer.innerHTML = '';
 
@@ -1134,7 +1247,7 @@
         });
       }
 
-      // Render Canvas
+      // Render Fretboard Canvas
       renderFretboard(voicings[state.voicingIndex]);
     }
 
@@ -1249,7 +1362,7 @@
     });
 
     document.getElementById('prevChordBtn').addEventListener('click', () => {
-      state.degreeIndex = (state.degreeIndex - 1 + 7) % 7;
+      state.degreeIndex = (state.degreeIndex - 1 + 8) % 8;
       state.voicingIndex = 0;
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
       if (state.scaleRoot === 'AUTO') {
@@ -1260,7 +1373,7 @@
     });
 
     document.getElementById('nextChordBtn').addEventListener('click', () => {
-      state.degreeIndex = (state.degreeIndex + 1) % 7;
+      state.degreeIndex = (state.degreeIndex + 1) % 8;
       state.voicingIndex = 0;
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
       if (state.scaleRoot === 'AUTO') {
@@ -1273,7 +1386,7 @@
     document.getElementById('cycleVoicingBtn').addEventListener('click', () => {
       const voicings = generateVoicings(
         state.key, 
-        state.degreeIndex, 
+        state.degreeIndex % 7, 
         state.mode, 
         state.chordType,
         state.enableFretRange,
@@ -1335,7 +1448,7 @@
           state.degreeIndex = fav.degreeIndex;
           state.chordType = fav.chordType;
           state.voicingIndex = fav.voicingIndex;
-          state.showScaleOverlay = fav.showScaleOverlay ?? true;
+          state.showScaleOverlay = fav.showScaleOverlay ?? false;
           state.scaleRoot = fav.scaleRoot ?? 'AUTO';
           state.selectedScale = fav.selectedScale ?? 'ionian';
           state.showDiatonicRun = fav.showDiatonicRun ?? false;
