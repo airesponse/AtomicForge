@@ -21,7 +21,7 @@
       --color-fifth: #f97316;      /* Orange */
       --color-seventh: #a855f7;    /* Purple */
       --color-scale: rgba(148, 163, 184, 0.35); /* Ghosted scale tone */
-      --color-diatonic: rgba(234, 179, 8, 0.4);  /* Ghosted diatonic tone (Yellow/Gold) */
+      --color-diatonic: rgba(234, 179, 8, 0.5);  /* Ghosted diatonic tone */
     }
 
     * {
@@ -518,7 +518,7 @@
         <div class="panel-title"><i class="fa-solid fa-arrows-left-right"></i> Range & Diatonic Filters</div>
 
         <div class="form-group">
-          <label>Show All Diatonic Triads</label>
+          <label>Show Continuous Diatonic Triads (I-VIII Run)</label>
           <div class="toggle-group">
             <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
             <button class="btn-toggle" id="diatonicOnBtn">On</button>
@@ -568,7 +568,7 @@
             <div class="legend-item"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
             <div class="legend-item" id="legendScale"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
-            <div class="legend-item" id="legendDiatonic" style="display:none;"><div class="legend-dot" style="background: var(--color-diatonic); border: 1px solid #eab308;"></div> Diatonic Triad</div>
+            <div class="legend-item" id="legendDiatonic" style="display:none;"><div class="legend-dot" style="background: var(--color-diatonic); border: 1px solid #eab308;"></div> Diatonic Run (I–VIII)</div>
           </div>
         </div>
 
@@ -655,7 +655,7 @@
 
     function getChordIntervals(degree, mode, type) {
       const scale = mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
-      const rootOffset = scale[degree];
+      const rootOffset = scale[degree % 7];
       
       const thirdOffset = (scale[(degree + 2) % 7] + (degree + 2 >= 7 ? 12 : 0)) - rootOffset;
       const fifthOffset = (scale[(degree + 4) % 7] + (degree + 4 >= 7 ? 12 : 0)) - rootOffset;
@@ -681,7 +681,7 @@
     function getChordName(key, degree, mode, type) {
       const keyIdx = NOTES.indexOf(key);
       const scale = mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
-      const chordRootIdx = (keyIdx + scale[degree]) % 12;
+      const chordRootIdx = (keyIdx + scale[degree % 7]) % 12;
       const rootName = NOTES[chordRootIdx];
 
       const intervals = getChordIntervals(degree, mode, type);
@@ -710,7 +710,7 @@
     function generateVoicings(key, degree, mode, type, rangeLimit = false, startFret = 0, span = 15) {
       const keyIdx = NOTES.indexOf(key);
       const scale = mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
-      const chordRoot = (keyIdx + scale[degree]) % 12;
+      const chordRoot = (keyIdx + scale[degree % 7]) % 12;
       const intervals = getChordIntervals(degree, mode, type);
 
       const targetPitchClasses = intervals.map(i => (chordRoot + i.semitones) % 12);
@@ -780,6 +780,64 @@
       });
 
       return unique;
+    }
+
+    // --- CONTINUOUS DIATONIC TRIAD RUN GENERATOR ---
+    // Finds exactly 8 similar-shaped contiguous triads ascending the neck from Degree I to VIII
+    function getContinuousDiatonicRun(activeVoicing) {
+      if (!activeVoicing) return [];
+
+      const stringSetKey = activeVoicing.notes.map(n => n.string).sort().join(',');
+      const keyIdx = NOTES.indexOf(state.key);
+      const scale = state.mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
+
+      let runNotes = [];
+      let lastAvgFret = -1;
+
+      for (let d = 0; d < 8; d++) {
+        const degIndex = d % 7;
+        const octaveOffset = d >= 7 ? 12 : 0;
+
+        const voicings = generateVoicings(state.key, degIndex, state.mode, 'triad', false, 0, 15);
+        
+        // Filter voicings on the exact same string set
+        const sameStringVoicings = voicings.filter(v => 
+          v.notes.map(n => n.string).sort().join(',') === stringSetKey
+        );
+
+        if (sameStringVoicings.length === 0) continue;
+
+        // Choose the voicing that ascends logically up the fretboard from previous step
+        let bestVoicing = sameStringVoicings[0];
+        let minDiff = 999;
+
+        sameStringVoicings.forEach(v => {
+          const avgFret = v.notes.reduce((sum, n) => sum + n.fret, 0) / v.notes.length;
+          if (lastAvgFret < 0) {
+            // First chord (I degree): match as close as possible to the active selected voicing
+            const activeAvg = activeVoicing.notes.reduce((sum, n) => sum + n.fret, 0) / activeVoicing.notes.length;
+            const diff = Math.abs(avgFret - activeAvg);
+            if (diff < minDiff) {
+              minDiff = diff;
+              bestVoicing = v;
+            }
+          } else {
+            // Ascending step: pick the voicing that is just above the previous step
+            if (avgFret >= lastAvgFret) {
+              const diff = avgFret - lastAvgFret;
+              if (diff < minDiff) {
+                minDiff = diff;
+                bestVoicing = v;
+              }
+            }
+          }
+        });
+
+        lastAvgFret = bestVoicing.notes.reduce((sum, n) => sum + n.fret, 0) / bestVoicing.notes.length;
+        runNotes.push(...bestVoicing.notes);
+      }
+
+      return runNotes;
     }
 
     // --- CANVAS RENDERER ---
@@ -932,40 +990,33 @@
         }
       }
 
-      // --- DRAW ALL RELATED DIATONIC TRIADS OVERLAY ---
-      if (state.showDiatonicRun) {
-        const activeVoicingKeys = new Set(
-          voicing ? voicing.notes.map(n => `${n.string}:${n.fret}`) : []
-        );
+      // --- DRAW CONTINUOUS DIATONIC RUN (8 SIMILAR-SHAPED TRIADS I to VIII) ---
+      if (state.showDiatonicRun && voicing) {
+        const activeVoicingKeys = new Set(voicing.notes.map(n => `${n.string}:${n.fret}`));
+        const diatonicRunNotes = getContinuousDiatonicRun(voicing);
 
-        // Gather all pitch classes across all 7 diatonic degree triads
-        const allDiatonicPcs = new Set();
-        for (let d = 0; d < 7; d++) {
-          const degRoot = (keyIdx + scale[d]) % 12;
-          const degIntervals = getChordIntervals(d, state.mode, 'triad');
-          degIntervals.forEach(i => allDiatonicPcs.add((degRoot + i.semitones) % 12));
-        }
+        diatonicRunNotes.forEach(n => {
+          const key = `${n.string}:${n.fret}`;
+          if (!activeVoicingKeys.has(key)) {
+            const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
+            const y = marginY + n.string * stringSpacing;
 
-        for (let s = 0; s < 6; s++) {
-          const openNote = TUNING[s];
-          const y = marginY + s * stringSpacing;
+            ctx.fillStyle = 'rgba(234, 179, 8, 0.25)';
+            ctx.beginPath();
+            ctx.arc(x, y, 12, 0, Math.PI * 2);
+            ctx.fill();
 
-          for (let f = 0; f <= numFrets; f++) {
-            const pc = (openNote + f) % 12;
-            if (allDiatonicPcs.has(pc) && !activeVoicingKeys.has(`${s}:${f}`)) {
-              const x = f === 0 ? marginX - 18 : marginX + (f - 0.5) * fretWidth;
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
 
-              ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
-              ctx.beginPath();
-              ctx.arc(x, y, 12, 0, Math.PI * 2);
-              ctx.fill();
-
-              ctx.strokeStyle = '#eab308';
-              ctx.lineWidth = 1.5;
-              ctx.stroke();
-            }
+            ctx.fillStyle = '#fef08a';
+            ctx.font = '600 9px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(getNoteName(n.pc), x, y);
           }
-        }
+        });
       }
 
       if (!voicing) return;
