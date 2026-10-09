@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>The Atomic StormWorks Triad Machine</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -36,144 +36,178 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 24px;
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+    /* Force landscape view prompt overlay when on mobile in portrait */
+    @media screen and (max-width: 900px) and (orientation: portrait) {
+      body::before {
+        content: "🔄 Please rotate your device to LANDSCAPE view for the optimal fretboard experience.";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.96);
+        color: #f8fafc;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.5;
+        backdrop-filter: blur(8px);
+      }
     }
 
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 1px solid var(--panel-border);
     }
 
     .logo-container {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .logo-icon {
-      font-size: 28px;
+      font-size: 20px;
       color: var(--accent-primary);
     }
 
     h1 {
-      font-size: 24px;
+      font-size: 16px;
       font-weight: 800;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
     }
 
     .subtitle {
-      font-size: 13px;
+      font-size: 11px;
       color: var(--text-muted);
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .subtitle { display: block; }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-hdr {
+      padding: 6px 10px;
+      font-size: 11px;
+      border-radius: 6px;
     }
 
     .app-layout {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       flex: 1;
     }
 
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .panel {
+    /* COMPACT SINGLE ROW CONTROLS BAR ABOVE CHORD / FRETBOARD */
+    .compact-controls-bar {
       background-color: var(--panel-bg);
       border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 18px;
-    }
-
-    .panel-title {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
+      border-radius: 8px;
+      padding: 6px 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: thin;
     }
 
-    .form-group {
-      margin-bottom: 14px;
+    .compact-controls-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .compact-controls-bar::-webkit-scrollbar-thumb {
+      background: var(--panel-border);
+      border-radius: 4px;
     }
 
-    .form-group:last-child {
-      margin-bottom: 0;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
+    .ctrl-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
       font-weight: 600;
-      margin-bottom: 6px;
       color: var(--text-muted);
     }
 
-    select, input[type="number"], input[type="text"] {
-      width: 100%;
+    .ctrl-item label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    select, input[type="number"] {
       background-color: var(--bg-dark);
       border: 1px solid var(--panel-border);
       color: var(--text-main);
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
       outline: none;
-      transition: border-color 0.2s;
-    }
-
-    select:focus, input:focus {
-      border-color: var(--accent-primary);
     }
 
     .toggle-group {
       display: flex;
-      gap: 8px;
+      gap: 2px;
+      background: var(--bg-dark);
+      padding: 2px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
     }
 
     .btn-toggle {
-      flex: 1;
-      padding: 8px;
-      background: var(--bg-dark);
-      border: 1px solid var(--panel-border);
+      padding: 3px 8px;
+      background: transparent;
+      border: none;
       color: var(--text-muted);
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 11px;
       transition: all 0.2s;
     }
 
     .btn-toggle.active {
       background: var(--accent-primary);
       color: white;
-      border-color: var(--accent-primary);
     }
 
     .btn {
-      width: 100%;
-      padding: 12px;
+      padding: 8px 12px;
       background-color: var(--accent-primary);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       transition: background 0.2s;
+      white-space: nowrap;
     }
 
     .btn:hover {
@@ -193,37 +227,38 @@
     .main-content {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 10px;
     }
 
     .fretboard-card {
       background-color: var(--panel-bg);
       border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 10px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 8px;
     }
 
     .fretboard-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 0 4px;
     }
 
     .chord-info h2 {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 800;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .chord-badge {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 6px;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
       background-color: rgba(59, 130, 246, 0.2);
       color: #60a5fa;
       font-weight: 600;
@@ -232,20 +267,22 @@
     .canvas-container {
       width: 100%;
       background-color: #000;
-      border-radius: 8px;
+      border-radius: 6px;
       overflow-x: auto;
       border: 1px solid var(--panel-border);
-      padding: 10px;
+      padding: 4px;
     }
 
     canvas {
       display: block;
       margin: 0 auto;
+      max-width: 100%;
+      height: auto;
     }
 
     .controls-bar {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
@@ -254,26 +291,26 @@
     .stepper-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
     .degree-buttons {
       display: flex;
-      gap: 4px;
+      gap: 2px;
       overflow-x: auto;
     }
 
     .btn-degree {
-      padding: 8px 12px;
+      padding: 6px 10px;
       background: var(--bg-dark);
       border: 1px solid var(--panel-border);
       color: var(--text-main);
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 11px;
       transition: all 0.2s;
-      min-width: 44px;
+      min-width: 36px;
     }
 
     .btn-degree.active {
@@ -283,12 +320,12 @@
 
     .legend {
       display: flex;
-      gap: 12px;
-      padding: 10px 14px;
+      gap: 10px;
+      padding: 6px 10px;
       background: var(--bg-dark);
-      border-radius: 8px;
+      border-radius: 6px;
       border: 1px solid var(--panel-border);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       flex-wrap: wrap;
     }
@@ -296,29 +333,47 @@
     .legend-item {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .legend-dot {
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
+    }
+
+    .panel {
+      background-color: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .voicing-selector {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 10px;
-      max-height: 200px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      max-height: 160px;
       overflow-y: auto;
-      padding-right: 4px;
     }
 
     .voicing-card {
       background: var(--bg-dark);
       border: 1px solid var(--panel-border);
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 6px;
+      padding: 8px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -333,39 +388,39 @@
     }
 
     .voicing-card .title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .voicing-card .frets {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-muted);
     }
 
     .favorites-list {
       display: flex;
-      flex-direction: column;
       gap: 8px;
-      max-height: 200px;
-      overflow-y: auto;
+      overflow-x: auto;
+      padding-bottom: 4px;
     }
 
     .favorite-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 8px 12px;
+      gap: 8px;
+      padding: 6px 10px;
       background: var(--bg-dark);
       border-radius: 6px;
       border: 1px solid var(--panel-border);
-      font-size: 13px;
+      font-size: 11px;
+      white-space: nowrap;
     }
 
     .favorite-item .actions {
       display: flex;
-      gap: 6px;
+      gap: 4px;
     }
 
     .icon-btn {
@@ -373,9 +428,8 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 14px;
-      padding: 4px;
-      transition: color 0.2s;
+      font-size: 12px;
+      padding: 2px;
     }
 
     .icon-btn:hover {
@@ -386,53 +440,32 @@
       color: var(--color-root);
     }
 
-    .range-inputs {
+    .triad-legend-bar, .notes-row-bar {
       display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .triad-legend-bar {
-      display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       background: var(--bg-dark);
-      padding: 10px 14px;
-      border-radius: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
       border: 1px solid var(--panel-border);
       align-items: center;
     }
 
     .triad-tag {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
       font-weight: 700;
       color: #fff;
-    }
-
-    .notes-row-bar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      background: var(--bg-dark);
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--panel-border);
-      align-items: center;
-      margin-top: 8px;
     }
 
     .note-pill {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
       font-weight: 700;
       background: #1e293b;
       border: 1px solid var(--panel-border);
@@ -441,9 +474,16 @@
     }
 
     .note-pill span.sub {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-muted);
       font-family: 'Inter', sans-serif;
+    }
+
+    .divider {
+      width: 1px;
+      height: 18px;
+      background-color: var(--panel-border);
+      margin: 0 4px;
     }
   </style>
 </head>
@@ -457,159 +497,141 @@
         <div class="subtitle">Interactive Diatonic, Scale & Range Explorer</div>
       </div>
     </div>
-    <div style="display:flex; gap:10px;">
-      <button class="btn btn-secondary" id="saveFavBtn"><i class="fa-solid fa-star"></i> Save Favorite</button>
-      <button class="btn" id="downloadBtn"><i class="fa-solid fa-download"></i> Export Image</button>
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-hdr" id="saveFavBtn"><i class="fa-solid fa-star"></i> Save</button>
+      <button class="btn btn-hdr" id="downloadBtn"><i class="fa-solid fa-download"></i> Export</button>
     </div>
   </header>
 
   <div class="app-layout">
     
-    <!-- SIDEBAR CONTROLS -->
-    <div class="sidebar">
+    <!-- COMPACT HORIZONTAL CONTROLS ROW (CONTAINING ALL SWITCHES & MENUS ABOVE THE CHORD & FRETBOARD) -->
+    <div class="compact-controls-bar">
       
-      <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-sliders"></i> Key & Progression</div>
-        
-        <div class="form-group">
-          <label>Root Key</label>
-          <select id="keySelect">
-            <option value="C">C</option>
-            <option value="C#">C# / Db</option>
-            <option value="D">D</option>
-            <option value="D#">D# / Eb</option>
-            <option value="E">E</option>
-            <option value="F">F</option>
-            <option value="F#">F# / Gb</option>
-            <option value="G" selected>G</option>
-            <option value="G#">G# / Ab</option>
-            <option value="A">A</option>
-            <option value="A#">A# / Bb</option>
-            <option value="B">B</option>
-          </select>
-        </div>
+      <!-- Key -->
+      <div class="ctrl-item">
+        <label>Key:</label>
+        <select id="keySelect">
+          <option value="C">C</option>
+          <option value="C#">C# / Db</option>
+          <option value="D">D</option>
+          <option value="D#">D# / Eb</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="F#">F# / Gb</option>
+          <option value="G" selected>G</option>
+          <option value="G#">G# / Ab</option>
+          <option value="A">A</option>
+          <option value="A#">A# / Bb</option>
+          <option value="B">B</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label>Quality / Mode</label>
-          <div class="toggle-group">
-            <button class="btn-toggle active" id="modeMajorBtn">Major</button>
-            <button class="btn-toggle" id="modeMinorBtn">Minor</button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Chord Structure</label>
-          <select id="chordTypeSelect">
-            <option value="triad">Triads (3 notes)</option>
-            <option value="7th">7th Chords (4 notes)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Display Notation</label>
-          <div class="toggle-group">
-            <button class="btn-toggle active" id="labelIntervalBtn">Intervals</button>
-            <button class="btn-toggle" id="labelNoteBtn">Notes</button>
-          </div>
+      <!-- Quality/Mode -->
+      <div class="ctrl-item">
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="modeMajorBtn">Maj</button>
+          <button class="btn-toggle" id="modeMinorBtn">Min</button>
         </div>
       </div>
 
-      <!-- SCALE OVERLAY PANEL -->
-      <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-layer-group"></i> Scale Overlay</div>
-        
-        <div class="form-group">
-          <label>Overlay State</label>
-          <div class="toggle-group">
-            <button class="btn-toggle active" id="overlayOffBtn">Off</button>
-            <button class="btn-toggle" id="overlayOnBtn">On</button>
-          </div>
-        </div>
+      <!-- Type -->
+      <div class="ctrl-item">
+        <select id="chordTypeSelect">
+          <option value="triad">Triads</option>
+          <option value="7th">7th Chords</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label>Scale Root (Defaults to Chord Root)</label>
-          <div style="display:flex; gap:8px;">
-            <select id="scaleRootSelect" style="flex:1;">
-              <option value="AUTO" selected>Auto (Follows Chord Root)</option>
-              <option value="C">C</option>
-              <option value="C#">C# / Db</option>
-              <option value="D">D</option>
-              <option value="D#">D# / Eb</option>
-              <option value="E">E</option>
-              <option value="F">F</option>
-              <option value="F#">F# / Gb</option>
-              <option value="G">G</option>
-              <option value="G#">G# / Ab</option>
-              <option value="A">A</option>
-              <option value="A#">A# / Bb</option>
-              <option value="B">B</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Overlay Scale / Mode</label>
-          <select id="scaleSelect">
-            <option value="ionian">1. Major (Ionian)</option>
-            <option value="dorian">2. Dorian</option>
-            <option value="phrygian">3. Phrygian</option>
-            <option value="lydian">4. Lydian</option>
-            <option value="mixolydian">5. Mixolydian</option>
-            <option value="aeolian">6. Natural Minor (Aeolian)</option>
-            <option value="locrian">7. Locrian</option>
-            <option value="pentatonic_major">Major Pentatonic</option>
-            <option value="pentatonic_minor">Minor Pentatonic</option>
-            <option value="harmonic_minor">Harmonic Minor</option>
-            <option value="melodic_minor">Melodic Minor</option>
-            <option value="blues">Blues Scale</option>
-          </select>
+      <!-- Notation -->
+      <div class="ctrl-item">
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="labelIntervalBtn">Intervals</button>
+          <button class="btn-toggle" id="labelNoteBtn">Notes</button>
         </div>
       </div>
 
-      <!-- DIATONIC TRIADS & FRET RANGE PANEL -->
-      <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-arrows-left-right"></i> Range & Diatonic Filters</div>
+      <div class="divider"></div>
 
-        <div class="form-group">
-          <label>Show Continuous Diatonic Triads (8 Triads I to VIII)</label>
-          <div class="toggle-group">
-            <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
-            <button class="btn-toggle" id="diatonicOnBtn">On</button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Fret Range Limit</label>
-          <div class="toggle-group" style="margin-bottom:8px;">
-            <button class="btn-toggle active" id="rangeOffBtn">Full Neck</button>
-            <button class="btn-toggle" id="rangeOnBtn">Filter Range</button>
-          </div>
-          <div class="range-inputs" id="rangeControls" style="display:none;">
-            <div>
-              <label style="font-size:10px;">Start Fret</label>
-              <input type="number" id="startFretInput" min="0" max="12" value="3">
-            </div>
-            <div>
-              <label style="font-size:10px;">Span (Frets)</label>
-              <input type="number" id="fretSpanInput" min="3" max="12" value="5">
-            </div>
-          </div>
+      <!-- Scale Overlay -->
+      <div class="ctrl-item">
+        <label>Scale Overlay:</label>
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="overlayOffBtn">Off</button>
+          <button class="btn-toggle" id="overlayOnBtn">On</button>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title"><i class="fa-solid fa-star"></i> Saved Favorites</div>
-        <div class="favorites-list" id="favoritesList">
-          <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 10px;">No saved positions yet</div>
+      <div class="ctrl-item">
+        <label>Root:</label>
+        <select id="scaleRootSelect">
+          <option value="AUTO" selected>Auto</option>
+          <option value="C">C</option>
+          <option value="C#">C#</option>
+          <option value="D">D</option>
+          <option value="D#">D#</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="F#">F#</option>
+          <option value="G">G</option>
+          <option value="G#">G#</option>
+          <option value="A">A</option>
+          <option value="A#">A#</option>
+          <option value="B">B</option>
+        </select>
+      </div>
+
+      <div class="ctrl-item">
+        <select id="scaleSelect">
+          <option value="ionian">Ionian (Major)</option>
+          <option value="dorian">Dorian</option>
+          <option value="phrygian">Phrygian</option>
+          <option value="lydian">Lydian</option>
+          <option value="mixolydian">Mixolydian</option>
+          <option value="aeolian">Aeolian (Minor)</option>
+          <option value="locrian">Locrian</option>
+          <option value="pentatonic_major">Maj Pentatonic</option>
+          <option value="pentatonic_minor">Min Pentatonic</option>
+          <option value="harmonic_minor">Harmonic Minor</option>
+          <option value="melodic_minor">Melodic Minor</option>
+          <option value="blues">Blues</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 8 Diatonic Triads Run Switch -->
+      <div class="ctrl-item">
+        <label>8 Diatonic Triads (I-VIII):</label>
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
+          <button class="btn-toggle" id="diatonicOnBtn">On</button>
         </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Fret Range Limit -->
+      <div class="ctrl-item">
+        <label>Range Limit:</label>
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="rangeOffBtn">Full Neck</button>
+          <button class="btn-toggle" id="rangeOnBtn">Filter</button>
+        </div>
+      </div>
+
+      <div class="ctrl-item" id="rangeControls" style="display:none;">
+        <label>Start:</label>
+        <input type="number" id="startFretInput" min="0" max="12" value="3" style="width:40px;">
+        <label>Span:</label>
+        <input type="number" id="fretSpanInput" min="3" max="12" value="5" style="width:40px;">
       </div>
 
     </div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN FRETBOARD AREA -->
     <div class="main-content">
       
-      <!-- FRETBOARD CONTAINER -->
       <div class="fretboard-card">
         <div class="fretboard-header">
           <div class="chord-info">
@@ -620,7 +642,7 @@
             <div class="legend-item" id="legendThird"><div class="legend-dot" style="background: var(--color-third)"></div> 3rd</div>
             <div class="legend-item" id="legendFifth"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
-            <div class="legend-item" id="legendScale" style="display:none;"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale Tone</div>
+            <div class="legend-item" id="legendScale" style="display:none;"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale</div>
           </div>
         </div>
 
@@ -628,26 +650,34 @@
           <canvas id="fretboardCanvas" width="1100" height="220"></canvas>
         </div>
 
-        <!-- TRIAD COLOR KEY & NOTE NAMES BAR (VISIBLE WHEN 8 DIATONIC TRIADS IS ON) -->
+        <!-- TRIAD COLOR KEY & NOTE NAMES BAR -->
         <div id="triadLegendContainer" style="display:none;">
           <div class="triad-legend-bar" id="triadLegendBar"></div>
-          <div class="notes-row-bar" id="notesRowBar"></div>
+          <div class="notes-row-bar" id="notesRowBar" style="margin-top:4px;"></div>
         </div>
 
         <div class="controls-bar">
           <div class="stepper-group">
-            <button class="btn btn-secondary" id="prevChordBtn" style="width: auto; padding: 8px 12px;"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="btn btn-secondary" id="prevChordBtn" style="padding: 6px 10px;"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="degree-buttons" id="degreeButtons"></div>
-            <button class="btn btn-secondary" id="nextChordBtn" style="width: auto; padding: 8px 12px;"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="btn btn-secondary" id="nextChordBtn" style="padding: 6px 10px;"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
 
-          <button class="btn" id="cycleVoicingBtn" style="width: auto; padding: 10px 16px;">
+          <button class="btn" id="cycleVoicingBtn" style="padding: 6px 12px;">
             <i class="fa-solid fa-arrows-rotate"></i> Swap Inversion / Position
           </button>
         </div>
       </div>
 
-      <!-- AVAILABLE VOICINGS -->
+      <!-- SAVED FAVORITES QUICK BAR -->
+      <div class="panel" style="padding: 8px 12px;">
+        <div class="panel-title" style="margin-bottom: 6px;"><i class="fa-solid fa-star"></i> Favorites</div>
+        <div class="favorites-list" id="favoritesList">
+          <div style="font-size: 11px; color: var(--text-muted);">No saved positions yet</div>
+        </div>
+      </div>
+
+      <!-- ALL PLAYABLE VOICINGS SECTION (REMAINS BELOW) -->
       <div class="panel">
         <div class="panel-title"><i class="fa-solid fa-list-check"></i> All Playable Voicings (Ranked by Ease)</div>
         <div class="voicing-selector" id="voicingContainer">
@@ -919,8 +949,7 @@
 
       canvas.width = width * dpr;
       canvas.height = height * dpr;
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
+      canvas.style.width = '100%';
 
       ctx.scale(dpr, dpr);
 
@@ -1017,7 +1046,6 @@
       const chordRoot = (keyIdx + scale[state.degreeIndex]) % 12;
       const intervals = getChordIntervals(state.degreeIndex, state.mode, state.chordType);
 
-      // --- Collect all active note keys to filter scale overlay if diatonic run is off ---
       const activeDiatonicRun = state.showDiatonicRun ? getEightDiatonicTriads(voicing) : [];
       const diatonicNoteKeys = new Set();
       if (state.showDiatonicRun) {
@@ -1026,7 +1054,7 @@
         });
       }
 
-      // --- 1. SCALE OVERLAY LAYER ---
+      // 1. SCALE OVERLAY LAYER
       if (state.showScaleOverlay) {
         const activeScaleRoot = state.scaleRoot === 'AUTO' ? chordRoot : NOTES.indexOf(state.scaleRoot);
         const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
@@ -1040,7 +1068,6 @@
             const pc = (openNote + f) % 12;
             const noteKey = `${s}:${f}`;
 
-            // Exclude positions occupied by the active chord or the diatonic run
             const isChordNote = voicing && voicing.notes.some(n => n.string === s && n.fret === f);
             const isDiatonicNote = state.showDiatonicRun && diatonicNoteKeys.has(noteKey);
 
@@ -1069,9 +1096,8 @@
         }
       }
 
-      // --- 2. DIATONIC TRIADS RUN (WHEN ON: ONLY SHOW THESE 8 TRIADS) ---
+      // 2. DIATONIC TRIADS RUN (WHEN ON: ONLY SHOW THESE 8 TRIADS)
       if (state.showDiatonicRun && activeDiatonicRun.length > 0) {
-        // Group notes by string/fret to handle overlapping triad notes seamlessly
         const noteMap = new Map();
 
         activeDiatonicRun.forEach(triad => {
@@ -1095,14 +1121,12 @@
           ctx.shadowOffsetY = 2;
 
           if (numTriads === 1) {
-            // Single triad note: solid color dot
             const triad = item.triads[0];
             ctx.fillStyle = triad.color;
             ctx.beginPath();
             ctx.arc(x, y, 14, 0, Math.PI * 2);
             ctx.fill();
           } else {
-            // Overlapping note between multiple triads: split color slices
             const angleStep = (Math.PI * 2) / numTriads;
             item.triads.forEach((triad, idx) => {
               const startAngle = idx * angleStep - Math.PI / 2;
@@ -1124,20 +1148,19 @@
           ctx.arc(x, y, 14, 0, Math.PI * 2);
           ctx.stroke();
 
-          // Label
           ctx.fillStyle = '#ffffff';
           ctx.font = '700 11px Inter';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          const labelText = state.labelMode === 'interval' ? getNoteName(item.pc) : getNoteName(item.pc);
+          const labelText = getNoteName(item.pc);
           ctx.fillText(labelText, x, y);
         });
 
-        return; // Complete render when 8 Diatonic Triads mode is active
+        return;
       }
 
-      // --- 3. SINGLE CHORD VOICING (WHEN DIATONIC RUN IS OFF) ---
+      // 3. SINGLE CHORD VOICING
       if (!voicing) return;
 
       voicing.notes.forEach(n => {
@@ -1187,7 +1210,6 @@
 
       document.getElementById('chordTitle').innerHTML = `${chordName} <span class="chord-badge">${degreeText} Degree</span>`;
       
-      // Update Legend Displays based on state
       const isDiatonic = state.showDiatonicRun;
       document.getElementById('legendRoot').style.display = isDiatonic ? 'none' : 'flex';
       document.getElementById('legendThird').style.display = isDiatonic ? 'none' : 'flex';
@@ -1195,35 +1217,32 @@
       document.getElementById('legendSeventh').style.display = (!isDiatonic && state.chordType === '7th') ? 'flex' : 'none';
       document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
 
-      // Diatonic Triads Legend Bar & Note Breakdown Row
       const triadLegendContainer = document.getElementById('triadLegendContainer');
       const triadLegendBar = document.getElementById('triadLegendBar');
       const notesRowBar = document.getElementById('notesRowBar');
 
       if (isDiatonic) {
         triadLegendContainer.style.display = 'block';
-        triadLegendBar.innerHTML = '<span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:6px;">8 Triads Key:</span>';
-        notesRowBar.innerHTML = '<span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:6px;">Triad Notes Breakdown:</span>';
+        triadLegendBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">8 Triads Key:</span>';
+        notesRowBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">Triad Notes Breakdown:</span>';
 
         const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, 'triad', state.enableFretRange, state.startFret, state.fretSpan);
         const activeVoicing = voicings[state.voicingIndex] || voicings[0];
         const run = getEightDiatonicTriads(activeVoicing);
 
         run.forEach(t => {
-          // Add Triad Tag
           const tag = document.createElement('div');
           tag.className = 'triad-tag';
           tag.style.backgroundColor = t.color;
           tag.innerText = `${t.roman}: ${t.name}`;
           triadLegendBar.appendChild(tag);
 
-          // Add Note Names Pill
           const sortedNotes = [...t.notes].sort((a, b) => b.string - a.string);
           const noteNamesStr = sortedNotes.map(n => getNoteName(n.pc)).join(' - ');
           
           const pill = document.createElement('div');
           pill.className = 'note-pill';
-          pill.style.borderLeft = `4px solid ${t.color}`;
+          pill.style.borderLeft = `3px solid ${t.color}`;
           pill.innerHTML = `<span>${t.roman}</span> <span class="sub">(${noteNamesStr})</span>`;
           notesRowBar.appendChild(pill);
         });
@@ -1233,7 +1252,6 @@
 
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
 
-      // Sync degree buttons (Showing I to VIII)
       const degreeContainer = document.getElementById('degreeButtons');
       degreeContainer.innerHTML = '';
       romanList.forEach((deg, idx) => {
@@ -1252,7 +1270,6 @@
         degreeContainer.appendChild(btn);
       });
 
-      // Generate Voicings for Current Chord
       const voicings = generateVoicings(
         state.key, 
         state.degreeIndex % 7, 
@@ -1263,12 +1280,11 @@
         state.fretSpan
       );
 
-      // Render Voicings Selector List
       const voicingContainer = document.getElementById('voicingContainer');
       voicingContainer.innerHTML = '';
 
       if (voicings.length === 0) {
-        voicingContainer.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:10px;">No playable voicings in this fret range</div>';
+        voicingContainer.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:8px;">No playable voicings in range</div>';
       } else {
         if (state.voicingIndex >= voicings.length) state.voicingIndex = 0;
 
@@ -1293,7 +1309,6 @@
         });
       }
 
-      // Render Fretboard Canvas
       renderFretboard(voicings[state.voicingIndex]);
     }
 
@@ -1365,7 +1380,6 @@
       updateApp();
     });
 
-    // Diatonic Run Controls
     document.getElementById('diatonicOnBtn').addEventListener('click', () => {
       state.showDiatonicRun = true;
       document.getElementById('diatonicOnBtn').classList.add('active');
@@ -1380,7 +1394,6 @@
       updateApp();
     });
 
-    // Fret Range Controls
     document.getElementById('rangeOnBtn').addEventListener('click', () => {
       state.enableFretRange = true;
       document.getElementById('rangeOnBtn').classList.add('active');
@@ -1445,7 +1458,6 @@
       }
     });
 
-    // Save Favorite
     document.getElementById('saveFavBtn').addEventListener('click', () => {
       const chordName = getChordName(state.key, state.degreeIndex, state.mode, state.chordType);
       const fav = {
@@ -1472,7 +1484,7 @@
     function renderFavorites() {
       const list = document.getElementById('favoritesList');
       if (state.favorites.length === 0) {
-        list.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 10px;">No saved positions yet</div>';
+        list.innerHTML = '<div style="font-size: 11px; color: var(--text-muted);">No saved positions yet</div>';
         return;
       }
 
@@ -1481,7 +1493,7 @@
         const item = document.createElement('div');
         item.className = 'favorite-item';
         item.innerHTML = `
-          <div><strong>${fav.name}</strong> <span style="font-size:11px; color:var(--text-muted);">(${fav.key} ${fav.mode})</span></div>
+          <div><strong>${fav.name}</strong> <span style="font-size:10px; color:var(--text-muted);">(${fav.key} ${fav.mode})</span></div>
           <div class="actions">
             <button class="icon-btn" title="Load"><i class="fa-solid fa-folder-open"></i></button>
             <button class="icon-btn delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -1545,7 +1557,6 @@
       });
     }
 
-    // Export PNG
     document.getElementById('downloadBtn').addEventListener('click', () => {
       const chordName = getChordName(state.key, state.degreeIndex, state.mode, state.chordType);
       const link = document.createElement('a');
@@ -1554,9 +1565,7 @@
       link.click();
     });
 
-    // Initial Load
     updateApp();
   </script>
 </body>
 </html>
-
