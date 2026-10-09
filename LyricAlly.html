@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LyricAlly — AI-Powered Lyricist & Songwriting DAW Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        daw: {
+                            bg: '#0c0d10',
+                            panel: '#13151b',
+                            card: '#1a1d26',
+                            border: '#2a2e3d',
+                            accent: '#6366f1',
+                            accentGlow: 'rgba(99, 102, 241, 0.25)',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            emerald: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Custom DAW scrollbar & Glassmorphism styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0c0d10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2e3d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .daw-glass {
+            background: rgba(19, 21, 27, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .pulse-glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+        .line-active {
+            border-left: 3px solid #6366f1;
+            background: rgba(99, 102, 241, 0.06);
+        }
+        /* Custom glowing pulse for metronome */
+        @keyframes beatFlash {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 12px #06b6d4; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+        .beat-active {
+            animation: beatFlash 0.18s ease-out;
+            background-color: #06b6d4 !important;
+        }
+    </style>
+</head>
+<body class="bg-daw-bg text-gray-200 font-sans min-h-screen flex flex-col antialiased selection:bg-daw-accent selection:text-white">
+
+    <!-- DAW Navbar Header -->
+    <header class="h-14 border-b border-daw-border bg-daw-panel flex items-center justify-between px-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                <i class="fa-solid fa-compact-disc fa-spin-pulse" style="--fa-animation-duration: 12s;"></i>
+            </div>
+            <div>
+                <span class="font-bold tracking-tight text-white text-lg flex items-center gap-2">
+                    LyricAlly <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">DAW v2.5</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Song Metadata & BPM Tapper Bar -->
+        <div class="hidden md:flex items-center gap-6 text-sm">
+            <!-- Song Title Input -->
+            <div class="flex items-center gap-2 bg-daw-bg/80 border border-daw-border px-3 py-1 rounded-md">
+                <i class="fa-solid fa-music text-indigo-400 text-xs"></i>
+                <input type="text" id="songTitleInput" value="Untitled Masterpiece" class="bg-transparent text-white font-medium focus:outline-none w-44 text-sm" placeholder="Song Title...">
+            </div>
+
+            <!-- Tempo & Metronome Control -->
+            <div class="flex items-center gap-3 bg-daw-card px-3 py-1 rounded-md border border-daw-border">
+                <button id="playBpmBtn" onclick="toggleMetronome()" class="text-gray-400 hover:text-cyan-400 transition-colors" title="Toggle Metronome Pulse">
+                    <i class="fa-solid fa-play text-xs" id="metronomeIcon"></i>
+                </button>
+                <div class="flex items-center gap-1.5 font-mono text-xs">
+                    <span class="text-gray-400">BPM:</span>
+                    <input type="number" id="bpmInput" value="120" min="40" max="240" class="w-12 bg-daw-bg border border-daw-border rounded text-center text-cyan-400 font-bold focus:outline-none" onchange="updateBpm(this.value)">
+                </div>
+                <button onclick="tapBpm()" class="px-2 py-0.5 text-xs bg-daw-border hover:bg-slate-700 text-gray-300 rounded font-mono active:bg-cyan-600 transition-all">
+                    TAP
+                </button>
+                <div id="beatIndicator" class="w-2.5 h-2.5 rounded-full bg-gray-600"></div>
+            </div>
+
+            <!-- Overall Stats Pill -->
+            <div class="flex items-center gap-4 text-xs font-mono text-gray-400 bg-daw-bg px-3 py-1 rounded-md border border-daw-border">
+                <span>WORDS: <strong id="totalWordsCount" class="text-white">0</strong></span>
+                <span>SYLLABLES: <strong id="totalSyllablesCount" class="text-white">0</strong></span>
+                <span>EST: <strong id="totalEstTime" class="text-indigo-400">0:00</strong></span>
+            </div>
+        </div>
+
+        <!-- Actions & Gemini API Key Toggle -->
+        <div class="flex items-center gap-2">
+            <button onclick="openApiKeyModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-daw-card border border-daw-border hover:border-indigo-500/50 text-gray-300 hover:text-white transition-all">
+                <i class="fa-solid fa-key text-amber-400"></i>
+                <span class="hidden sm:inline" id="apiKeyStatusLabel">API Key</span>
+            </button>
+            
+            <button onclick="openScratchpadModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-all">
+                <i class="fa-solid fa-microphone"></i>
+                <span class="hidden sm:inline">Scratchpad</span>
+            </button>
+
+            <!-- Export Menu Button -->
+            <div class="relative inline-block text-left">
+                <button onclick="toggleExportDropdown()" class="px-3 py-1.5 text-xs rounded-md bg-indigo-600 hover:bg-indigo-500 text-white font-medium flex items-center gap-1.5 transition-all shadow-md">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Export</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                <div id="exportDropdown" class="hidden absolute right-0 mt-2 w-48 bg-daw-panel border border-daw-border rounded-lg shadow-xl z-50 py-1 text-xs">
+                    <button onclick="exportSong('markdown')" class="w-full text-left px-4 py-2 hover:bg-daw-card flex items-center gap-2 text-gray-300 hover:text-white">
+                        <i class="fa-brands fa-markdown text-blue-400"></i> Export Markdown (.md)
+                    </button>
+                    <button onclick="exportSong('txt')" class="w-full text-left px-4 py-2 hover:bg-daw-card flex items-center gap-2 text-gray-300 hover:text-white">
+                        <i class="fa-regular fa-file-lines text-green-400"></i> Export Text (.txt)
+                    </button>
+                    <button onclick="exportSong('html')" class="w-full text-left px-4 py-2 hover:bg-daw-card flex items-center gap-2 text-gray-300 hover:text-white">
+                        <i class="fa-brands fa-html5 text-orange-400"></i> Export Web Doc (.html)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- DAW Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Project Manager & Song Structure Overview -->
+        <aside class="w-64 bg-daw-panel border-r border-daw-border flex flex-col hidden lg:flex select-none">
+            <div class="p-3 border-b border-daw-border flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fa-solid fa-folder-tree text-indigo-400"></i> Project Drafts
+                </span>
+                <button onclick="createNewSong()" class="p-1 text-gray-400 hover:text-white hover:bg-daw-card rounded" title="Create New Song Draft">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+            <!-- Song List -->
+            <div id="songProjectList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Dynamically populated songs -->
+            </div>
+
+            <!-- Stanza Navigator Summary -->
+            <div class="p-3 border-t border-daw-border bg-daw-bg/50">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block mb-2">
+                    Arrangement Map
+                </span>
+                <div id="stanzaMapContainer" class="space-y-1 text-xs">
+                    <!-- Dynamic Stanza list items -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Stage: Lyric Editor Workspace -->
+        <main class="flex-1 flex flex-col bg-daw-bg overflow-hidden relative">
+            
+            <!-- Toolbar for Adding Stanzas and Quick Actions -->
+            <div class="p-2 bg-daw-panel/60 border-b border-daw-border flex flex-wrap items-center justify-between gap-2 px-4">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs text-gray-400 font-medium mr-1">Add Stanza:</span>
+                    <button onclick="addStanza('Verse')" class="px-2.5 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 text-xs transition-all">
+                        + Verse
+                    </button>
+                    <button onclick="addStanza('Chorus')" class="px-2.5 py-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 text-xs transition-all">
+                        + Chorus
+                    </button>
+                    <button onclick="addStanza('Pre-Chorus')" class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 text-xs transition-all">
+                        + Pre-Chorus
+                    </button>
+                    <button onclick="addStanza('Bridge')" class="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 text-xs transition-all">
+                        + Bridge
+                    </button>
+                    <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">
+                        + Outro
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 text-xs text-gray-400">
+                    <span title="Highlighting rhymes across lines">
+                        <i class="fa-solid fa-spell-check text-indigo-400"></i> Rhyme Detector Active
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stanzas Container (Scrollable Lyric Sheet) -->
+            <div id="stanzasContainer" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                <!-- Stanzas will be rendered here dynamically -->
+            </div>
+        </main>
+
+        <!-- Right Sidebar: AI & Songwriting Workbench -->
+        <aside class="w-80 md:w-96 bg-daw-panel border-l border-daw-border flex flex-col h-full overflow-hidden select-none">
+            <!-- Tab Headers -->
+            <div class="flex border-b border-daw-border bg-daw-bg/80">
+                <button onclick="switchTab('rhymes')" id="tabBtn-rhymes" class="flex-1 py-2.5 text-xs font-semibold text-center text-indigo-400 border-b-2 border-indigo-500 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-quote-right"></i> Rhymes
+                </button>
+                <button onclick="switchTab('aiAssist')" id="tabBtn-aiAssist" class="flex-1 py-2.5 text-xs font-semibold text-center text-gray-400 border-b-2 border-transparent hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> AI Studio
+                </button>
+                <button onclick="switchTab('concept')" id="tabBtn-concept" class="flex-1 py-2.5 text-xs font-semibold text-center text-gray-400 border-b-2 border-transparent hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb text-yellow-400"></i> Concepts
+                </button>
+            </div>
+
+            <!-- Tab 1: Rhyme & Word Utility Workspace -->
+            <div id="tabContent-rhymes" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 block mb-1">Target Word or Selected Term:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="rhymeTargetWord" class="flex-1 bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. Dream, Shadow...">
+                        <button onclick="triggerRhymeLookup()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                            Find
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rhyme Results Output -->
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-[11px] font-semibold text-cyan-400 tracking-wider uppercase block mb-1">Perfect Rhymes</span>
+                        <div id="perfectRhymesList" class="flex flex-wrap gap-1.5">
+                            <span class="text-xs text-gray-500 italic">Select a word or type above to find rhymes.</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-amber-400 tracking-wider uppercase block mb-1">Slant / Near Rhymes</span>
+                        <div id="slantRhymesList" class="flex flex-wrap gap-1.5">
+                            <span class="text-xs text-gray-500 italic">No slant rhymes loaded yet.</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] font-semibold text-purple-400 tracking-wider uppercase block mb-1">Multi-Syllable Rhymes</span>
+                        <div id="multiRhymesList" class="flex flex-wrap gap-1.5">
+                            <span class="text-xs text-gray-500 italic">Multi-rhymes will appear here.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: AI Songwriting Tools -->
+            <div id="tabContent-aiAssist" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- Next Word & Contextual Line Generator -->
+                <div class="bg-daw-card border border-daw-border rounded-lg p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-angles-right text-cyan-400"></i> Line Continuation
+                        </span>
+                        <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded">AI Powered</span>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Generate rhythmic next-line suggestions matching meter and rhyme scheme.</p>
+                    <button onclick="aiSuggestNextLine()" class="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium py-1.5 rounded-md text-xs transition-all shadow">
+                        Suggest Next Line
+                    </button>
+                    <div id="aiNextLineResults" class="space-y-1.5 pt-1">
+                        <!-- Output dynamic predictions -->
+                    </div>
+                </div>
+
+                <!-- Lyric Transformer & Rephrase Tool -->
+                <div class="bg-daw-card border border-daw-border rounded-lg p-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders text-amber-400"></i> Style Transformer
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Rewrite active active line into alternate lyric tones.</p>
+                    <div class="grid grid-cols-2 gap-1.5 pt-1">
+                        <button onclick="aiTransformStyle('Melancholic & Moody')" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-indigo-500 text-xs text-gray-300 rounded text-left">
+                            🌧 Moody
+                        </button>
+                        <button onclick="aiTransformStyle('Catchy Pop Hook')" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-cyan-500 text-xs text-gray-300 rounded text-left">
+                            ✨ Pop Hook
+                        </button>
+                        <button onclick="aiTransformStyle('Poetic Metaphorical')" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-purple-500 text-xs text-gray-300 rounded text-left">
+                            📖 Poetic
+                        </button>
+                        <button onclick="aiTransformStyle('Punchy Syncopated Hip Hop')" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-amber-500 text-xs text-gray-300 rounded text-left">
+                            ⚡ Syncopated
+                        </button>
+                    </div>
+                    <div id="aiTransformResults" class="space-y-1.5 pt-1">
+                        <!-- Dynamic transformed options -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Tip-Of-My-Tongue & Metaphor Generator -->
+            <div id="tabContent-concept" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-gray-300 block mb-1">Describe a Vibe, Image, or Concept:</label>
+                    <textarea id="conceptInput" rows="3" class="w-full bg-daw-bg border border-daw-border rounded-md p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none" placeholder="e.g. Driving late at night through rain in a glowing city feeling nostalgic..."></textarea>
+                    <button onclick="aiSearchConcept()" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded-md text-xs transition-all">
+                        Generate Metaphors & Imagery
+                    </button>
+                </div>
+
+                <div id="conceptResults" class="space-y-3">
+                    <span class="text-xs text-gray-500 italic block">Enter a prompt above to unlock vivid descriptors, metaphors, and sensory imagery.</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Audio Voice Scratchpad Modal -->
+    <div id="scratchpadModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-daw-panel border border-daw-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-microphone-lines text-rose-400"></i> Voice Idea Scratchpad
+                </h3>
+                <button onclick="closeScratchpadModal()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="text-center py-6 space-y-4 bg-daw-card border border-daw-border rounded-lg mb-4">
+                <div id="recordVisualizer" class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-microphone" id="micIcon"></i>
+                </div>
+                <div id="recordTimer" class="font-mono text-xl font-bold text-white">00:00</div>
+                <div class="flex justify-center gap-3">
+                    <button id="startRecBtn" onclick="startRecording()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle"></i> Record
+                    </button>
+                    <button id="stopRecBtn" onclick="stopRecording()" disabled class="px-4 py-2 bg-gray-700 text-gray-400 rounded-md text-xs font-semibold flex items-center gap-1.5 opacity-50 cursor-not-allowed">
+                        <i class="fa-solid fa-square"></i> Stop
+                    </button>
+                </div>
+            </div>
+
+            <!-- Saved Audio Memos -->
+            <span class="text-xs font-semibold text-gray-400 block mb-2">Saved Voice Memos</span>
+            <div id="audioMemosList" class="space-y-2 max-h-40 overflow-y-auto">
+                <p class="text-xs text-gray-500 italic">No audio scratch memos recorded yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Config Modal -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-daw-panel border border-daw-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i> Gemini API Settings
+                </h3>
+                <button onclick="closeApiKeyModal()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-400 mb-4">
+                LyricAlly uses Google's Gemini AI for deep contextual rhyming, metaphor synthesis, and style transformation. If not configured, local smart algorithms are used as fallbacks.
+            </p>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-gray-300 block mb-1">API Key:</label>
+                    <input type="password" id="geminiApiKeyInput" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" placeholder="AIzaSy...">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="saveApiKey()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-md">
+                        Save API Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           LYRICALLY APPLICATION CORE STATE & DATA ENGINE
+           ========================================================================== */
+
+        // Global State Store
+        let state = {
+            songs: [],
+            currentSongId: null,
+            activeStanzaId: null,
+            activeLineIndex: 0,
+            bpm: 120,
+            isPlayingMetronome: false,
+            metronomeInterval: null,
+            tapTimes: [],
+            apiKey: localStorage.getItem('lyrically_gemini_key') || ''
+        };
+
+        // Fallback Local Rhyme Dictionary Heuristic Database
+        const LOCAL_RHYME_DB = {
+            "dream": { perfect: ["beam", "stream", "team", "scheme", "gleam", "scream"], slant: ["seen", "clean", "theme", "feel"] },
+            "night": { perfect: ["light", "sight", "fight", "flight", "bright", "white"], slant: ["mind", "time", "high", "glide"] },
+            "fire": { perfect: ["desire", "wire", "higher", "tire", "pyre"], slant: ["inspire", "flyer", "buyer"] },
+            "heart": { perfect: ["part", "start", "art", "smart", "dart"], slant: ["dark", "hard", "march"] },
+            "love": { perfect: ["above", "dove", "glove"], slant: ["of", "rough", "tough", "enough"] },
+            "soul": { perfect: ["control", "whole", "role", "goal", "coal"], slant: ["stone", "alone", "gold"] },
+            "rain": { perfect: ["pain", "drain", "stain", "gain", "chain"], slant: ["came", "flame", "same"] }
+        };
+
+        // Sample initial song template
+        const SAMPLE_SONG = {
+            id: 'song_' + Date.now(),
+            title: 'Neon Skyline',
+            bpm: 120,
+            stanzas: [
+                {
+                    id: 'stz_1',
+                    type: 'Verse',
+                    lines: [
+                        "Walking under neon shadows through the midnight rain",
+                        "Counting every silent footstep echo down the lane",
+                        "City lights are whispering a forgotten song",
+                        "Wondering where all the electric dreams belong"
+                    ]
+                },
+                {
+                    id: 'stz_2',
+                    type: 'Chorus',
+                    lines: [
+                        "We burn brighter than the stars up in the atmosphere",
+                        "Chasing moments till the darkness starts to disappear",
+                        "Hold the rhythm tight before it fades away into the blue"
+                    ]
+                }
+            ]
+        };
+
+
+        /**
+         * Advanced Phonetic Syllable Estimator Heuristic
+         * @param {string} word - target word
+         * @returns {number} estimated syllable count
+         */
+        function countWordSyllables(word) {
+            word = word.toLowerCase().trim().replace(/[^a-z]/g, '');
+            if (!word) return 0;
+            if (word.length <= 3) return 1;
+
+            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            word = word.replace(/^y/, '');
+
+            const match = word.match(/[aeiouy]{1,2}/g);
+            return match ? match.length : 1;
+        }
+
+        /**
+         * Line-level metrics calculator
+         * @param {string} line text
+         * @returns {Object} syllables, estimated beats, rhythm stress pattern
+         */
+        function analyzeLine(line) {
+            const words = line.trim().split(/\s+/).filter(w => w.length > 0);
+            let totalSyllables = 0;
+
+            words.forEach(w => {
+                totalSyllables += countWordSyllables(w);
+            });
+
+            // Est. Beats based on ~1.8 to 2 syllables per rhythmic beat measure in standard pop/rock meter
+            const estimatedBeats = Math.max(1, Math.round(totalSyllables / 2));
+
+            return {
+                syllables: totalSyllables,
+                beats: estimatedBeats,
+                wordsCount: words.length
+            };
+        }
+
+        /**
+         * Rhyme Scheme Auto-Detector (AABB, ABAB, ABBA, etc.)
+         * @param {Array<string>} lines - list of lyric lines
+         */
+        function detectRhymeScheme(lines) {
+            if (!lines || lines.length === 0) return '';
+            const endWords = lines.map(line => {
+                const words = line.trim().split(/\s+/);
+                return words.length > 0 ? words[words.length - 1].toLowerCase().replace(/[^a-z]/g, '') : '';
+            });
+
+            const alphabet = 'ABCDEFGH';
+            let scheme = '';
+            const wordMap = {};
+            let charIndex = 0;
+
+            endWords.forEach(word => {
+                if (!word) {
+                    scheme += '-';
+                    return;
+                }
+                const tail = word.slice(-3); // sound tail heuristic
+                let matchedChar = null;
+
+                for (let key in wordMap) {
+                    if (key === tail || (key.length >= 2 && tail.endsWith(key.slice(-2)))) {
+                        matchedChar = wordMap[key];
+                        break;
+                    }
+                }
+
+                if (matchedChar) {
+                    scheme += matchedChar;
+                } else {
+                    const newChar = alphabet[charIndex % alphabet.length];
+                    wordMap[tail] = newChar;
+                    scheme += newChar;
+                    charIndex++;
+                }
+            });
+
+            return scheme;
+        }
+
+
+        // Init App on load
+        window.onload = function() {
+            loadSavedSongs();
+            updateApiKeyUI();
+            renderSongList();
+            renderCurrentSong();
+        };
+
+        function loadSavedSongs() {
+            const saved = localStorage.getItem('lyrically_songs');
+            if (saved) {
+                try {
+                    state.songs = JSON.parse(saved);
+                } catch (e) {
+                    state.songs = [SAMPLE_SONG];
+                }
+            } else {
+                state.songs = [SAMPLE_SONG];
+            }
+            if (state.songs.length > 0) {
+                state.currentSongId = state.songs[0].id;
+                state.bpm = state.songs[0].bpm || 120;
+                document.getElementById('bpmInput').value = state.bpm;
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('lyrically_songs', JSON.stringify(state.songs));
+            renderSongList();
+            updateTotalStats();
+        }
+
+        function getCurrentSong() {
+            return state.songs.find(s => s.id === state.currentSongId) || state.songs[0];
+        }
+
+
+        function renderSongList() {
+            const container = document.getElementById('songProjectList');
+            container.innerHTML = '';
+
+            state.songs.forEach(song => {
+                const isActive = song.id === state.currentSongId;
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-md cursor-pointer flex items-center justify-between text-xs transition-all ${
+                    isActive ? 'bg-indigo-600/20 text-white border border-indigo-500/30 font-medium' : 'text-gray-400 hover:bg-daw-card hover:text-gray-200'
+                }`;
+                div.onclick = () => switchSong(song.id);
+
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="fa-solid fa-compact-disc ${isActive ? 'text-indigo-400' : 'text-gray-500'}"></i>
+                        <span class="truncate">${escapeHtml(song.title)}</span>
+                    </div>
+                    ${state.songs.length > 1 ? `
+                        <button onclick="event.stopPropagation(); deleteSong('${song.id}')" class="p-1 hover:text-rose-400 opacity-60 hover:opacity-100">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                    ` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderCurrentSong() {
+            const song = getCurrentSong();
+            if (!song) return;
+
+            document.getElementById('songTitleInput').value = song.title;
+            const container = document.getElementById('stanzasContainer');
+            container.innerHTML = '';
+
+            const mapContainer = document.getElementById('stanzaMapContainer');
+            mapContainer.innerHTML = '';
+
+            song.stanzas.forEach((stanza, stzIdx) => {
+                // Render Stanza Section Block
+                const stanzaCard = document.createElement('div');
+                stanzaCard.className = 'bg-daw-card border border-daw-border rounded-xl p-4 shadow-lg transition-all relative group';
+
+                const rhymeScheme = detectRhymeScheme(stanza.lines);
+
+                // Badge color based on type
+                let badgeStyle = 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400';
+                if (stanza.type === 'Chorus') badgeStyle = 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400';
+                if (stanza.type === 'Pre-Chorus') badgeStyle = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+                if (stanza.type === 'Bridge') badgeStyle = 'bg-purple-500/10 border-purple-500/30 text-purple-400';
+                if (stanza.type === 'Outro') badgeStyle = 'bg-rose-500/10 border-rose-500/30 text-rose-400';
+
+                stanzaCard.innerHTML = `
+                    <div class="flex items-center justify-between pb-3 border-b border-daw-border/60 mb-3 select-none">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2.5 py-0.5 rounded-full border text-xs font-semibold ${badgeStyle}">
+                                ${stanza.type}
+                            </span>
+                            <span class="text-xs font-mono text-gray-500" title="Auto-detected Rhyme Scheme">
+                                Scheme: <strong class="text-gray-300">${rhymeScheme || 'N/A'}</strong>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="moveStanza('${stanza.id}', -1)" class="p-1 text-gray-500 hover:text-white" title="Move Up"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+                            <button onclick="moveStanza('${stanza.id}', 1)" class="p-1 text-gray-500 hover:text-white" title="Move Down"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+                            <button onclick="deleteStanza('${stanza.id}')" class="p-1 text-gray-500 hover:text-rose-400 ml-2" title="Delete Stanza"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Lines Container -->
+                    <div class="space-y-2" id="stanzaLines-${stanza.id}">
+                        ${stanza.lines.map((line, lineIdx) => renderLineRow(stanza.id, line, lineIdx)).join('')}
+                    </div>
+
+                    <button onclick="addLineToStanza('${stanza.id}')" class="mt-3 w-full py-1.5 border border-dashed border-daw-border hover:border-indigo-500/50 rounded-lg text-xs text-gray-400 hover:text-indigo-300 transition-all flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Add Line
+                    </button>
+                `;
+
+                container.appendChild(stanzaCard);
+
+                // Side Map item
+                const mapItem = document.createElement('div');
+                mapItem.className = 'flex items-center justify-between text-gray-400 hover:text-white cursor-pointer py-1 px-2 rounded hover:bg-daw-card';
+                mapItem.onclick = () => {
+                    stanzaCard.scrollIntoView({ behavior: 'smooth' });
+                };
+                mapItem.innerHTML = `
+                    <span class="truncate">${stanza.type} ${stzIdx + 1}</span>
+                    <span class="font-mono text-[10px] text-gray-500">${stanza.lines.length}L</span>
+                `;
+                mapContainer.appendChild(mapItem);
+            });
+
+            updateTotalStats();
+        }
+
+        function renderLineRow(stanzaId, lineText, lineIdx) {
+            const metrics = analyzeLine(lineText);
+            return `
+                <div class="flex items-center gap-2 group/line hover:bg-daw-bg/50 p-1.5 rounded-lg transition-all" id="lineRow-${stanzaId}-${lineIdx}">
+                    <!-- Syllable & Beat Counter Pill -->
+                    <div class="flex items-center gap-1.5 font-mono text-[11px] bg-daw-bg border border-daw-border px-2 py-1 rounded w-28 shrink-0 select-none">
+                        <span class="text-indigo-400 font-bold" title="Syllable Count">${metrics.syllables} <span class="text-[9px] font-normal text-gray-500">syl</span></span>
+                        <span class="text-gray-600">|</span>
+                        <span class="text-cyan-400 font-bold" title="Estimated Beats">${metrics.beats} <span class="text-[9px] font-normal text-gray-500">bts</span></span>
+                    </div>
+
+                    <!-- Line Text Input Area -->
+                    <input type="text" 
+                           value="${escapeHtml(lineText)}" 
+                           onfocus="setActiveLine('${stanzaId}', ${lineIdx}, this)"
+                           oninput="updateLineText('${stanzaId}', ${lineIdx}, this.value)"
+                           onkeydown="handleLineKeydown(event, '${stanzaId}', ${lineIdx})"
+                           class="flex-1 bg-transparent text-sm text-gray-100 focus:outline-none focus:text-white font-sans px-2 py-1 rounded hover:bg-daw-bg/80 focus:bg-daw-bg focus:ring-1 focus:ring-indigo-500/50" 
+                           placeholder="Type lyrics here...">
+
+                    <!-- Line Actions -->
+                    <div class="flex items-center gap-1 opacity-0 group-hover/line:opacity-100 transition-opacity">
+                        <button onclick="aiTransformLine('${stanzaId}', ${lineIdx})" class="p-1 text-gray-400 hover:text-amber-400" title="Rephrase line with AI">
+                            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                        </button>
+                        <button onclick="deleteLine('${stanzaId}', ${lineIdx})" class="p-1 text-gray-400 hover:text-rose-400" title="Remove line">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function setActiveLine(stanzaId, lineIdx, inputElem) {
+            state.activeStanzaId = stanzaId;
+            state.activeLineIndex = lineIdx;
+
+            // Highlight word under cursor for rhyme lookup
+            const text = inputElem.value;
+            const cursorPos = inputElem.selectionStart || text.length;
+            const words = text.slice(0, cursorPos).trim().split(/\s+/);
+            const currentWord = words[words.length - 1]?.replace(/[^a-zA-Z]/g, '');
+
+            if (currentWord && currentWord.length > 2) {
+                document.getElementById('rhymeTargetWord').value = currentWord;
+                triggerRhymeLookup();
+            }
+        }
+
+        function updateLineText(stanzaId, lineIdx, text) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza) {
+                stanza.lines[lineIdx] = text;
+                // Live update counters
+                const metrics = analyzeLine(text);
+                const lineRow = document.getElementById(`lineRow-${stanzaId}-${lineIdx}`);
+                if (lineRow) {
+                    const counterElem = lineRow.querySelector('.font-mono');
+                    if (counterElem) {
+                        counterElem.innerHTML = `
+                            <span class="text-indigo-400 font-bold" title="Syllable Count">${metrics.syllables} <span class="text-[9px] font-normal text-gray-500">syl</span></span>
+                            <span class="text-gray-600">|</span>
+                            <span class="text-cyan-400 font-bold" title="Estimated Beats">${metrics.beats} <span class="text-[9px] font-normal text-gray-500">bts</span></span>
+                        `;
+                    }
+                }
+                saveState();
+            }
+        }
+
+        function handleLineKeydown(event, stanzaId, lineIdx) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const song = getCurrentSong();
+                const stanza = song.stanzas.find(s => s.id === stanzaId);
+                if (stanza) {
+                    stanza.lines.splice(lineIdx + 1, 0, '');
+                    saveState();
+                    renderCurrentSong();
+                    // Focus newly created line
+                    setTimeout(() => {
+                        const nextRow = document.getElementById(`lineRow-${stanzaId}-${lineIdx + 1}`);
+                        if (nextRow) nextRow.querySelector('input')?.focus();
+                    }, 50);
+                }
+            }
+        }
+
+        function addLineToStanza(stanzaId) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza) {
+                stanza.lines.push('');
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function deleteLine(stanzaId, lineIdx) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza && stanza.lines.length > 1) {
+                stanza.lines.splice(lineIdx, 1);
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function addStanza(type) {
+            const song = getCurrentSong();
+            song.stanzas.push({
+                id: 'stz_' + Date.now(),
+                type: type,
+                lines: ['']
+            });
+            saveState();
+            renderCurrentSong();
+        }
+
+        function deleteStanza(stanzaId) {
+            const song = getCurrentSong();
+            if (song.stanzas.length > 1) {
+                song.stanzas = song.stanzas.filter(s => s.id !== stanzaId);
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function moveStanza(stanzaId, direction) {
+            const song = getCurrentSong();
+            const idx = song.stanzas.findIndex(s => s.id === stanzaId);
+            if (idx < 0) return;
+            const newIdx = idx + direction;
+            if (newIdx >= 0 && newIdx < song.stanzas.length) {
+                const temp = song.stanzas[idx];
+                song.stanzas[idx] = song.stanzas[newIdx];
+                song.stanzas[newIdx] = temp;
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+
+        function createNewSong() {
+            const newSong = {
+                id: 'song_' + Date.now(),
+                title: 'New Song Draft',
+                bpm: 120,
+                stanzas: [
+                    { id: 'stz_1', type: 'Verse', lines: [''] }
+                ]
+            };
+            state.songs.push(newSong);
+            state.currentSongId = newSong.id;
+            saveState();
+            renderCurrentSong();
+        }
+
+        function switchSong(songId) {
+            state.currentSongId = songId;
+            renderSongList();
+            renderCurrentSong();
+        }
+
+        function deleteSong(songId) {
+            if (state.songs.length <= 1) return;
+            state.songs = state.songs.filter(s => s.id !== songId);
+            state.currentSongId = state.songs[0].id;
+            saveState();
+            renderCurrentSong();
+        }
+
+        document.getElementById('songTitleInput').addEventListener('change', function(e) {
+            const song = getCurrentSong();
+            if (song) {
+                song.title = e.target.value || 'Untitled Masterpiece';
+                saveState();
+            }
+        });
+
+        function updateTotalStats() {
+            const song = getCurrentSong();
+            let totalWords = 0;
+            let totalSyllables = 0;
+
+            song.stanzas.forEach(s => {
+                s.lines.forEach(l => {
+                    const m = analyzeLine(l);
+                    totalWords += m.wordsCount;
+                    totalSyllables += m.syllables;
+                });
+            });
+
+            document.getElementById('totalWordsCount').innerText = totalWords;
+            document.getElementById('totalSyllablesCount').innerText = totalSyllables;
+
+            // Estimated singing duration calculation based on BPM (assuming avg 2 syllables/beat)
+            const beats = totalSyllables / 2;
+            const seconds = Math.round((beats / state.bpm) * 60);
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('totalEstTime').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+
+        function updateBpm(val) {
+            state.bpm = parseInt(val) || 120;
+            const song = getCurrentSong();
+            if (song) song.bpm = state.bpm;
+            updateTotalStats();
+        }
+
+        function tapBpm() {
+            const now = Date.now();
+            state.tapTimes.push(now);
+            if (state.tapTimes.length > 4) state.tapTimes.shift();
+
+            if (state.tapTimes.length > 1) {
+                let intervals = [];
+                for (let i = 1; i < state.tapTimes.length; i++) {
+                    intervals.push(state.tapTimes[i] - state.tapTimes[i - 1]);
+                }
+                const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                const calculatedBpm = Math.round(60000 / avgInterval);
+                if (calculatedBpm >= 40 && calculatedBpm <= 240) {
+                    state.bpm = calculatedBpm;
+                    document.getElementById('bpmInput').value = calculatedBpm;
+                    updateBpm(calculatedBpm);
+                }
+            }
+        }
+
+        function toggleMetronome() {
+            state.isPlayingMetronome = !state.isPlayingMetronome;
+            const icon = document.getElementById('metronomeIcon');
+
+            if (state.isPlayingMetronome) {
+                icon.className = 'fa-solid fa-pause text-cyan-400';
+                startMetronomeLoop();
+            } else {
+                icon.className = 'fa-solid fa-play text-xs';
+                clearInterval(state.metronomeInterval);
+            }
+        }
+
+        function startMetronomeLoop() {
+            clearInterval(state.metronomeInterval);
+            const intervalMs = (60 / state.bpm) * 1000;
+            
+            state.metronomeInterval = setInterval(() => {
+                playClickSound();
+                flashBeatIndicator();
+            }, intervalMs);
+        }
+
+        function playClickSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1000, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+            } catch (e) {
+                // Silent fallback if audio context restricted
+            }
+        }
+
+        function flashBeatIndicator() {
+            const ind = document.getElementById('beatIndicator');
+            if (ind) {
+                ind.classList.add('beat-active');
+                setTimeout(() => ind.classList.remove('beat-active'), 120);
+            }
+        }
+
+
+        function triggerRhymeLookup() {
+            const word = document.getElementById('rhymeTargetWord').value.trim().toLowerCase();
+            if (!word) return;
+
+            // Check if local DB exists
+            if (LOCAL_RHYME_DB[word]) {
+                renderRhymes(LOCAL_RHYME_DB[word].perfect, LOCAL_RHYME_DB[word].slant, []);
+            } else {
+                // Heuristic Fallback rhyming generation
+                const endings = ["ight", "eam", "ire", "art", "ove", "oul", "ain", "ide", "ace", "oal"];
+                const perfect = [];
+                const slant = [];
+
+                const tail = word.slice(-3);
+                ['br', 'cl', 'fl', 'st', 'tr', 'ch', 'sh', 'b', 'd', 'g', 'h', 'm', 'p', 'r', 's', 't', 'w'].forEach(p => {
+                    if (p + tail !== word) perfect.push(p + tail);
+                    slant.push(p + 'e');
+                });
+
+                renderRhymes(perfect.slice(0, 8), slant.slice(0, 6), [word + "ing", "un" + word]);
+            }
+
+            // If Gemini API key is available, attempt enhanced fetch
+            if (state.apiKey) {
+                aiFetchRhymes(word);
+            }
+        }
+
+        function renderRhymes(perfect, slant, multi) {
+            const pList = document.getElementById('perfectRhymesList');
+            const sList = document.getElementById('slantRhymesList');
+            const mList = document.getElementById('multiRhymesList');
+
+            pList.innerHTML = perfect.length > 0 ? perfect.map(w => `<span onclick="insertWord('${w}')" class="px-2 py-1 bg-daw-bg border border-cyan-500/30 text-cyan-300 rounded text-xs cursor-pointer hover:bg-cyan-500/20">${w}</span>`).join('') : '<span class="text-xs text-gray-500 italic">None found</span>';
+            sList.innerHTML = slant.length > 0 ? slant.map(w => `<span onclick="insertWord('${w}')" class="px-2 py-1 bg-daw-bg border border-amber-500/30 text-amber-300 rounded text-xs cursor-pointer hover:bg-amber-500/20">${w}</span>`).join('') : '<span class="text-xs text-gray-500 italic">None found</span>';
+            mList.innerHTML = multi.length > 0 ? multi.map(w => `<span onclick="insertWord('${w}')" class="px-2 py-1 bg-daw-bg border border-purple-500/30 text-purple-300 rounded text-xs cursor-pointer hover:bg-purple-500/20">${w}</span>`).join('') : '<span class="text-xs text-gray-500 italic">None found</span>';
+        }
+
+        function insertWord(word) {
+            if (state.activeStanzaId !== null) {
+                const song = getCurrentSong();
+                const stanza = song.stanzas.find(s => s.id === state.activeStanzaId);
+                if (stanza) {
+                    stanza.lines[state.activeLineIndex] += ' ' + word;
+                    saveState();
+                    renderCurrentSong();
+                }
+            }
+        }
+
+
+        function openApiKeyModal() {
+            document.getElementById('geminiApiKeyInput').value = state.apiKey;
+            document.getElementById('apiKeyModal').classList.remove('hidden');
+        }
+
+        function closeApiKeyModal() {
+            document.getElementById('apiKeyModal').classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            state.apiKey = document.getElementById('geminiApiKeyInput').value.trim();
+            localStorage.setItem('lyrically_gemini_key', state.apiKey);
+            updateApiKeyUI();
+            closeApiKeyModal();
+        }
+
+        function updateApiKeyUI() {
+            const label = document.getElementById('apiKeyStatusLabel');
+            if (state.apiKey) {
+                label.innerText = 'API Active';
+                label.className = 'text-emerald-400 font-semibold';
+            } else {
+                label.innerText = 'Set API Key';
+                label.className = 'text-gray-300';
+            }
+        }
+
+        // Generic Gemini API Fetch Wrapper
+        async function callGeminiApi(prompt, systemInstruction = "You are a professional songwriting assistant.") {
+            if (!state.apiKey) {
+                alert('Please enter your Gemini API Key in the top menu to enable AI features.');
+                return null;
+            }
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${state.apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+            } catch (err) {
+                console.error('Gemini API Error:', err);
+                return null;
+            }
+        }
+
+        async function aiFetchRhymes(targetWord) {
+            const prompt = `Provide rhymes for the word "${targetWord}" in JSON format with keys "perfect" (array), "slant" (array), "multi" (array).`;
+            const system = "Respond ONLY in valid JSON format matching schema: { perfect: [], slant: [], multi: [] }";
+
+            try {
+                const resText = await callGeminiApi(prompt, system);
+                if (resText) {
+                    const cleanJson = resText.replace(/```json|```/g, '').trim();
+                    const parsed = JSON.parse(cleanJson);
+                    renderRhymes(parsed.perfect || [], parsed.slant || [], parsed.multi || []);
+                }
+            } catch (e) {
+                // Fallback retained
+            }
+        }
+
+        async function aiSuggestNextLine() {
+            const container = document.getElementById('aiNextLineResults');
+            container.innerHTML = '<span class="text-xs text-indigo-400 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> Generating line ideas...</span>';
+
+            const song = getCurrentSong();
+            const currentLines = song.stanzas.flatMap(s => s.lines).filter(l => l.trim() !== '');
+            const context = currentLines.slice(-4).join('\n');
+
+            const prompt = `Given these lyrics:\n"${context}"\n\nSuggest 3 catchy, rhythmic next line options that maintain meter and rhyming flow. Format as numbered list 1., 2., 3.`;
+            const result = await callGeminiApi(prompt);
+
+            if (result) {
+                const lines = result.split('\n').filter(l => l.trim().length > 0);
+                container.innerHTML = lines.map(line => `
+                    <div onclick="addSuggestedLine('${escapeHtml(line.replace(/^\d+\.\s*/, ''))}')" class="p-2 bg-daw-bg border border-daw-border hover:border-indigo-500 rounded text-xs text-gray-200 cursor-pointer transition-all">
+                        ${escapeHtml(line)}
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<span class="text-xs text-rose-400">Failed to generate line suggestions. Check API key.</span>';
+            }
+        }
+
+        function addSuggestedLine(lineText) {
+            const song = getCurrentSong();
+            if (song.stanzas.length > 0) {
+                song.stanzas[song.stanzas.length - 1].lines.push(lineText);
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        async function aiTransformStyle(styleName) {
+            const container = document.getElementById('aiTransformResults');
+            container.innerHTML = '<span class="text-xs text-amber-400 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> Rephrasing active line...</span>';
+
+            const song = getCurrentSong();
+            let targetLine = "Walking under neon shadows through the midnight rain";
+            if (state.activeStanzaId !== null) {
+                const stanza = song.stanzas.find(s => s.id === state.activeStanzaId);
+                if (stanza && stanza.lines[state.activeLineIndex]) {
+                    targetLine = stanza.lines[state.activeLineIndex];
+                }
+            }
+
+            const prompt = `Rephrase this lyric line: "${targetLine}" into 3 different options matching the style: ${styleName}. Keep exact line length rhythmic. Number 1., 2., 3.`;
+            const result = await callGeminiApi(prompt);
+
+            if (result) {
+                const options = result.split('\n').filter(l => l.trim().length > 0);
+                container.innerHTML = options.map(opt => `
+                    <div onclick="replaceActiveLine('${escapeHtml(opt.replace(/^\d+\.\s*/, ''))}')" class="p-2 bg-daw-bg border border-daw-border hover:border-amber-500 rounded text-xs text-gray-200 cursor-pointer transition-all">
+                        ${escapeHtml(opt)}
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<span class="text-xs text-rose-400">Transform failed. Ensure API key is configured.</span>';
+            }
+        }
+
+        function replaceActiveLine(newText) {
+            if (state.activeStanzaId !== null) {
+                const song = getCurrentSong();
+                const stanza = song.stanzas.find(s => s.id === state.activeStanzaId);
+                if (stanza) {
+                    stanza.lines[state.activeLineIndex] = newText;
+                    saveState();
+                    renderCurrentSong();
+                }
+            }
+        }
+
+        async function aiSearchConcept() {
+            const input = document.getElementById('conceptInput').value.trim();
+            const container = document.getElementById('conceptResults');
+            if (!input) return;
+
+            container.innerHTML = '<span class="text-xs text-indigo-400 flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> Synthesizing metaphors & imagery...</span>';
+
+            const prompt = `Concept prompt: "${input}". Generate songwriting imagery, sensory metaphors, keywords, and rhyming hook lines based on this theme. Organize in markdown format.`;
+            const result = await callGeminiApi(prompt);
+
+            if (result) {
+                container.innerHTML = `<div class="p-3 bg-daw-bg border border-daw-border rounded-lg text-xs text-gray-300 space-y-2 whitespace-pre-line">${escapeHtml(result)}</div>`;
+            } else {
+                container.innerHTML = '<span class="text-xs text-rose-400">Concept lookup failed. Verify API Key.</span>';
+            }
+        }
+
+
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordTimerInterval = null;
+        let recordSeconds = 0;
+
+        function openScratchpadModal() {
+            document.getElementById('scratchpadModal').classList.remove('hidden');
+        }
+
+        function closeScratchpadModal() {
+            document.getElementById('scratchpadModal').classList.add('hidden');
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = saveAudioMemo;
+
+                mediaRecorder.start();
+                recordSeconds = 0;
+                document.getElementById('recordTimer').innerText = '00:00';
+
+                recordTimerInterval = setInterval(() => {
+                    recordSeconds++;
+                    const m = Math.floor(recordSeconds / 60);
+                    const s = recordSeconds % 60;
+                    document.getElementById('recordTimer').innerText = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                }, 1000);
+
+                document.getElementById('startRecBtn').disabled = true;
+                document.getElementById('startRecBtn').classList.add('opacity-50');
+                document.getElementById('stopRecBtn').disabled = false;
+                document.getElementById('stopRecBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('recordVisualizer').classList.add('pulse-glow');
+            } catch (err) {
+                alert('Microphone access denied or unverified.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                clearInterval(recordTimerInterval);
+
+                document.getElementById('startRecBtn').disabled = false;
+                document.getElementById('startRecBtn').classList.remove('opacity-50');
+                document.getElementById('stopRecBtn').disabled = true;
+                document.getElementById('stopRecBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('recordVisualizer').classList.remove('pulse-glow');
+            }
+        }
+
+        function saveAudioMemo() {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(blob);
+            const container = document.getElementById('audioMemosList');
+
+            if (container.querySelector('p')) container.innerHTML = '';
+
+            const memoItem = document.createElement('div');
+            memoItem.className = 'p-2 bg-daw-bg border border-daw-border rounded-md flex items-center justify-between text-xs';
+            memoItem.innerHTML = `
+                <audio controls src="${audioUrl}" class="h-7 w-56"></audio>
+                <span class="font-mono text-[10px] text-gray-500">${new Date().toLocaleTimeString()}</span>
+            `;
+            container.appendChild(memoItem);
+        }
+
+
+        function toggleExportDropdown() {
+            const drop = document.getElementById('exportDropdown');
+            drop.classList.toggle('hidden');
+        }
+
+        function exportSong(format) {
+            const song = getCurrentSong();
+            let content = '';
+            let filename = `${song.title.toLowerCase().replace(/\s+/g, '_')}`;
+
+            if (format === 'markdown') {
+                filename += '.md';
+                content = `# ${song.title}\n\n**BPM:** ${song.bpm}\n\n`;
+                song.stanzas.forEach(s => {
+                    content += `### [${s.type}]\n`;
+                    s.lines.forEach(l => content += `${l}\n`);
+                    content += `\n`;
+                });
+            } else if (format === 'txt') {
+                filename += '.txt';
+                content = `${song.title.toUpperCase()}\nBPM: ${song.bpm}\n\n`;
+                song.stanzas.forEach(s => {
+                    content += `[${s.type}]\n`;
+                    s.lines.forEach(l => content += `${l}\n`);
+                    content += `\n`;
+                });
+            } else if (format === 'html') {
+                filename += '.html';
+                content = `<!DOCTYPE html><html><head><title>${song.title}</title><style>body{font-family:sans-serif;padding:40px;background:#0c0d10;color:#fff;}h1{color:#6366f1;}.stanza{margin-bottom:20px;padding:15px;background:#1a1d26;border-radius:8px;}.type{color:#06b6d4;font-size:12px;font-weight:bold;}</style></head><body><h1>${song.title}</h1>`;
+                song.stanzas.forEach(s => {
+                    content += `<div class="stanza"><div class="type">${s.type}</div>`;
+                    s.lines.forEach(l => content += `<p>${l}</p>`);
+                    content += `</div>`;
+                });
+                content += `</body></html>`;
+            }
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            toggleExportDropdown();
+        }
+
+        function switchTab(tabName) {
+            ['rhymes', 'aiAssist', 'concept'].forEach(t => {
+                const btn = document.getElementById(`tabBtn-${t}`);
+                const content = document.getElementById(`tabContent-${t}`);
+                if (t === tabName) {
+                    btn.className = 'flex-1 py-2.5 text-xs font-semibold text-center text-indigo-400 border-b-2 border-indigo-500 transition-all flex items-center justify-center gap-1.5';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = 'flex-1 py-2.5 text-xs font-semibold text-center text-gray-400 border-b-2 border-transparent hover:text-white transition-all flex items-center justify-center gap-1.5';
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
