@@ -156,7 +156,6 @@
       border-color: var(--danger);
       color: var(--danger);
     }
-    /* Circle of Fifths */
     .wheel-container {
       position: relative;
       width: 100%;
@@ -214,7 +213,6 @@
       fill: #1a1200;
       font-weight: 600;
     }
-    /* Diatonic chords */
     .chord-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
@@ -251,7 +249,6 @@
       color: var(--text-soft);
       font-size: 10px;
     }
-    /* Progression builder */
     .progression-list {
       display: flex;
       flex-wrap: wrap;
@@ -286,7 +283,6 @@
       font-size: 11px;
       color: #555b7a;
     }
-    /* Fretboard (simple) */
     .fretboard {
       margin-top: 8px;
       border-radius: 10px;
@@ -321,7 +317,6 @@
       font-size: 10px;
       color: var(--text-soft);
     }
-    /* Footer */
     footer {
       padding: 8px 16px 12px;
       font-size: 11px;
@@ -330,13 +325,18 @@
       border-top: 1px solid #262b40;
       background: rgba(5, 8, 20, 0.9);
     }
+    .preset-info {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
 <header>
   <div>
     <h1>ChordWheel</h1>
-    <small>Circle of Fifths • Diatonic chords • Progressions • Simple fretboard</small>
+    <small>Circle of Fifths • Multi-instrument • Progressions • Presets</small>
   </div>
   <div class="row">
     <span class="pill">HTML Single-File App</span>
@@ -344,7 +344,6 @@
 </header>
 
 <main>
-  <!-- LEFT: Circle of Fifths -->
   <section class="card">
     <h2>Circle of Fifths</h2>
     <p class="subtext">
@@ -374,7 +373,6 @@
           </radialGradient>
         </defs>
         <circle cx="100" cy="100" r="90" fill="url(#wheelBg)" stroke="#343a5a" stroke-width="1.5"/>
-        <!-- Notes will be injected by JS -->
         <g id="wheelNotes"></g>
       </svg>
       <div class="wheel-label">
@@ -397,11 +395,10 @@
     </div>
   </section>
 
-  <!-- RIGHT: Progression & practice -->
   <section class="card">
     <h2>Progression builder</h2>
     <p class="subtext">
-      Build a chord progression in the current key, loop it, and experiment with different modes.
+      Build a chord progression in the current key, loop it, and experiment with different modes and instruments.
     </p>
 
     <div class="row" style="margin-bottom:8px;">
@@ -413,11 +410,43 @@
         <input type="number" id="tempoInput" value="90" min="40" max="200" style="width:60px;">
         bpm
       </label>
+      <label style="font-size:11px;color:var(--text-soft);display:flex;align-items:center;gap:4px;">
+        <input type="checkbox" id="loopToggle">
+        Loop progression
+      </label>
     </div>
+
+    <div class="row" style="margin-bottom:8px;">
+      <label style="font-size:11px;color:var(--text-soft);display:flex;align-items:center;gap:4px;">
+        Instrument
+        <select id="instrumentSelect">
+          <option value="strings">Strings</option>
+          <option value="piano">Piano</option>
+          <option value="strummed_guitar">Strummed acoustic guitar</option>
+          <option value="distorted_guitar">Distorted guitar chords</option>
+          <option value="clean_electric">Clean electric guitar</option>
+          <option value="double_cellos">Double cellos</option>
+          <option value="orchestra">Orchestra</option>
+          <option value="strummed_electric">Strummed electric guitar</option>
+          <option value="brass_section">Brass section</option>
+        </select>
+      </label>
+    </div>
+
+    <h3>Preset progressions</h3>
+    <p class="subtext">
+      Choose a well-known progression; it will be mapped into the current key.
+    </p>
+    <div class="row" style="margin-bottom:6px;">
+      <select id="presetSelect" style="flex:1;">
+        <option value="">-- Select a preset progression --</option>
+      </select>
+    </div>
+    <div class="preset-info" id="presetInfo"></div>
 
     <h3>Current progression</h3>
     <div class="progression-list" id="progressionList">
-      <span class="progression-empty">No chords yet. Tap chords on the left to add them.</span>
+      <span class="progression-empty">No chords yet. Tap chords on the left or choose a preset.</span>
     </div>
 
     <h3>Mode hints</h3>
@@ -437,7 +466,6 @@
 </footer>
 
 <script>
-  // --- Music theory core ---
   const FIFTHS = ["C","G","D","A","E","B","F#","C#","Ab","Eb","Bb","F"];
   const NOTE_ORDER = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const MODE_PATTERNS = {
@@ -460,14 +488,6 @@
   };
   const DEGREE_LABELS = ["I","ii","iii","IV","V","vi","vii°"];
 
-  function rotateArray(arr, startIndex) {
-    const out = [];
-    for (let i = 0; i < arr.length; i++) {
-      out.push(arr[(startIndex + i) % arr.length]);
-    }
-    return out;
-  }
-
   function buildScale(root, mode) {
     const pattern = MODE_PATTERNS[mode] || MODE_PATTERNS.ionian;
     const startIndex = NOTE_ORDER.indexOf(root);
@@ -482,9 +502,7 @@
   }
 
   function buildDiatonicChords(scale, mode) {
-    // Very simplified: triads only, major/minor/dim based on Ionian pattern
     const qualitiesIonian = ["maj","min","min","maj","maj","min","dim"];
-    // For now, reuse Ionian qualities for all modes (you can refine later)
     const qualities = qualitiesIonian;
     const chords = [];
     for (let i = 0; i < 7; i++) {
@@ -500,7 +518,6 @@
   }
 
   function getRelativeMinor(key) {
-    // Relative minor: 6th degree of major scale
     const scale = buildScale(key, "ionian");
     return scale[5] || "N/A";
   }
@@ -514,22 +531,44 @@
     return [right, left, relMinor];
   }
 
-  // --- Audio (simple WebAudio sine chords) ---
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
   function noteToFreq(note) {
-    // Map note to frequency (A4 = 440)
     const semitoneMap = {
       "C": -9, "C#": -8, "D": -7, "D#": -6, "E": -5,
       "F": -4, "F#": -3, "G": -2, "G#": -1, "A": 0,
       "A#": 1, "B": 2
     };
-    const base = 440; // A4
+    const base = 440;
     const semitones = semitoneMap[note] ?? 0;
     return base * Math.pow(2, semitones / 12);
   }
 
-  function playChord(chordName, duration = 1.2) {
-    // Very simple: root + major/minor third + fifth
+  function getInstrumentSettings(instrument) {
+    switch (instrument) {
+      case "piano":
+        return { type: "triangle", attack: 0.01, decay: 0.25, sustain: 0.2, release: 0.3 };
+      case "strummed_guitar":
+        return { type: "sawtooth", attack: 0.01, decay: 0.3, sustain: 0.15, release: 0.4 };
+      case "distorted_guitar":
+        return { type: "square", attack: 0.01, decay: 0.4, sustain: 0.25, release: 0.5 };
+      case "clean_electric":
+        return { type: "sine", attack: 0.02, decay: 0.3, sustain: 0.3, release: 0.4 };
+      case "double_cellos":
+        return { type: "sine", attack: 0.1, decay: 0.4, sustain: 0.4, release: 0.6 };
+      case "orchestra":
+        return { type: "triangle", attack: 0.08, decay: 0.5, sustain: 0.4, release: 0.7 };
+      case "strummed_electric":
+        return { type: "sawtooth", attack: 0.02, decay: 0.35, sustain: 0.2, release: 0.45 };
+      case "brass_section":
+        return { type: "square", attack: 0.05, decay: 0.4, sustain: 0.35, release: 0.6 };
+      case "strings":
+      default:
+        return { type: "sine", attack: 0.05, decay: 0.5, sustain: 0.5, release: 0.7 };
+    }
+  }
+
+  function playChord(chordName, instrument, startTime = null, durationOverride = null) {
     const match = chordName.match(/^([A-G]#?)(m|dim)?$/);
     if (!match) return;
     const root = match[1];
@@ -537,56 +576,72 @@
     const rootIndex = NOTE_ORDER.indexOf(root);
     if (rootIndex === -1) return;
     const intervals = type === "dim" ? [0, 3, 6] : type === "m" ? [0, 3, 7] : [0, 4, 7];
-    const now = audioCtx.currentTime;
+    const settings = getInstrumentSettings(instrument);
+    const now = startTime !== null ? startTime : audioCtx.currentTime;
+    const duration = durationOverride || (settings.attack + settings.decay + settings.release + 0.2);
+
     intervals.forEach(semi => {
       const idx = (rootIndex + semi) % NOTE_ORDER.length;
       const note = NOTE_ORDER[idx];
       const freq = noteToFreq(note);
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.type = "sine";
+      osc.type = settings.type;
       osc.frequency.value = freq;
+      const a = settings.attack;
+      const d = settings.decay;
+      const s = settings.sustain;
+      const r = settings.release;
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
-      gain.gain.linearRampToValueAtTime(0.0, now + duration);
+      gain.gain.linearRampToValueAtTime(0.3, now + a);
+      gain.gain.linearRampToValueAtTime(s, now + a + d);
+      gain.gain.linearRampToValueAtTime(0.0, now + a + d + r);
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(now);
       osc.stop(now + duration + 0.1);
     });
   }
 
-  function playScale(notes, tempoBpm) {
+  function playScale(notes, tempoBpm, instrument) {
     const beat = 60 / tempoBpm;
     const now = audioCtx.currentTime;
     notes.forEach((note, i) => {
       const freq = noteToFreq(note);
+      const settings = getInstrumentSettings(instrument);
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.type = "sine";
+      osc.type = settings.type;
       osc.frequency.value = freq;
       const t = now + i * beat * 0.75;
+      const a = settings.attack;
+      const d = settings.decay;
+      const s = settings.sustain;
+      const r = settings.release;
       gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.2, t + 0.03);
-      gain.gain.linearRampToValueAtTime(0.0, t + beat * 0.7);
+      gain.gain.linearRampToValueAtTime(0.25, t + a);
+      gain.gain.linearRampToValueAtTime(s, t + a + d);
+      gain.gain.linearRampToValueAtTime(0.0, t + a + d + r);
       osc.connect(gain).connect(audioCtx.destination);
       osc.start(t);
-      osc.stop(t + beat * 0.8);
+      osc.stop(t + beat * 0.8 + r);
     });
   }
 
   function stopAudio() {
-    audioCtx.close().then(() => {
-      // Recreate context
-      window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }).catch(() => {});
+    try {
+      audioCtx.close().then(() => {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      });
+    } catch (e) {}
   }
 
-  // --- UI wiring ---
   let currentKey = "C";
   let currentMode = "ionian";
   let currentScale = buildScale(currentKey, currentMode);
   let currentChords = buildDiatonicChords(currentScale, currentMode);
   let progression = [];
+  let loopEnabled = false;
+  let loopTimeoutId = null;
 
   const wheelNotesGroup = document.getElementById("wheelNotes");
   const wheelKeyLabel = document.getElementById("wheelKeyLabel");
@@ -604,6 +659,10 @@
   const modeHints = document.getElementById("modeHints");
   const keyRelationships = document.getElementById("keyRelationships");
   const fretboardContainer = document.getElementById("fretboardContainer");
+  const instrumentSelect = document.getElementById("instrumentSelect");
+  const loopToggle = document.getElementById("loopToggle");
+  const presetSelect = document.getElementById("presetSelect");
+  const presetInfo = document.getElementById("presetInfo");
 
   function renderWheel() {
     wheelNotesGroup.innerHTML = "";
@@ -687,7 +746,8 @@
       div.addEventListener("click", () => {
         progression.push({ ...ch, key: currentKey, mode: currentMode });
         renderProgression();
-        playChord(ch.name);
+        const instrument = instrumentSelect.value;
+        playChord(ch.name, instrument);
       });
       chordGrid.appendChild(div);
     });
@@ -698,7 +758,7 @@
     if (progression.length === 0) {
       const span = document.createElement("span");
       span.className = "progression-empty";
-      span.textContent = "No chords yet. Tap chords on the left to add them.";
+      span.textContent = "No chords yet. Tap chords on the left or choose a preset.";
       progressionList.appendChild(span);
       return;
     }
@@ -759,11 +819,10 @@
   }
 
   function renderFretboard() {
-    // Very simple: 6 strings, 5 frets, highlight scale tones by note name only (no octave)
-    const strings = ["E","B","G","D","A","E"]; // from high to low visually
+    const strings = ["E","B","G","D","A","E"];
     const fretsCount = 5;
     fretboardContainer.innerHTML = "";
-    strings.forEach((openNote, sIdx) => {
+    strings.forEach(openNote => {
       const row = document.createElement("div");
       row.className = "fretboard-row";
       for (let f = 0; f <= fretsCount; f++) {
@@ -781,43 +840,164 @@
     });
   }
 
-  // --- Event handlers ---
-  modeSelect.addEventListener("change", e => {
-    setMode(e.target.value);
-  });
-
-  playScaleBtn.addEventListener("click", () => {
-    const tempo = parseInt(tempoInput.value, 10) || 90;
-    playScale(currentScale, tempo);
-  });
-
-  playProgressionBtn.addEventListener("click", () => {
+  function playProgressionOnce() {
     if (progression.length === 0) return;
     const tempo = parseInt(tempoInput.value, 10) || 90;
     const beat = 60 / tempo;
+    const instrument = instrumentSelect.value;
     const now = audioCtx.currentTime;
     progression.forEach((ch, i) => {
       const t = now + i * beat * 1.2;
-      setTimeout(() => playChord(ch.name), i * beat * 1200);
+      playChord(ch.name, instrument, t, beat * 1.1);
     });
+    const totalDuration = progression.length * beat * 1.2;
+    return totalDuration;
+  }
+
+  function scheduleLoop() {
+    if (!loopEnabled) return;
+    const total = playProgressionOnce();
+    if (!total) return;
+    loopTimeoutId = setTimeout(() => {
+      scheduleLoop();
+    }, total * 1000);
+  }
+
+  function cancelLoop() {
+    if (loopTimeoutId) {
+      clearTimeout(loopTimeoutId);
+      loopTimeoutId = null;
+    }
+  }
+
+  loopToggle.addEventListener("change", e => {
+    loopEnabled = e.target.checked;
+  });
+
+  playProgressionBtn.addEventListener("click", () => {
+    cancelLoop();
+    if (loopEnabled) {
+      scheduleLoop();
+    } else {
+      playProgressionOnce();
+    }
   });
 
   clearProgressionBtn.addEventListener("click", () => {
     progression = [];
     renderProgression();
+    cancelLoop();
   });
 
   stopAudioBtn.addEventListener("click", () => {
+    cancelLoop();
     stopAudio();
   });
 
-  // --- Init ---
-  renderWheel();
-  renderChords();
-  renderProgression();
-  renderModeHints();
-  renderKeyRelationships();
-  renderFretboard();
+  playScaleBtn.addEventListener("click", () => {
+    const tempo = parseInt(tempoInput.value, 10) || 90;
+    const instrument = instrumentSelect.value;
+    playScale(currentScale, tempo, instrument);
+  });
+
+  modeSelect.addEventListener("change", e => {
+    setMode(e.target.value);
+  });
+
+  const PRESETS = [
+    { id: 1, name: "I–V–vi–IV (Pop)", degrees: ["I","V","vi","IV"], example: "Let It Be, No Woman No Cry" },
+    { id: 2, name: "vi–IV–I–V (Pop)", degrees: ["vi","IV","I","V"], example: "Apologize, With or Without You" },
+    { id: 3, name: "I–vi–IV–V (50s)", degrees: ["I","vi","IV","V"], example: "Stand By Me, Blue Moon" },
+    { id: 4, name: "ii–V–I (Jazz)", degrees: ["ii","V","I"], example: "Autumn Leaves (turnarounds)" },
+    { id: 5, name: "I–IV–V (Rock/Blues)", degrees: ["I","IV","V"], example: "La Bamba, Twist and Shout" },
+    { id: 6, name: "I–V–IV (Rock)", degrees: ["I","V","IV"], example: "Sweet Home Alabama" },
+    { id: 7, name: "I–IV–vi–V", degrees: ["I","IV","vi","V"], example: "Every Breath You Take (variant)" },
+    { id: 8, name: "I–vi–ii–V", degrees: ["I","vi","ii","V"], example: "Jazz standard turnaround" },
+    { id: 9, name: "I–iii–IV–V", degrees: ["I","iii","IV","V"], example: "Oh, Pretty Woman" },
+    { id: 10, name: "I–IV–I–V", degrees: ["I","IV","I","V"], example: "Country progressions" },
+    { id: 11, name: "i–VI–III–VII (Minor)", degrees: ["vi","IV","I","V"], example: "Smells Like Teen Spirit (relative)" },
+    { id: 12, name: "i–iv–v (Minor)", degrees: ["vi","ii","iii"], example: "Traditional minor blues" },
+    { id: 13, name: "I–bVII–IV (Mixolydian)", degrees: ["I","VII","IV"], example: "Sweet Child O' Mine (flavor)" },
+    { id: 14, name: "I–bVII–bIII–IV", degrees: ["I","VII","iii","IV"], example: "Rock modal vibes" },
+    { id: 15, name: "I–V–ii–IV", degrees: ["I","V","ii","IV"], example: "Pop variants" },
+    { id: 16, name: "I–IV–ii–V", degrees: ["I","IV","ii","V"], example: "Jazz/pop hybrid" },
+    { id: 17, name: "ii–IV–I–V", degrees: ["ii","IV","I","V"], example: "Contemporary worship" },
+    { id: 18, name: "I–V–vi–iii–IV", degrees: ["I","V","vi","iii","IV"], example: "Complex pop ballad" },
+    { id: 19, name: "I–vi–iii–IV", degrees: ["I","vi","iii","IV"], example: "Ballad progression" },
+    { id: 20, name: "I–IV–bVII–IV", degrees: ["I","IV","VII","IV"], example: "Rock mixolydian loop" },
+    { id: 21, name: "I–IV–vi–V", degrees: ["I","IV","vi","V"], example: "Pop worship progression" },
+    { id: 22, name: "I–V–IV–I", degrees: ["I","V","IV","I"], example: "Classic rock ending" },
+    { id: 23, name: "I–vi–ii–IV–V", degrees: ["I","vi","ii","IV","V"], example: "Extended 50s progression" },
+    { id: 24, name: "I–V–I–IV–V", degrees: ["I","V","I","IV","V"], example: "Hymn-like progression" },
+    { id: 25, name: "I–IV–I–V–I", degrees: ["I","IV","I","V","I"], example: "Traditional folk" },
+    { id: 26, name: "I–V–vi–iii–IV–I", degrees: ["I","V","vi","iii","IV","I"], example: "Epic pop ballad" },
+    { id: 27, name: "I–IV–bVII–I", degrees: ["I","IV","VII","I"], example: "Rock anthem" },
+    { id: 28, name: "I–bIII–IV–I", degrees: ["I","iii","IV","I"], example: "Modal rock" },
+    { id: 29, name: "I–vi–IV–I", degrees: ["I","vi","IV","I"], example: "Romantic ballad" },
+    { id: 30, name: "I–IV–vi–iii–IV–V", degrees: ["I","IV","vi","iii","IV","V"], example: "Pop epic" },
+    { id: 31, name: "ii–V–I–vi", degrees: ["ii","V","I","vi"], example: "Jazz turnaround with tag" },
+    { id: 32, name: "I–vi–ii–V–I", degrees: ["I","vi","ii","V","I"], example: "Jazz/pop cadence" },
+    { id: 33, name: "I–IV–ii–I", degrees: ["I","IV","ii","I"], example: "Soft pop cadence" },
+    { id: 34, name: "I–V–vi–IV–I", degrees: ["I","V","vi","IV","I"], example: "Pop loop with resolution" },
+    { id: 35, name: "I–IV–V–IV", degrees: ["I","IV","V","IV"], example: "Bluesy rock loop" },
+    { id: 36, name: "I–vi–IV–V–IV", degrees: ["I","vi","IV","V","IV"], example: "Pop chorus variant" },
+    { id: 37, name: "I–V–IV–vi", degrees: ["I","V","IV","vi"], example: "Modern pop variant" },
+    { id: 38, name: "I–IV–I–vi–V", degrees: ["I","IV","I","vi","V"], example: "Ballad with lift" },
+    { id: 39, name: "I–iii–vi–IV", degrees: ["I","iii","vi","IV"], example: "Emotional pop progression" },
+    { id: 40, name: "I–IV–bVII–bIII", degrees: ["I","IV","VII","iii"], example: "Heavy rock modal" }
+  ];
+
+  function degreeToIndex(degree) {
+    switch (degree) {
+      case "I": return 0;
+      case "ii": return 1;
+      case "iii": return 2;
+      case "IV": return 3;
+      case "V": return 4;
+      case "vi": return 5;
+      case "vii°": return 6;
+      case "VII": return 6; // treat as leading tone / borrowed
+      default: return 0;
+    }
+  }
+
+  function populatePresets() {
+    PRESETS.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `${p.name}`;
+      presetSelect.appendChild(opt);
+    });
+  }
+
+  presetSelect.addEventListener("change", e => {
+    const id = parseInt(e.target.value, 10);
+    const preset = PRESETS.find(p => p.id === id);
+    if (!preset) {
+      presetInfo.textContent = "";
+      return;
+    }
+    presetInfo.textContent = `Example: ${preset.example}`;
+    progression = [];
+    preset.degrees.forEach(deg => {
+      const idx = degreeToIndex(deg);
+      const ch = currentChords[idx] || currentChords[0];
+      progression.push({ ...ch, key: currentKey, mode: currentMode });
+    });
+    renderProgression();
+  });
+
+  function init() {
+    renderWheel();
+    renderChords();
+    renderProgression();
+    renderModeHints();
+    renderKeyRelationships();
+    renderFretboard();
+    populatePresets();
+  }
+
+  init();
 </script>
 </body>
 </html>
