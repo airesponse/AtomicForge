@@ -17,6 +17,7 @@
       --muted: #8e8e93;
       --border: #2c2c2e;
       --danger: #ff453a;
+      --success: #30d158;
     }
 
     * {
@@ -107,7 +108,7 @@
       flex-direction: column;
       gap: 6px;
       flex: 1;
-      min-width: 110px;
+      min-width: 130px;
     }
 
     label {
@@ -130,7 +131,7 @@
     button {
       cursor: pointer;
       font-weight: 600;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
 
     button.btn-accent {
@@ -141,6 +142,24 @@
 
     button.btn-accent:active {
       opacity: 0.8;
+    }
+
+    .toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #2c2c2e;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    .toggle-btn.active {
+      border-color: var(--success);
+      color: var(--success);
+      background: rgba(48, 209, 88, 0.12);
     }
 
     .refresh-btn {
@@ -182,6 +201,7 @@
       color: var(--accent);
       position: relative;
       flex-shrink: 0;
+      transition: transform 0.1s ease, background-color 0.1s ease;
     }
 
     .chord-slot.active {
@@ -193,8 +213,7 @@
     .chord-slot.playing {
       background: var(--accent);
       color: #000;
-      transform: scale(1.05);
-      transition: transform 0.1s ease;
+      transform: scale(1.06);
     }
 
     .remove-chord {
@@ -292,10 +311,23 @@
         <div class="input-group">
           <label for="instrument-select">Sound Instrument</label>
           <select id="instrument-select">
-            <option value="acoustic" selected>Acoustic Guitar</option>
-            <option value="electric">Electric Clean</option>
-            <option value="pad">Warm Synth Pad</option>
-            <option value="piano">8-Bit Piano</option>
+            <optgroup label="Guitars & Keyboard">
+              <option value="acoustic">Acoustic Guitar (Picked)</option>
+              <option value="strummed">Strummed Acoustic Guitar</option>
+              <option value="electric">Electric Clean Guitar</option>
+              <option value="piano">8-Bit Piano</option>
+              <option value="doubled_piano" selected>Doubled Piano (Two-Handed)</option>
+              <option value="toy_piano">Toy Piano</option>
+            </optgroup>
+            <optgroup label="Orchestral & Strings">
+              <option value="violin">Violin</option>
+              <option value="viola">Viola</option>
+              <option value="cello">Cello</option>
+              <option value="bassoon">Bassoon</option>
+              <option value="strings">String Section</option>
+              <option value="orchestra">Full Orchestra</option>
+              <option value="pad">Warm Synth Pad</option>
+            </optgroup>
           </select>
         </div>
 
@@ -352,8 +384,10 @@
       <!-- Progression Display Slots -->
       <div class="progression-slots" id="slots-container"></div>
 
+      <!-- Action Controls -->
       <div class="controls-row" style="margin-top: 16px; margin-bottom: 0;">
         <button class="btn-accent" id="play-btn" style="flex: 2;">▶ Play Progression</button>
+        <button class="toggle-btn" id="loop-btn">🔁 Loop: OFF</button>
         <button id="clear-btn" style="flex: 1; color: var(--danger);">Clear</button>
       </div>
     </section>
@@ -371,11 +405,11 @@
   <script>
     const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // Note frequencies in Hz (Octave 3/4)
     const NOTE_FREQS = {
+      'C2': 65.41, 'C#2': 69.30, 'D2': 73.42, 'D#2': 77.78, 'E2': 82.41, 'F2': 87.31, 'F#2': 92.50, 'G2': 98.00, 'G#2': 103.83, 'A2': 110.00, 'A#2': 116.54, 'B2': 123.47,
       'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
       'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
-      'C5': 523.25, 'D5': 587.33, 'E5': 659.25
+      'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99
     };
 
     const CHORD_FORMULAS = {
@@ -389,7 +423,6 @@
     };
 
     const PRESETS = [
-      // --- Pop & Rock Essentials ---
       { cat: "Essential Pop & Rock", name: "Pop Progression (I-V-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Let It Be, No Woman No Cry, Don't Stop Believin'" },
       { cat: "Essential Pop & Rock", name: "Sensitive Female Pop (vi-IV-I-V)", numerals: ["vi", "IV", "I", "V"], desc: "Despacito, Grenade, Complicated" },
       { cat: "Essential Pop & Rock", name: "Classic Rock (I-vi-IV-V)", numerals: ["I", "vi", "IV", "V"], desc: "Stand By Me, Every Breath You Take, Earth Angel" },
@@ -399,20 +432,17 @@
       { cat: "Essential Pop & Rock", name: "50s Rock n Roll (I-IV-I-V)", numerals: ["I", "IV", "I", "V"], desc: "Johnny B. Goode, Hound Dog" },
       { cat: "Essential Pop & Rock", name: "Subdominant Lift (IV-I-V-vi)", numerals: ["IV", "I", "V", "vi"], desc: "Umbrella, Firework" },
 
-      // --- Blues, Soul & Funk ---
       { cat: "Blues, Soul & Funk", name: "12-Bar Blues (I7-IV7-V7)", numerals: ["I7", "IV7", "I7", "V7"], desc: "Pride and Joy, Crossroad Blues" },
       { cat: "Blues, Soul & Funk", name: "Minor Blues (i-iv-V7)", numerals: ["i", "iv", "i", "V7"], desc: "The Thrill Is Gone, Black Magic Woman" },
       { cat: "Blues, Soul & Funk", name: "Gospel Cadence (I-I7-IV-iv)", numerals: ["I", "I7", "IV", "iv"], desc: "In My Life, Georgia On My Mind" },
       { cat: "Blues, Soul & Funk", name: "Andalusian Cadence (i-VII-VI-V)", numerals: ["i", "VII", "VI", "V"], desc: "Sultans of Swing, Smooth, Stray Cat Strut" },
       { cat: "Blues, Soul & Funk", name: "Soul Turnaround (I-iii-IV-V)", numerals: ["I", "iii", "IV", "V"], desc: "Sitting on the Dock of the Bay" },
 
-      // --- Jazz & Modal Fusion ---
       { cat: "Jazz & Modal Fusion", name: "Major ii-V-I", numerals: ["ii7", "V7", "Imaj7"], desc: "Autumn Leaves, Tune Up, All The Things You Are" },
       { cat: "Jazz & Modal Fusion", name: "Minor ii-V-i", numerals: ["iim7b5", "V7", "im7"], desc: "Black Orpheus, Softly As In A Morning Sunrise" },
       { cat: "Jazz & Modal Fusion", name: "Jazz Turnaround (I-vi-ii-V)", numerals: ["Imaj7", "vim7", "iim7", "V7"], desc: "Rhythm Changes, Ain't Misbehavin'" },
       { cat: "Jazz & Modal Fusion", name: "Dorian Funk Vamp (i7-IV7)", numerals: ["im7", "IV7"], desc: "Oye Como Va, Chameleon, Breeze" },
 
-      // --- Modern & Cinematic ---
       { cat: "Modern & Cinematic", name: "Royal Road / J-Pop (IV-V-iii-vi)", numerals: ["IV", "V", "iii", "vi"], desc: "Anime themes, modern acoustic pop" },
       { cat: "Modern & Cinematic", name: "Epic Hero (vi-VII-i)", numerals: ["vi", "VII", "i"], desc: "Hans Zimmer style, movie trailers" },
       { cat: "Modern & Cinematic", name: "Lydian Float (I-II)", numerals: ["I", "II"], desc: "Dreams (Fleetwood Mac), Space Oddity" },
@@ -427,8 +457,9 @@
     let selectedRoot = 'C';
     let audioCtx = null;
     let isPlaying = false;
+    let isLooping = false;
+    let playbackStepTimeout = null;
 
-    // Web Audio Synthesizer Engine
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -438,7 +469,7 @@
       }
     }
 
-    function getChordNotes(chordName) {
+    function getChordNotes(chordName, baseOctave = 3) {
       let root = chordName.replace(/m7b5|maj7|sus4|dim|m7|7|m/g, '');
       let quality = 'maj';
       if (chordName.endsWith('m7b5')) quality = 'dim';
@@ -454,7 +485,7 @@
 
       return intervals.map(semitone => {
         const index = (rootIdx + semitone) % 12;
-        const octave = (rootIdx + semitone >= 12) ? 4 : 3;
+        const octave = baseOctave + Math.floor((rootIdx + semitone) / 12);
         const noteName = CHROMATIC_SCALE[index] + octave;
         return NOTE_FREQS[noteName] || 261.63;
       });
@@ -464,36 +495,167 @@
       initAudio();
       const inst = document.getElementById('instrument-select').value;
 
-      frequencies.forEach((freq, idx) => {
+      let activeFrequencies = [...frequencies];
+      if (inst === 'doubled_piano') {
+        const bassFreq = frequencies[0] / 2;
+        activeFrequencies = [bassFreq, ...frequencies];
+      }
+
+      activeFrequencies.forEach((freq, idx) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+        let delay = 0;
 
-        if (inst === 'acoustic') {
-          osc.type = 'triangle';
-          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.2 / frequencies.length, audioCtx.currentTime + 0.03 + (idx * 0.015));
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        } else if (inst === 'electric') {
-          osc.type = 'sine';
-          gain.gain.setValueAtTime(0.15 / frequencies.length, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration * 0.8);
-        } else if (inst === 'pad') {
-          osc.type = 'sawtooth';
-          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.12 / frequencies.length, audioCtx.currentTime + 0.3);
-          gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        } else if (inst === 'piano') {
-          osc.type = 'square';
-          gain.gain.setValueAtTime(0.1 / frequencies.length, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration * 0.6);
+        switch (inst) {
+          case 'acoustic':
+            osc.type = 'triangle';
+            delay = idx * 0.02;
+            gain.gain.setValueAtTime(0.001, now + delay);
+            gain.gain.linearRampToValueAtTime(0.2 / activeFrequencies.length, now + delay + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+            break;
+
+          case 'strummed':
+            osc.type = 'triangle';
+            delay = idx * 0.045;
+            gain.gain.setValueAtTime(0.001, now + delay);
+            gain.gain.linearRampToValueAtTime(0.25 / activeFrequencies.length, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration * 1.1);
+            break;
+
+          case 'electric':
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.18 / activeFrequencies.length, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.8);
+            break;
+
+          case 'piano':
+            osc.type = 'square';
+            gain.gain.setValueAtTime(0.12 / activeFrequencies.length, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.7);
+            break;
+
+          case 'doubled_piano':
+            osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.2 / activeFrequencies.length, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.9);
+            break;
+
+          case 'toy_piano':
+            osc.type = 'sine';
+            const chimeOsc = audioCtx.createOscillator();
+            const chimeGain = audioCtx.createGain();
+            chimeOsc.type = 'square';
+            chimeOsc.frequency.setValueAtTime(freq * 3.5, now);
+            chimeGain.gain.setValueAtTime(0.04, now);
+            chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+            chimeOsc.connect(chimeGain);
+            chimeGain.connect(audioCtx.destination);
+            chimeOsc.start(now);
+            chimeOsc.stop(now + 0.35);
+
+            gain.gain.setValueAtTime(0.15 / activeFrequencies.length, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            break;
+
+          case 'cello':
+            osc.type = 'sawtooth';
+            const celloFilter = audioCtx.createBiquadFilter();
+            celloFilter.type = 'lowpass';
+            celloFilter.frequency.setValueAtTime(450, now);
+            osc.connect(celloFilter);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.18 / activeFrequencies.length, now + 0.25);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            celloFilter.connect(gain);
+            break;
+
+          case 'viola':
+            osc.type = 'sawtooth';
+            const violaFilter = audioCtx.createBiquadFilter();
+            violaFilter.type = 'lowpass';
+            violaFilter.frequency.setValueAtTime(800, now);
+            osc.connect(violaFilter);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.16 / activeFrequencies.length, now + 0.18);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            violaFilter.connect(gain);
+            break;
+
+          case 'violin':
+            osc.type = 'sawtooth';
+            const violinFilter = audioCtx.createBiquadFilter();
+            violinFilter.type = 'lowpass';
+            violinFilter.frequency.setValueAtTime(1600, now);
+            osc.connect(violinFilter);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + 0.15);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            violinFilter.connect(gain);
+            break;
+
+          case 'bassoon':
+            osc.type = 'sawtooth';
+            const bsnFilter = audioCtx.createBiquadFilter();
+            bsnFilter.type = 'bandpass';
+            bsnFilter.frequency.setValueAtTime(500, now);
+            bsnFilter.Q.setValueAtTime(3, now);
+            osc.connect(bsnFilter);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.2 / activeFrequencies.length, now + 0.1);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            bsnFilter.connect(gain);
+            break;
+
+          case 'strings':
+            osc.type = 'sawtooth';
+            const strFilter = audioCtx.createBiquadFilter();
+            strFilter.type = 'lowpass';
+            strFilter.frequency.setValueAtTime(1200, now);
+            osc.connect(strFilter);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.14 / activeFrequencies.length, now + 0.3);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration * 1.1);
+            strFilter.connect(gain);
+            break;
+
+          case 'orchestra':
+            osc.type = 'sawtooth';
+            const subOsc = audioCtx.createOscillator();
+            subOsc.type = 'triangle';
+            subOsc.frequency.setValueAtTime(freq / 2, now);
+            const subGain = audioCtx.createGain();
+            subGain.gain.setValueAtTime(0.001, now);
+            subGain.gain.linearRampToValueAtTime(0.1, now + 0.2);
+            subGain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            subOsc.connect(subGain);
+            subGain.connect(audioCtx.destination);
+            subOsc.start(now);
+            subOsc.stop(now + duration + 0.1);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + 0.25);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration * 1.1);
+            break;
+
+          case 'pad':
+          default:
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.12 / activeFrequencies.length, now + 0.3);
+            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            break;
         }
 
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.connect(gain);
+        osc.frequency.setValueAtTime(freq, now + delay);
+        if (inst !== 'cello' && inst !== 'viola' && inst !== 'violin' && inst !== 'bassoon' && inst !== 'strings') {
+          osc.connect(gain);
+        }
         gain.connect(audioCtx.destination);
 
-        osc.start(audioCtx.currentTime + (inst === 'acoustic' ? idx * 0.02 : 0));
-        osc.stop(audioCtx.currentTime + duration + 0.1);
+        osc.start(now + delay);
+        osc.stop(now + delay + duration + 0.1);
       });
     }
 
@@ -578,7 +740,8 @@
         card.onclick = () => {
           currentProgression = [...chords];
           renderSlots();
-          playProgression();
+          stopPlayback();
+          startPlayback();
         };
 
         card.innerHTML = `
@@ -598,29 +761,56 @@
       renderSlots();
     }
 
-    async function playProgression() {
-      if (isPlaying || currentProgression.length === 0) return;
+    function stopPlayback() {
+      isPlaying = false;
+      if (playbackStepTimeout) clearTimeout(playbackStepTimeout);
+      document.querySelectorAll('.chord-slot').forEach(s => s.classList.remove('playing'));
+      document.getElementById('play-btn').innerText = '▶ Play Progression';
+    }
+
+    async function startPlayback() {
+      if (currentProgression.length === 0) return;
       isPlaying = true;
+      document.getElementById('play-btn').innerText = '⏹ Stop';
 
-      const bpm = parseInt(document.getElementById('bpm-select').value, 10);
-      const stepDuration = (60 / bpm) * 1000;
-      const playBtn = document.getElementById('play-btn');
-      playBtn.innerText = '⏹ Playing...';
+      let stepIndex = 0;
 
-      for (let i = 0; i < currentProgression.length; i++) {
-        if (!isPlaying) break;
-        const slot = document.getElementById(`slot-${i}`);
+      const playStep = () => {
+        if (!isPlaying || currentProgression.length === 0) {
+          stopPlayback();
+          return;
+        }
+
+        // Remove active play highlight from previous
+        document.querySelectorAll('.chord-slot').forEach(s => s.classList.remove('playing'));
+
+        const slot = document.getElementById(`slot-${stepIndex}`);
         if (slot) slot.classList.add('playing');
 
-        const freqs = getChordNotes(currentProgression[i]);
+        const bpm = parseInt(document.getElementById('bpm-select').value, 10);
+        const stepDuration = (60 / bpm) * 1000;
+
+        const freqs = getChordNotes(currentProgression[stepIndex]);
         playChordSynth(freqs, stepDuration / 1000);
 
-        await new Promise(r => setTimeout(r, stepDuration));
-        if (slot) slot.classList.remove('playing');
-      }
+        stepIndex++;
 
-      isPlaying = false;
-      playBtn.innerText = '▶ Play Progression';
+        // End of sequence check
+        if (stepIndex >= currentProgression.length) {
+          if (isLooping) {
+            stepIndex = 0; // Loop around
+            playbackStepTimeout = setTimeout(playStep, stepDuration);
+          } else {
+            playbackStepTimeout = setTimeout(() => {
+              stopPlayback();
+            }, stepDuration);
+          }
+        } else {
+          playbackStepTimeout = setTimeout(playStep, stepDuration);
+        }
+      };
+
+      playStep();
     }
 
     // Event Listeners
@@ -640,15 +830,28 @@
     };
 
     document.getElementById('clear-btn').onclick = () => {
+      stopPlayback();
       currentProgression = [];
       renderSlots();
     };
 
     document.getElementById('play-btn').onclick = () => {
       if (isPlaying) {
-        isPlaying = false;
+        stopPlayback();
       } else {
-        playProgression();
+        startPlayback();
+      }
+    };
+
+    document.getElementById('loop-btn').onclick = () => {
+      isLooping = !isLooping;
+      const loopBtn = document.getElementById('loop-btn');
+      if (isLooping) {
+        loopBtn.classList.add('active');
+        loopBtn.innerText = '🔁 Loop: ON';
+      } else {
+        loopBtn.classList.remove('active');
+        loopBtn.innerText = '🔁 Loop: OFF';
       }
     };
 
