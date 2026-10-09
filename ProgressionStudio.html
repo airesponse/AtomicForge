@@ -191,6 +191,7 @@
       position: relative;
       flex-shrink: 0;
       transition: transform 0.1s ease, background-color 0.1s ease;
+      cursor: pointer;
     }
 
     .chord-slot.active {
@@ -495,155 +496,111 @@
         const now = audioCtx.currentTime;
         let delay = 0;
 
+        let oscType = 'sawtooth';
+        let filterFreq = null;
+        let filterType = 'lowpass';
+        let attack = 0.02;
+        let decay = duration;
+
         switch (inst) {
           case 'acoustic':
-            osc.type = 'triangle';
+            oscType = 'triangle';
             delay = idx * 0.02;
-            gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.2 / activeFrequencies.length, now + delay + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+            attack = 0.02;
+            decay = duration;
             break;
-
           case 'strummed':
-            osc.type = 'triangle';
+            oscType = 'triangle';
             delay = idx * 0.045;
-            gain.gain.setValueAtTime(0.001, now + delay);
-            gain.gain.linearRampToValueAtTime(0.25 / activeFrequencies.length, now + delay + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration * 1.1);
+            attack = 0.02;
+            decay = duration * 1.1;
             break;
-
           case 'electric':
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.18 / activeFrequencies.length, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.8);
+            oscType = 'sine';
+            attack = 0.01;
+            decay = duration * 0.8;
             break;
-
           case 'piano':
-            osc.type = 'square';
-            gain.gain.setValueAtTime(0.12 / activeFrequencies.length, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.7);
+            oscType = 'square';
+            attack = 0.01;
+            decay = duration * 0.7;
             break;
-
           case 'doubled_piano':
-            osc.type = 'triangle';
-            gain.gain.setValueAtTime(0.2 / activeFrequencies.length, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration * 0.9);
+            oscType = 'triangle';
+            attack = 0.01;
+            decay = duration * 0.9;
             break;
-
           case 'toy_piano':
-            osc.type = 'sine';
-            const chimeOsc = audioCtx.createOscillator();
-            const chimeGain = audioCtx.createGain();
-            chimeOsc.type = 'square';
-            chimeOsc.frequency.setValueAtTime(freq * 3.5, now);
-            chimeGain.gain.setValueAtTime(0.04, now);
-            chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-            chimeOsc.connect(chimeGain);
-            chimeGain.connect(audioCtx.destination);
-            chimeOsc.start(now);
-            chimeOsc.stop(now + 0.35);
-
-            gain.gain.setValueAtTime(0.15 / activeFrequencies.length, now);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            oscType = 'sine';
+            attack = 0.01;
+            decay = 0.5;
             break;
-
           case 'cello':
-            osc.type = 'sawtooth';
-            const celloFilter = audioCtx.createBiquadFilter();
-            celloFilter.type = 'lowpass';
-            celloFilter.frequency.setValueAtTime(450, now);
-            osc.connect(celloFilter);
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.18 / activeFrequencies.length, now + 0.25);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
-            celloFilter.connect(gain);
+            oscType = 'sawtooth';
+            filterFreq = 450;
+            attack = 0.2;
+            decay = duration;
             break;
-
           case 'viola':
-            osc.type = 'sawtooth';
-            const violaFilter = audioCtx.createBiquadFilter();
-            violaFilter.type = 'lowpass';
-            violaFilter.frequency.setValueAtTime(800, now);
-            osc.connect(violaFilter);
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.16 / activeFrequencies.length, now + 0.18);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
-            violaFilter.connect(gain);
+            oscType = 'sawtooth';
+            filterFreq = 800;
+            attack = 0.15;
+            decay = duration;
             break;
-
           case 'violin':
-            osc.type = 'sawtooth';
-            const violinFilter = audioCtx.createBiquadFilter();
-            violinFilter.type = 'lowpass';
-            violinFilter.frequency.setValueAtTime(1600, now);
-            osc.connect(violinFilter);
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + 0.15);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
-            violinFilter.connect(gain);
+            oscType = 'sawtooth';
+            filterFreq = 1600;
+            attack = 0.12;
+            decay = duration;
             break;
-
           case 'bassoon':
-            osc.type = 'sawtooth';
-            const bsnFilter = audioCtx.createBiquadFilter();
-            bsnFilter.type = 'bandpass';
-            bsnFilter.frequency.setValueAtTime(500, now);
-            bsnFilter.Q.setValueAtTime(3, now);
-            osc.connect(bsnFilter);
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.2 / activeFrequencies.length, now + 0.1);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
-            bsnFilter.connect(gain);
+            oscType = 'sawtooth';
+            filterFreq = 500;
+            filterType = 'bandpass';
+            attack = 0.1;
+            decay = duration;
             break;
-
           case 'strings':
-            osc.type = 'sawtooth';
-            const strFilter = audioCtx.createBiquadFilter();
-            strFilter.type = 'lowpass';
-            strFilter.frequency.setValueAtTime(1200, now);
-            osc.connect(strFilter);
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.14 / activeFrequencies.length, now + 0.3);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration * 1.1);
-            strFilter.connect(gain);
+            oscType = 'sawtooth';
+            filterFreq = 1200;
+            attack = 0.25;
+            decay = duration * 1.1;
             break;
-
           case 'orchestra':
-            osc.type = 'sawtooth';
-            const subOsc = audioCtx.createOscillator();
-            subOsc.type = 'triangle';
-            subOsc.frequency.setValueAtTime(freq / 2, now);
-            const subGain = audioCtx.createGain();
-            subGain.gain.setValueAtTime(0.001, now);
-            subGain.gain.linearRampToValueAtTime(0.1, now + 0.2);
-            subGain.gain.linearRampToValueAtTime(0.0001, now + duration);
-            subOsc.connect(subGain);
-            subGain.connect(audioCtx.destination);
-            subOsc.start(now);
-            subOsc.stop(now + duration + 0.1);
-
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + 0.25);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration * 1.1);
+            oscType = 'sawtooth';
+            filterFreq = 1800;
+            attack = 0.2;
+            decay = duration * 1.1;
             break;
-
           case 'pad':
           default:
-            osc.type = 'sawtooth';
-            gain.gain.setValueAtTime(0.001, now);
-            gain.gain.linearRampToValueAtTime(0.12 / activeFrequencies.length, now + 0.3);
-            gain.gain.linearRampToValueAtTime(0.0001, now + duration);
+            oscType = 'sawtooth';
+            filterFreq = 1000;
+            attack = 0.3;
+            decay = duration;
             break;
         }
 
+        osc.type = oscType;
         osc.frequency.setValueAtTime(freq, now + delay);
-        if (inst !== 'cello' && inst !== 'viola' && inst !== 'violin' && inst !== 'bassoon' && inst !== 'strings') {
+
+        gain.gain.setValueAtTime(0.0001, now + delay);
+        gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + delay + attack);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + decay);
+
+        if (filterFreq) {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = filterType;
+          filter.frequency.setValueAtTime(filterFreq, now + delay);
+          osc.connect(filter);
+          filter.connect(gain);
+        } else {
           osc.connect(gain);
         }
-        gain.connect(audioCtx.destination);
 
+        gain.connect(audioCtx.destination);
         osc.start(now + delay);
-        osc.stop(now + delay + duration + 0.1);
+        osc.stop(now + delay + decay + 0.1);
       });
     }
 
@@ -681,7 +638,6 @@
       return note + suffix;
     }
 
-    // UI Render Functions
     function renderSlots() {
       const container = document.getElementById('slots-container');
       container.innerHTML = '';
@@ -697,10 +653,10 @@
         slot.id = `slot-${index}`;
         slot.innerHTML = `
           ${chord}
-          <button class="remove-chord" onclick="removeChord(${index})">✕</button>
+          <button class="remove-chord" onclick="removeChord(event, ${index})">✕</button>
         `;
         slot.onclick = (e) => {
-          if (e.target.tagName !== 'BUTTON') {
+          if (!e.target.classList.contains('remove-chord')) {
             playChordSynth(getChordNotes(chord));
           }
         };
@@ -744,7 +700,8 @@
       document.getElementById('current-key-label').innerText = `Key: ${selectedRoot}`;
     }
 
-    function removeChord(index) {
+    function removeChord(event, index) {
+      event.stopPropagation();
       currentProgression.splice(index, 1);
       renderSlots();
     }
@@ -756,7 +713,7 @@
       document.getElementById('play-btn').innerText = '▶ Play Progression';
     }
 
-    async function startPlayback() {
+    function startPlayback() {
       if (currentProgression.length === 0) return;
       isPlaying = true;
       document.getElementById('play-btn').innerText = '⏹ Stop';
