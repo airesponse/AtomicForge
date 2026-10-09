@@ -1527,3 +1527,61 @@
           state.selectedScale = fav.selectedScale ?? 'ionian';
           state.showDiatonicRun = fav.showDiatonicRun ?? false;
           state.enableFretRange = fav.enableFretRange ?? false;
+          state.startFret = fav.startFret ?? 3;
+          state.fretSpan = fav.fretSpan ?? 5;
+
+          document.getElementById('keySelect').value = fav.key;
+          document.getElementById('chordTypeSelect').value = fav.chordType;
+          document.getElementById('scaleRootSelect').value = state.scaleRoot;
+          document.getElementById('scaleSelect').value = state.selectedScale;
+          document.getElementById('startFretInput').value = state.startFret;
+          document.getElementById('fretSpanInput').value = state.fretSpan;
+
+          if (fav.mode === 'major') {
+            document.getElementById('modeMajorBtn').click();
+          } else {
+            document.getElementById('modeMinorBtn').click();
+          }
+
+          if (state.showScaleOverlay) {
+            document.getElementById('overlayOnBtn').click();
+          } else {
+            document.getElementById('overlayOffBtn').click();
+          }
+
+          if (state.showDiatonicRun) {
+            document.getElementById('diatonicOnBtn').click();
+          } else {
+            document.getElementById('diatonicOffBtn').click();
+          }
+
+          if (state.enableFretRange) {
+            document.getElementById('rangeOnBtn').click();
+          } else {
+            document.getElementById('rangeOffBtn').click();
+          }
+
+          updateApp();
+        };
+
+        item.querySelector('.delete').onclick = () => {
+          state.favorites = state.favorites.filter(f => f.id !== fav.id);
+          renderFavorites();
+        };
+
+        list.appendChild(item);
+      });
+    }
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      const chordName = getChordName(state.key, state.degreeIndex, state.mode, state.chordType);
+      const link = document.createElement('a');
+      link.download = `${chordName.replace(/\s+/g, '_')}_fretboard.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    updateApp();
+  </script>
+</body>
+</html>
