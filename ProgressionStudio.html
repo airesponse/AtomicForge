@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Chord Studio - Progression Builder</title>
+  <title>Chord Studio - Songwriter Progression Tool</title>
   <style>
     :root {
       --bg: #0f0f11;
@@ -39,7 +39,7 @@
     header {
       width: 100%;
       max-width: 800px;
-      padding: 24px 0 16px;
+      padding: 20px 0 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -61,6 +61,10 @@
       text-decoration: none;
       font-size: 0.9rem;
       font-weight: 600;
+      padding: 6px 12px;
+      background: rgba(243, 156, 18, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
     }
 
     .main-container {
@@ -79,12 +83,12 @@
     }
 
     .panel-title {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -95,6 +99,7 @@
       gap: 10px;
       margin-bottom: 16px;
       flex-wrap: wrap;
+      align-items: flex-end;
     }
 
     .input-group {
@@ -108,6 +113,7 @@
     label {
       font-size: 0.8rem;
       color: var(--muted);
+      font-weight: 500;
     }
 
     select, button {
@@ -118,6 +124,7 @@
       border-radius: 8px;
       font-size: 0.95rem;
       outline: none;
+      height: 42px;
     }
 
     button {
@@ -143,10 +150,7 @@
       background: #2c2c2e;
       border: 1px solid var(--accent);
       color: var(--accent);
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      margin-top: 20px;
+      padding: 0 14px;
     }
 
     .refresh-btn:active {
@@ -159,10 +163,12 @@
       gap: 10px;
       overflow-x: auto;
       padding-bottom: 8px;
+      min-height: 100px;
+      align-items: center;
     }
 
     .chord-slot {
-      min-width: 80px;
+      min-width: 85px;
       height: 90px;
       background: #121214;
       border: 2px dashed var(--border);
@@ -172,15 +178,23 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       color: var(--accent);
       position: relative;
+      flex-shrink: 0;
     }
 
     .chord-slot.active {
       border-style: solid;
       border-color: var(--accent);
       background: var(--accent-glow);
+    }
+
+    .chord-slot.playing {
+      background: var(--accent);
+      color: #000;
+      transform: scale(1.05);
+      transition: transform 0.1s ease;
     }
 
     .remove-chord {
@@ -190,8 +204,16 @@
       background: transparent;
       border: none;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       padding: 2px 6px;
+      height: auto;
+    }
+
+    .empty-msg {
+      color: var(--muted);
+      font-size: 0.9rem;
+      width: 100%;
+      text-align: center;
     }
 
     .presets-grid {
@@ -207,7 +229,7 @@
       padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
       text-align: left;
     }
@@ -224,7 +246,7 @@
     }
 
     .preset-chords {
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--accent);
     }
@@ -243,6 +265,10 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
+    .category-title:first-child {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
@@ -254,13 +280,36 @@
 
   <main class="main-container">
 
-    <!-- Builder Panel -->
+    <!-- Builder & Synth Panel -->
     <section class="panel">
       <div class="panel-title">
         <span>Progression Builder</span>
         <span id="current-key-label" style="color: var(--accent); font-size: 0.85rem;">Key: C Major</span>
       </div>
 
+      <!-- Instrument & Tempo Controls -->
+      <div class="controls-row">
+        <div class="input-group">
+          <label for="instrument-select">Sound Instrument</label>
+          <select id="instrument-select">
+            <option value="acoustic" selected>Acoustic Guitar</option>
+            <option value="electric">Electric Clean</option>
+            <option value="pad">Warm Synth Pad</option>
+            <option value="piano">8-Bit Piano</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="bpm-select">Tempo (BPM)</label>
+          <select id="bpm-select">
+            <option value="70">70 BPM (Slow)</option>
+            <option value="95" selected>95 BPM (Medium)</option>
+            <option value="120">120 BPM (Upbeat)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Root & Quality Selector -->
       <div class="controls-row">
         <div class="input-group">
           <label for="root-select">Root Note</label>
@@ -297,13 +346,11 @@
           🔄 Sync Presets
         </button>
 
-        <button class="btn-accent" id="add-chord-btn" style="margin-top: 20px;">+ Add</button>
+        <button class="btn-accent" id="add-chord-btn">+ Add</button>
       </div>
 
       <!-- Progression Display Slots -->
-      <div class="progression-slots" id="slots-container">
-        <!-- Dynamic Slots -->
-      </div>
+      <div class="progression-slots" id="slots-container"></div>
 
       <div class="controls-row" style="margin-top: 16px; margin-bottom: 0;">
         <button class="btn-accent" id="play-btn" style="flex: 2;">▶ Play Progression</button>
@@ -311,14 +358,12 @@
       </div>
     </section>
 
-    <!-- Presets List (26 Progressions) -->
+    <!-- Presets List -->
     <section class="panel">
       <div class="panel-title">
-        <span>Progression Examples (<span id="preset-root-display">Key: C</span>)</span>
+        <span>Songwriting Progressions (<span id="preset-root-display">Key: C</span>)</span>
       </div>
-      <div class="presets-grid" id="presets-grid">
-        <!-- Dynamic Presets -->
-      </div>
+      <div class="presets-grid" id="presets-grid"></div>
     </section>
 
   </main>
@@ -326,7 +371,23 @@
   <script>
     const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // Progression definitions using Roman numerals relative to Major/Minor scales
+    // Note frequencies in Hz (Octave 3/4)
+    const NOTE_FREQS = {
+      'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
+      'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+      'C5': 523.25, 'D5': 587.33, 'E5': 659.25
+    };
+
+    const CHORD_FORMULAS = {
+      'maj': [0, 4, 7],
+      'min': [0, 3, 7],
+      '7': [0, 4, 7, 10],
+      'maj7': [0, 4, 7, 11],
+      'm7': [0, 3, 7, 10],
+      'dim': [0, 3, 6],
+      'sus4': [0, 5, 7]
+    };
+
     const PRESETS = [
       // --- Pop & Rock Essentials ---
       { cat: "Essential Pop & Rock", name: "Pop Progression (I-V-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Let It Be, No Woman No Cry, Don't Stop Believin'" },
@@ -335,12 +396,12 @@
       { cat: "Essential Pop & Rock", name: "3-Chord Rock (I-IV-V)", numerals: ["I", "IV", "V"], desc: "Wild Thing, Twist and Shout, Blitzkrieg Bop" },
       { cat: "Essential Pop & Rock", name: "Doo-Wop / Ballad (I-vi-ii-V)", numerals: ["I", "vi", "ii", "V"], desc: "Heart and Soul, Blue Moon" },
       { cat: "Essential Pop & Rock", name: "Acoustic Pop Verse (I-V-IV)", numerals: ["I", "V", "IV"], desc: "Sweet Home Alabama, Learning to Fly" },
-      { cat: "Essential Pop & Rock", name: "50s Rock n Roll (I-I-IV-I-V-IV-I)", numerals: ["I", "IV", "I", "V", "IV"], desc: "Johnny B. Goode, Hound Dog" },
+      { cat: "Essential Pop & Rock", name: "50s Rock n Roll (I-IV-I-V)", numerals: ["I", "IV", "I", "V"], desc: "Johnny B. Goode, Hound Dog" },
       { cat: "Essential Pop & Rock", name: "Subdominant Lift (IV-I-V-vi)", numerals: ["IV", "I", "V", "vi"], desc: "Umbrella, Firework" },
 
       // --- Blues, Soul & Funk ---
-      { cat: "Blues, Soul & Funk", name: "12-Bar Blues (I7-IV7-V7)", numerals: ["I7", "IV7", "I7", "V7", "IV7", "I7"], desc: "Pride and Joy, Crossroad Blues" },
-      { cat: "Blues, Soul & Funk", name: "Minor Blues (i-iv-V7)", numerals: ["i", "iv", "i", "V7", "iv", "i"], desc: "The Thrill Is Gone, Black Magic Woman" },
+      { cat: "Blues, Soul & Funk", name: "12-Bar Blues (I7-IV7-V7)", numerals: ["I7", "IV7", "I7", "V7"], desc: "Pride and Joy, Crossroad Blues" },
+      { cat: "Blues, Soul & Funk", name: "Minor Blues (i-iv-V7)", numerals: ["i", "iv", "i", "V7"], desc: "The Thrill Is Gone, Black Magic Woman" },
       { cat: "Blues, Soul & Funk", name: "Gospel Cadence (I-I7-IV-iv)", numerals: ["I", "I7", "IV", "iv"], desc: "In My Life, Georgia On My Mind" },
       { cat: "Blues, Soul & Funk", name: "Andalusian Cadence (i-VII-VI-V)", numerals: ["i", "VII", "VI", "V"], desc: "Sultans of Swing, Smooth, Stray Cat Strut" },
       { cat: "Blues, Soul & Funk", name: "Soul Turnaround (I-iii-IV-V)", numerals: ["I", "iii", "IV", "V"], desc: "Sitting on the Dock of the Bay" },
@@ -350,23 +411,92 @@
       { cat: "Jazz & Modal Fusion", name: "Minor ii-V-i", numerals: ["iim7b5", "V7", "im7"], desc: "Black Orpheus, Softly As In A Morning Sunrise" },
       { cat: "Jazz & Modal Fusion", name: "Jazz Turnaround (I-vi-ii-V)", numerals: ["Imaj7", "vim7", "iim7", "V7"], desc: "Rhythm Changes, Ain't Misbehavin'" },
       { cat: "Jazz & Modal Fusion", name: "Dorian Funk Vamp (i7-IV7)", numerals: ["im7", "IV7"], desc: "Oye Como Va, Chameleon, Breeze" },
-      { cat: "Jazz & Modal Fusion", name: "Coltrane Matrix (I-bVI-bIII)", numerals: ["Imaj7", "bVI", "bIII"], desc: "Giant Steps, Countdown" },
 
       // --- Modern & Cinematic ---
       { cat: "Modern & Cinematic", name: "Royal Road / J-Pop (IV-V-iii-vi)", numerals: ["IV", "V", "iii", "vi"], desc: "Anime themes, modern acoustic pop" },
-      { cat: "Modern & Cinematic", name: "Epic Hero (vi-VI-VII-i)", numerals: ["vi", "VII", "i"], desc: "Hans Zimmer style, movie trailers" },
+      { cat: "Modern & Cinematic", name: "Epic Hero (vi-VII-i)", numerals: ["vi", "VII", "i"], desc: "Hans Zimmer style, movie trailers" },
       { cat: "Modern & Cinematic", name: "Lydian Float (I-II)", numerals: ["I", "II"], desc: "Dreams (Fleetwood Mac), Space Oddity" },
       { cat: "Modern & Cinematic", name: "Sus4 Resolution (Isus4-I-V)", numerals: ["Isus4", "I", "V"], desc: "Pinball Wizard, Free Fallin'" },
-      { cat: "Modern & Cinematic", name: "Folk Pluck (I-V/F#-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Dust in the Wind, Blackbird" },
+      { cat: "Modern & Cinematic", name: "Folk Pluck (I-V-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Dust in the Wind, Blackbird" },
       { cat: "Modern & Cinematic", name: "Minor Plunge (i-bVI-bIII-bVII)", numerals: ["i", "bVI", "bIII", "bVII"], desc: "Wonderwall, Boulevard of Broken Dreams" },
       { cat: "Modern & Cinematic", name: "Nostalgic Minor (i-bVII-bVI-bVII)", numerals: ["i", "bVII", "bVI", "bVII"], desc: "All Along the Watchtower, Stairway to Heaven" },
-      { cat: "Modern & Cinematic", name: "Sad Indie Vibe (i-IV-v-i)", numerals: ["i", "IV", "v"], desc: "Mad World, Radiohead style" }
+      { cat: "Modern & Cinematic", name: "Sad Indie Vibe (i-IV-v)", numerals: ["i", "IV", "v"], desc: "Mad World, Radiohead style" }
     ];
 
     let currentProgression = ['C', 'G', 'Am', 'F'];
     let selectedRoot = 'C';
+    let audioCtx = null;
+    let isPlaying = false;
 
-    // Helper: Map Roman Numeral to Concrete Chord based on Root
+    // Web Audio Synthesizer Engine
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function getChordNotes(chordName) {
+      let root = chordName.replace(/m7b5|maj7|sus4|dim|m7|7|m/g, '');
+      let quality = 'maj';
+      if (chordName.endsWith('m7b5')) quality = 'dim';
+      else if (chordName.endsWith('maj7')) quality = 'maj7';
+      else if (chordName.endsWith('m7')) quality = 'm7';
+      else if (chordName.endsWith('7')) quality = '7';
+      else if (chordName.endsWith('sus4')) quality = 'sus4';
+      else if (chordName.endsWith('dim')) quality = 'dim';
+      else if (chordName.endsWith('m')) quality = 'min';
+
+      const rootIdx = CHROMATIC_SCALE.indexOf(root);
+      const intervals = CHORD_FORMULAS[quality] || [0, 4, 7];
+
+      return intervals.map(semitone => {
+        const index = (rootIdx + semitone) % 12;
+        const octave = (rootIdx + semitone >= 12) ? 4 : 3;
+        const noteName = CHROMATIC_SCALE[index] + octave;
+        return NOTE_FREQS[noteName] || 261.63;
+      });
+    }
+
+    function playChordSynth(frequencies, duration = 1.2) {
+      initAudio();
+      const inst = document.getElementById('instrument-select').value;
+
+      frequencies.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        if (inst === 'acoustic') {
+          osc.type = 'triangle';
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.2 / frequencies.length, audioCtx.currentTime + 0.03 + (idx * 0.015));
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        } else if (inst === 'electric') {
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.15 / frequencies.length, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration * 0.8);
+        } else if (inst === 'pad') {
+          osc.type = 'sawtooth';
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.12 / frequencies.length, audioCtx.currentTime + 0.3);
+          gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        } else if (inst === 'piano') {
+          osc.type = 'square';
+          gain.gain.setValueAtTime(0.1 / frequencies.length, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration * 0.6);
+        }
+
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(audioCtx.currentTime + (inst === 'acoustic' ? idx * 0.02 : 0));
+        osc.stop(audioCtx.currentTime + duration + 0.1);
+      });
+    }
+
     function numeralToChord(numeral, rootNote) {
       const rootIndex = CHROMATIC_SCALE.indexOf(rootNote);
       let semitones = 0;
@@ -405,13 +535,25 @@
     function renderSlots() {
       const container = document.getElementById('slots-container');
       container.innerHTML = '';
+
+      if (currentProgression.length === 0) {
+        container.innerHTML = `<div class="empty-msg">No chords added yet. Tap "+ Add" or select a preset below!</div>`;
+        return;
+      }
+
       currentProgression.forEach((chord, index) => {
         const slot = document.createElement('div');
         slot.className = 'chord-slot active';
+        slot.id = `slot-${index}`;
         slot.innerHTML = `
           ${chord}
           <button class="remove-chord" onclick="removeChord(${index})">✕</button>
         `;
+        slot.onclick = (e) => {
+          if (e.target.tagName !== 'BUTTON') {
+            playChordSynth(getChordNotes(chord));
+          }
+        };
         container.appendChild(slot);
       });
     }
@@ -436,6 +578,7 @@
         card.onclick = () => {
           currentProgression = [...chords];
           renderSlots();
+          playProgression();
         };
 
         card.innerHTML = `
@@ -455,7 +598,32 @@
       renderSlots();
     }
 
-    // Event Handlers
+    async function playProgression() {
+      if (isPlaying || currentProgression.length === 0) return;
+      isPlaying = true;
+
+      const bpm = parseInt(document.getElementById('bpm-select').value, 10);
+      const stepDuration = (60 / bpm) * 1000;
+      const playBtn = document.getElementById('play-btn');
+      playBtn.innerText = '⏹ Playing...';
+
+      for (let i = 0; i < currentProgression.length; i++) {
+        if (!isPlaying) break;
+        const slot = document.getElementById(`slot-${i}`);
+        if (slot) slot.classList.add('playing');
+
+        const freqs = getChordNotes(currentProgression[i]);
+        playChordSynth(freqs, stepDuration / 1000);
+
+        await new Promise(r => setTimeout(r, stepDuration));
+        if (slot) slot.classList.remove('playing');
+      }
+
+      isPlaying = false;
+      playBtn.innerText = '▶ Play Progression';
+    }
+
+    // Event Listeners
     document.getElementById('sync-btn').onclick = () => {
       selectedRoot = document.getElementById('root-select').value;
       renderPresets();
@@ -465,8 +633,10 @@
       const root = document.getElementById('root-select').value;
       const q = document.getElementById('quality-select').value;
       const suffix = q === 'maj' ? '' : (q === 'min' ? 'm' : q);
-      currentProgression.push(root + suffix);
+      const newChord = root + suffix;
+      currentProgression.push(newChord);
       renderSlots();
+      playChordSynth(getChordNotes(newChord));
     };
 
     document.getElementById('clear-btn').onclick = () => {
@@ -475,8 +645,11 @@
     };
 
     document.getElementById('play-btn').onclick = () => {
-      if (currentProgression.length === 0) return alert('Add chords to your progression first!');
-      alert(`Playing: ${currentProgression.join(' ➔ ')}`);
+      if (isPlaying) {
+        isPlaying = false;
+      } else {
+        playProgression();
+      }
     };
 
     // Init
