@@ -118,7 +118,7 @@
       flex: 1;
     }
 
-    /* COMPACT SINGLE ROW CONTROLS BAR ABOVE CHORD / FRETBOARD */
+    /* COMPACT HORIZONTAL CONTROLS BAR ABOVE CHORD / FRETBOARD */
     .compact-controls-bar {
       background-color: var(--panel-bg);
       border: 1px solid var(--panel-border);
@@ -535,11 +535,17 @@
         </div>
       </div>
 
-      <!-- Type -->
+      <!-- Type Dropdown -->
       <div class="ctrl-item">
+        <label>Structure:</label>
         <select id="chordTypeSelect">
-          <option value="triad">Triads</option>
-          <option value="7th">7th Chords</option>
+          <option value="triad">Triads (3 notes)</option>
+          <option value="dom7">Dominant 7th (7)</option>
+          <option value="maj7">Major 7th (Maj7)</option>
+          <option value="9th">9th Chords (9)</option>
+          <option value="sus4">Sus4 Chords</option>
+          <option value="sus2">Sus2 Chords</option>
+          <option value="6th">6th Chords (6)</option>
         </select>
       </div>
 
@@ -641,7 +647,7 @@
             <div class="legend-item" id="legendRoot"><div class="legend-dot" style="background: var(--color-root)"></div> Root</div>
             <div class="legend-item" id="legendThird"><div class="legend-dot" style="background: var(--color-third)"></div> 3rd</div>
             <div class="legend-item" id="legendFifth"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
-            <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th</div>
+            <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th/Ext</div>
             <div class="legend-item" id="legendScale" style="display:none;"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale</div>
           </div>
         </div>
@@ -758,23 +764,65 @@
       
       const thirdOffset = (scale[(degree + 2) % 7] + (degree + 2 >= 7 ? 12 : 0)) - rootOffset;
       const fifthOffset = (scale[(degree + 4) % 7] + (degree + 4 >= 7 ? 12 : 0)) - rootOffset;
-      const seventhOffset = (scale[(degree + 6) % 7] + (degree + 6 >= 7 ? 12 : 0)) - rootOffset;
 
-      const res = [
+      if (type === 'sus2') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: 2, name: '2', type: 'third' },
+          { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' }
+        ];
+      }
+
+      if (type === 'sus4') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: 5, name: '4', type: 'third' },
+          { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' }
+        ];
+      }
+
+      if (type === '6th') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: thirdOffset, name: thirdOffset === 3 ? 'm3' : 'M3', type: 'third' },
+          { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' },
+          { semitones: 9, name: '6', type: 'seventh' }
+        ];
+      }
+
+      if (type === 'dom7') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: thirdOffset, name: thirdOffset === 3 ? 'm3' : 'M3', type: 'third' },
+          { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' },
+          { semitones: 10, name: 'b7', type: 'seventh' }
+        ];
+      }
+
+      if (type === 'maj7') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: thirdOffset, name: thirdOffset === 3 ? 'm3' : 'M3', type: 'third' },
+          { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' },
+          { semitones: 11, name: 'M7', type: 'seventh' }
+        ];
+      }
+
+      if (type === '9th') {
+        return [
+          { semitones: 0, name: 'R', type: 'root' },
+          { semitones: thirdOffset, name: thirdOffset === 3 ? 'm3' : 'M3', type: 'third' },
+          { semitones: 10, name: 'b7', type: 'fifth' },
+          { semitones: 14, name: '9', type: 'seventh' }
+        ];
+      }
+
+      // Default Triads
+      return [
         { semitones: 0, name: 'R', type: 'root' },
         { semitones: thirdOffset, name: thirdOffset === 3 ? 'm3' : 'M3', type: 'third' },
         { semitones: fifthOffset, name: fifthOffset === 6 ? 'b5' : '5', type: 'fifth' }
       ];
-
-      if (type === '7th') {
-        let name = '7';
-        if (seventhOffset === 11) name = 'M7';
-        else if (seventhOffset === 10) name = 'b7';
-        else if (seventhOffset === 9) name = 'bb7';
-        res.push({ semitones: seventhOffset, name: name, type: 'seventh' });
-      }
-
-      return res;
     }
 
     function getChordName(key, degree, mode, type) {
@@ -787,20 +835,18 @@
       const third = intervals[1].semitones;
       const fifth = intervals[2].semitones;
 
+      if (type === 'sus2') return rootName + 'sus2';
+      if (type === 'sus4') return rootName + 'sus4';
+      if (type === '6th') return (third === 3 ? rootName + 'm6' : rootName + '6');
+      if (type === 'dom7') return rootName + '7';
+      if (type === 'maj7') return rootName + 'Maj7';
+      if (type === '9th') return rootName + '9';
+
       let suffix = '';
-      if (type === 'triad') {
-        if (third === 4 && fifth === 7) suffix = ' Maj';
-        else if (third === 3 && fifth === 7) suffix = 'm';
-        else if (third === 3 && fifth === 6) suffix = 'dim';
-        else if (third === 4 && fifth === 8) suffix = 'aug';
-      } else {
-        const seventh = intervals[3].semitones;
-        if (third === 4 && fifth === 7 && seventh === 11) suffix = 'Maj7';
-        else if (third === 3 && fifth === 7 && seventh === 10) suffix = 'm7';
-        else if (third === 4 && fifth === 7 && seventh === 10) suffix = '7';
-        else if (third === 3 && fifth === 6 && seventh === 10) suffix = 'm7b5';
-        else if (third === 3 && fifth === 6 && seventh === 9) suffix = 'dim7';
-      }
+      if (third === 4 && fifth === 7) suffix = ' Maj';
+      else if (third === 3 && fifth === 7) suffix = 'm';
+      else if (third === 3 && fifth === 6) suffix = 'dim';
+      else if (third === 4 && fifth === 8) suffix = 'aug';
 
       return rootName + suffix;
     }
@@ -815,14 +861,15 @@
       const targetPitchClasses = intervals.map(i => (chordRoot + i.semitones) % 12);
 
       let validVoicings = [];
-      const is7th = type === '7th';
-      const numNotes = is7th ? 4 : 3;
+      const is4Note = ['dom7', 'maj7', '9th', '6th'].includes(type);
+      const numNotes = is4Note ? 4 : 3;
 
-      const stringSets = is7th ? 
+      const stringSets = is4Note ? 
         [[0,1,2,3], [1,2,3,4], [2,3,4,5]] : 
         [[0,1,2], [1,2,3], [2,3,4], [3,4,5]];
 
-      const endFret = Math.min(15, startFret + span);
+      const minF = rangeLimit ? startFret : 0;
+      const maxF = rangeLimit ? Math.min(15, startFret + span) : 15;
 
       stringSets.forEach(stringGroup => {
         function searchGroup(strIdx, currentFingering) {
@@ -837,9 +884,6 @@
 
           const s = stringGroup[strIdx];
           const openNote = TUNING[s];
-
-          const minF = rangeLimit ? startFret : 0;
-          const maxF = rangeLimit ? endFret : 15;
 
           for (let f = minF; f <= maxF; f++) {
             const pc = (openNote + f) % 12;
@@ -864,7 +908,7 @@
         score += minFret * 0.2;
 
         return { notes: v, span: currentSpan, minFret, maxFret, score };
-      }).filter(v => v.span <= 4);
+      }).filter(v => v.span <= 5);
 
       scored.sort((a, b) => a.score - b.score);
       
@@ -881,11 +925,9 @@
       return unique;
     }
 
-    // --- GENERATE ALL 8 DIATONIC TRIADS (I THROUGH VIII) WITH INTELLIGENT WRAP ---
+    // --- GENERATE ALL 8 DIATONIC TRIADS (I THROUGH VIII) RESPECTING STRICT RANGE LIMIT ---
     function getEightDiatonicTriads(activeVoicing) {
-      if (!activeVoicing) return [];
-
-      const stringSetKey = activeVoicing.notes.map(n => n.string).sort().join(',');
+      const stringSetKey = activeVoicing ? activeVoicing.notes.map(n => n.string).sort().join(',') : null;
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
       let triadsRun = [];
@@ -893,21 +935,24 @@
 
       for (let d = 0; d < 8; d++) {
         const degIndex = d % 7;
-        const voicings = generateVoicings(state.key, degIndex, state.mode, 'triad', false, 0, 15);
+        const voicings = generateVoicings(state.key, degIndex, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
         
-        const sameStringVoicings = voicings.filter(v => 
-          v.notes.map(n => n.string).sort().join(',') === stringSetKey
-        );
+        let matchingVoicings = stringSetKey 
+          ? voicings.filter(v => v.notes.map(n => n.string).sort().join(',') === stringSetKey)
+          : voicings;
 
-        if (sameStringVoicings.length === 0) continue;
+        if (matchingVoicings.length === 0) {
+          matchingVoicings = voicings;
+        }
 
-        let bestVoicing = sameStringVoicings[0];
+        if (matchingVoicings.length === 0) continue;
 
-        if (d === 0) {
-          // Degree I: pick voicing closest to active selection
+        let bestVoicing = matchingVoicings[0];
+
+        if (d === 0 && activeVoicing) {
           const activeAvg = activeVoicing.notes.reduce((sum, n) => sum + n.fret, 0) / activeVoicing.notes.length;
           let minDiff = 999;
-          sameStringVoicings.forEach(v => {
+          matchingVoicings.forEach(v => {
             const avgFret = v.notes.reduce((sum, n) => sum + n.fret, 0) / v.notes.length;
             const diff = Math.abs(avgFret - activeAvg);
             if (diff < minDiff) {
@@ -915,9 +960,8 @@
               bestVoicing = v;
             }
           });
-        } else {
-          // Continuous ascending progression from degree 1 to 7/8
-          let ascendingCandidates = sameStringVoicings.filter(v => {
+        } else if (lastAvgFret >= 0) {
+          let ascendingCandidates = matchingVoicings.filter(v => {
             const avgFret = v.notes.reduce((sum, n) => sum + n.fret, 0) / v.notes.length;
             return avgFret >= lastAvgFret;
           });
@@ -930,13 +974,12 @@
             });
             bestVoicing = ascendingCandidates[0];
           } else {
-            // Boundary wrap-around down to left side of fretboard (nut area)
-            sameStringVoicings.sort((a, b) => {
+            matchingVoicings.sort((a, b) => {
               const avgA = a.notes.reduce((sum, n) => sum + n.fret, 0) / a.notes.length;
               const avgB = b.notes.reduce((sum, n) => sum + n.fret, 0) / b.notes.length;
               return avgA - avgB;
             });
-            bestVoicing = sameStringVoicings[0];
+            bestVoicing = matchingVoicings[0];
           }
         }
 
@@ -945,7 +988,7 @@
         triadsRun.push({
           degree: d,
           roman: romanList[d],
-          name: getChordName(state.key, degIndex, state.mode, 'triad'),
+          name: getChordName(state.key, degIndex, state.mode, state.chordType),
           color: TRIAD_COLORS[d],
           notes: bestVoicing.notes
         });
@@ -1076,11 +1119,14 @@
         const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
         const scalePcs = scaleIntervals.map(i => (activeScaleRoot + i) % 12);
 
+        const minF = state.enableFretRange ? state.startFret : 0;
+        const maxF = state.enableFretRange ? Math.min(15, state.startFret + state.fretSpan) : 15;
+
         for (let s = 0; s < 6; s++) {
           const openNote = TUNING[s];
           const y = marginY + s * stringSpacing;
 
-          for (let f = 0; f <= numFrets; f++) {
+          for (let f = minF; f <= maxF; f++) {
             const pc = (openNote + f) % 12;
             const noteKey = `${s}:${f}`;
 
@@ -1112,15 +1158,30 @@
         }
       }
 
-      // 2. DIATONIC TRIADS RUN (WHEN ON: ONLY SHOW THESE 8 TRIADS)
+      // 2. DIATONIC TRIADS RUN (SHOWING ALL 8 TRIADS WITHIN RANGE)
       if (state.showDiatonicRun && activeDiatonicRun.length > 0) {
         const noteMap = new Map();
 
         activeDiatonicRun.forEach(triad => {
+          const tIntervals = getChordIntervals(triad.degree, state.mode, state.chordType);
+          const tScale = state.mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
+          const tRoot = (keyIdx + tScale[triad.degree % 7]) % 12;
+
           triad.notes.forEach(n => {
+            if (state.enableFretRange && (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
+              return; // Enforce hard strict range bound
+            }
+
             const key = `${n.string}:${n.fret}`;
             if (!noteMap.has(key)) {
-              noteMap.set(key, { string: n.string, fret: n.fret, pc: n.pc, triads: [] });
+              const intervalObj = tIntervals.find(i => (tRoot + i.semitones) % 12 === n.pc);
+              noteMap.set(key, { 
+                string: n.string, 
+                fret: n.fret, 
+                pc: n.pc, 
+                intervalName: intervalObj ? intervalObj.name : 'R',
+                triads: [] 
+              });
             }
             noteMap.get(key).triads.push(triad);
           });
@@ -1169,7 +1230,8 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          const labelText = getNoteName(item.pc);
+          // DYNAMIC LABELING (SWITCHES ON INTERVAL VS NOTE BUTTON TOGGLE)
+          const labelText = state.labelMode === 'interval' ? item.intervalName : getNoteName(item.pc);
           ctx.fillText(labelText, x, y);
         });
 
@@ -1180,6 +1242,10 @@
       if (!voicing) return;
 
       voicing.notes.forEach(n => {
+        if (state.enableFretRange && (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
+          return;
+        }
+
         const x = n.fret === 0 ? marginX - 18 : marginX + (n.fret - 0.5) * fretWidth;
         const y = marginY + n.string * stringSpacing;
 
@@ -1230,7 +1296,7 @@
       document.getElementById('legendRoot').style.display = isDiatonic ? 'none' : 'flex';
       document.getElementById('legendThird').style.display = isDiatonic ? 'none' : 'flex';
       document.getElementById('legendFifth').style.display = isDiatonic ? 'none' : 'flex';
-      document.getElementById('legendSeventh').style.display = (!isDiatonic && state.chordType === '7th') ? 'flex' : 'none';
+      document.getElementById('legendSeventh').style.display = (!isDiatonic && ['dom7', 'maj7', '9th', '6th'].includes(state.chordType)) ? 'flex' : 'none';
       document.getElementById('legendScale').style.display = state.showScaleOverlay ? 'flex' : 'none';
 
       const triadLegendContainer = document.getElementById('triadLegendContainer');
@@ -1239,10 +1305,10 @@
 
       if (isDiatonic) {
         triadLegendContainer.style.display = 'block';
-        triadLegendBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">8 Triads Key:</span>';
-        notesRowBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">Triad Notes Breakdown:</span>';
+        triadLegendBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">8 Diatonic Key:</span>';
+        notesRowBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">Notes Breakdown:</span>';
 
-        const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, 'triad', state.enableFretRange, state.startFret, state.fretSpan);
+        const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
         const activeVoicing = voicings[state.voicingIndex] || voicings[0];
         const run = getEightDiatonicTriads(activeVoicing);
 
