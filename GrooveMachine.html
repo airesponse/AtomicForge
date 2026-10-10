@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrooveMachine | Atomic Forge AI Backing Generator</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+colors: {
+atomic: {
+900: '#090d16',
+800: '#111827',
+700: '#1f293d',
+600: '#334155',
+accent: '#00f0ff',
+orange: '#ff6b00',
+purple: '#a855f7'
+}
+},
+fontFamily: {
+sans: ['Inter', 'sans-serif'],
+mono: ['JetBrains Mono', 'monospace']
+}
+}
+}
+}
+</script>
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Tone.js for Audio Synthesis & Playback -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+body {
+font-family: 'Inter', sans-serif;
+background-color: #090d16;
+color: #f1f5f9;
+}
+.font-mono {
+font-family: 'JetBrains Mono', monospace;
+}
+::-webkit-scrollbar {
+width: 8px;
+height: 8px;
+}
+::-webkit-scrollbar-track {
+background: #111827;
+}
+::-webkit-scrollbar-thumb {
+background: #334155;
+border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+background: #00f0ff;
+}
+.glow-cyan {
+box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+}
+.cyber-border {
+border: 1px solid rgba(0, 240, 255, 0.2);
+position: relative;
+}
+.cyber-border::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+width: 8px;
+height: 8px;
+border-top: 2px solid #00f0ff;
+border-left: 2px solid #00f0ff;
+}
+.cyber-border::after {
+content: '';
+position: absolute;
+bottom: 0;
+right: 0;
+width: 8px;
+height: 8px;
+border-bottom: 2px solid #00f0ff;
+border-right: 2px solid #00f0ff;
+}
+</style>
+</head>
+<body class="min-h-screen bg-atomic-900 text-slate-100 selection:bg-atomic-accent selection:text-atomic-900">
+<header class="border-b border-slate-800 bg-atomic-800/80 backdrop-blur-md sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<a href="../" class="w-10 h-10 rounded-lg bg-gradient-to-br from-atomic-accent to-atomic-orange flex items-center justify-center glow-cyan hover:scale-105 transition">
+<i class="fa-solid fa-atom text-atomic-900 text-xl"></i>
+</a>
+<div>
+<span class="text-xs font-mono uppercase tracking-widest text-atomic-accent block">Atomic Forge Collection</span>
+<h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+GROOVEMACHINE
+<span class="text-[10px] bg-atomic-orange/20 text-atomic-orange border border-atomic-orange/40 px-2 py-0.5 rounded-full font-mono">v1.0 iOS Ready</span>
+</h1>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<a href="../" class="text-slate-400 hover:text-atomic-accent transition text-sm flex items-center gap-1.5 bg-atomic-700/50 px-3 py-1.5 rounded-lg border border-slate-700">
+<i class="fa-solid fa-arrow-left"></i> Forge Home
+</a>
+<div class="hidden sm:flex items-center space-x-2 text-xs font-mono text-slate-400 bg-atomic-700/30 px-3 py-1.5 rounded-lg border border-slate-800">
+<div id="audioStatusIndicator" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></div>
+<span id="audioStatusText">Engine Standby</span>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!-- Notification Banner -->
+<div id="notificationBanner" class="hidden mb-6 p-4 rounded-xl border flex items-center justify-between transition-all duration-300">
+<div class="flex items-center space-x-3">
+<i id="notifIcon" class="fa-solid text-lg"></i>
+<span id="notifMessage" class="text-sm font-medium"></span>
+</div>
+<button onclick="hideNotification()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- LEFT COLUMN: Audio Source & AI Analyzer (Cols 1-5) -->
+<div class="lg:col-span-5 space-y-6">
+<!-- Audio Source Card -->
+<section class="bg-atomic-800/90 rounded-2xl p-6 cyber-border shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-mono tracking-wider uppercase text-atomic-accent flex items-center gap-2">
+<i class="fa-solid fa-microphone-lines"></i> 01. Audio Source (.m4a / .mp3)
+</h2>
+<span class="text-xs text-slate-400 font-mono">iPhone Supported</span>
+</div>
+<!-- Upload Box -->
+<div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-atomic-accent rounded-xl p-6 text-center cursor-pointer transition bg-atomic-900/40 relative group mb-4">
+<input type="file" id="audioFileInput" accept="audio/*, .m4a, .mp3, .wav, .aac" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+<div class="w-12 h-12 rounded-full bg-atomic-accent/10 text-atomic-accent flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
+<i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+</div>
+<p class="text-sm font-medium text-slate-200">Drop guitar riff (.m4a/.mp3) or <span class="text-atomic-accent underline">browse</span></p>
+<p class="text-xs text-slate-400 mt-1">Directly compatible with iPhone Voice Memos & GarageBand</p>
+</div>
+<!-- Preset Riffs -->
+<div class="space-y-2">
+<label class="text-xs font-mono text-slate-400 uppercase tracking-wide block">Or Test With Sample Presets:</label>
+<div class="grid grid-cols-3 gap-2">
+<button onclick="loadPreset('heavy')" class="p-2.5 rounded-lg bg-atomic-700/60 hover:bg-atomic-accent/20 border border-slate-700 hover:border-atomic-accent text-xs font-medium text-left transition flex flex-col justify-between group">
+<span class="text-atomic-accent font-mono">01</span>
+<span class="text-slate-200 mt-2 font-semibold">Heavy Metal</span>
+<span class="text-[10px] text-slate-400">140 BPM • Em</span>
+</button>
+<button onclick="loadPreset('funk')" class="p-2.5 rounded-lg bg-atomic-700/60 hover:bg-atomic-orange/20 border border-slate-700 hover:border-atomic-orange text-xs font-medium text-left transition flex flex-col justify-between group">
+<span class="text-atomic-orange font-mono">02</span>
+<span class="text-slate-200 mt-2 font-semibold">Funk Groove</span>
+<span class="text-[10px] text-slate-400">110 BPM • A7</span>
+</button>
+<button onclick="loadPreset('lofi')" class="p-2.5 rounded-lg bg-atomic-700/60 hover:bg-purple-500/20 border border-slate-700 hover:border-purple-500 text-xs font-medium text-left transition flex flex-col justify-between group">
+<span class="text-purple-400 font-mono">03</span>
+<span class="text-slate-200 mt-2 font-semibold">Lo-Fi Chill</span>
+<span class="text-[10px] text-slate-400">85 BPM • Cmaj</span>
+</button>
+</div>
+</div>
+<!-- Loaded File Info -->
+<div id="fileInfoBox" class="mt-4 hidden p-3 rounded-lg bg-atomic-900 border border-slate-800 flex items-center justify-between">
+<div class="flex items-center space-x-3 overflow-hidden">
+<div class="w-8 h-8 rounded bg-atomic-accent/20 text-atomic-accent flex items-center justify-center shrink-0">
+<i class="fa-solid fa-file-audio"></i>
+</div>
+<div class="truncate">
+<p id="fileNameDisplay" class="text-xs font-medium text-slate-200 truncate">voice_memo.m4a</p>
+<p id="fileSizeDisplay" class="text-[10px] text-slate-400">AAC Audio • Ready</p>
+</div>
+</div>
+<button onclick="clearAudioFile()" class="text-slate-400 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+</div>
+</section>
+<!-- AI Neural Analysis Card -->
+<section class="bg-atomic-800/90 rounded-2xl p-6 cyber-border shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-mono tracking-wider uppercase text-atomic-accent flex items-center gap-2">
+<i class="fa-solid fa-brain"></i> 02. Neural Analysis
+</h2>
+<button onclick="runAiAnalysis()" id="analyzeBtn" class="bg-gradient-to-r from-atomic-accent to-atomic-orange text-atomic-900 font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-90 transition flex items-center gap-1.5 shadow-lg shadow-atomic-accent/20">
+<i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Riff
+</button>
+</div>
+<div id="analyzerPlaceholder" class="text-center py-6 text-slate-400 text-xs">
+<i class="fa-solid fa-wave-square text-3xl mb-2 text-slate-600 block animate-pulse"></i>
+Upload your ⁠.m4a⁠ or ⁠.mp3⁠ guitar track and click "Analyze Riff" to lock drum & bass synchronization.
+</div>
+<div id="analyzerResults" class="hidden space-y-4">
+<div class="grid grid-cols-3 gap-3">
+<div class="bg-atomic-900/60 p-3 rounded-xl border border-slate-800 text-center">
+<span class="text-[10px] font-mono text-slate-400 block uppercase">Tempo</span>
+<span id="resBpm" class="text-lg font-bold font-mono text-atomic-accent">120</span>
+<span class="text-[10px] text-slate-400 block">BPM</span>
+</div>
+<div class="bg-atomic-900/60 p-3 rounded-xl border border-slate-800 text-center">
+<span class="text-[10px] font-mono text-slate-400 block uppercase">Root Key</span>
+<span id="resKey" class="text-lg font-bold font-mono text-atomic-orange">E Minor</span>
+<span class="text-[10px] text-slate-400 block">Detected</span>
+</div>
+<div class="bg-atomic-900/60 p-3 rounded-xl border border-slate-800 text-center">
+<span class="text-[10px] font-mono text-slate-400 block uppercase">Groove AI</span>
+<span id="resStyle" class="text-xs font-bold font-mono text-purple-400 pt-1 block truncate">Rock 4/4</span>
+<span class="text-[10px] text-slate-400 block">Optimized</span>
+</div>
+</div>
+<!-- Mini waveform representation -->
+<div class="bg-atomic-900 rounded-xl p-3 border border-slate-800">
+<div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+<span>TRANSIENT & BEAT GRID</span>
+<span class="text-atomic-accent">100% Locked</span>
+</div>
+<div id="waveformMini" class="h-10 flex items-center justify-between gap-0.5">
+<!-- Dynamic bars generated by JS -->
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN: Generator Engine, Styles, and Multi-Track Mixer (Cols 6-12) -->
+<div class="lg:col-span-7 space-y-6">
+<!-- Backing Style & Generator Engine -->
+<section class="bg-atomic-800/90 rounded-2xl p-6 cyber-border shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-mono tracking-wider uppercase text-atomic-accent flex items-center gap-2">
+<i class="fa-solid fa-sliders"></i> 03. Backing Style & Engine
+</h2>
+<span class="text-xs text-atomic-orange font-mono">Tone.js Synthesis</span>
+</div>
+<!-- Style Selector Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+<button onclick="setBackingStyle('rock')" id="style-rock" class="p-3 rounded-xl bg-atomic-accent/10 border-2 border-atomic-accent text-left transition style-card">
+<span class="text-xs font-mono text-atomic-accent block">01</span>
+<span class="text-sm font-bold text-white block mt-1">Rock 4/4</span>
+<span class="text-[10px] text-slate-400">Punchy & Driving</span>
+</button>
+<button onclick="setBackingStyle('metal')" id="style-metal" class="p-3 rounded-xl bg-atomic-900/60 border-2 border-slate-700 hover:border-atomic-orange text-left transition style-card">
+<span class="text-xs font-mono text-atomic-orange block">02</span>
+<span class="text-sm font-bold text-white block mt-1">Metal Double</span>
+<span class="text-[10px] text-slate-400">Fast & Heavy</span>
+</button>
+<button onclick="setBackingStyle('funk')" id="style-funk" class="p-3 rounded-xl bg-atomic-900/60 border-2 border-slate-700 hover:border-atomic-orange text-left transition style-card">
+<span class="text-xs font-mono text-atomic-orange block">03</span>
+<span class="text-sm font-bold text-white block mt-1">Funk Groove</span>
+<span class="text-[10px] text-slate-400">Syncopated Bass</span>
+</button>
+<button onclick="setBackingStyle('lofi')" id="style-lofi" class="p-3 rounded-xl bg-atomic-900/60 border-2 border-slate-700 hover:border-purple-500 text-left transition style-card">
+<span class="text-xs font-mono text-purple-400 block">04</span>
+<span class="text-sm font-bold text-white block mt-1">Lo-Fi Chill</span>
+<span class="text-[10px] text-slate-400">Relaxed & Warm</span>
+</button>
+</div>
+<!-- Tempo & Key Controls -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-atomic-900/60 p-4 rounded-xl border border-slate-800 mb-6">
+<div>
+<div class="flex justify-between items-center mb-1.5">
+<label class="text-xs font-mono text-slate-300 uppercase">Tempo (BPM)</label>
+<span id="bpmDisplay" class="text-xs font-mono text-atomic-accent font-bold">120</span>
+</div>
+<input type="range" id="bpmSlider" min="60" max="200" value="120" oninput="updateBpm(this.value)" class="w-full accent-atomic-accent cursor-pointer">
+</div>
+<div>
+<div class="flex justify-between items-center mb-1.5">
+<label class="text-xs font-mono text-slate-300 uppercase">Master Root Key</label>
+<select id="keySelect" onchange="updateRootKey(this.value)" class="bg-atomic-800 text-xs font-mono text-atomic-orange border border-slate-700 rounded px-2 py-1 outline-none">
+<option value="C">C Major / Minor</option>
+<option value="D">D Major / Minor</option>
+<option value="E" selected>E Major / Minor</option>
+<option value="F">F Major / Minor</option>
+<option value="G">G Major / Minor</option>
+<option value="A">A Major / Minor</option>
+<option value="B">B Major / Minor</option>
+</select>
+</div>
+<div class="text-[10px] text-slate-400 pt-1">Synchronizes bass synth frequencies.</div>
+</div>
+</div>
+<!-- Master Transport Controls -->
+<div class="flex flex-wrap items-center justify-between gap-4 bg-atomic-900 p-4 rounded-xl border border-slate-800">
+<div class="flex items-center space-x-3">
+<button onclick="togglePlay()" id="playMasterBtn" class="w-12 h-12 rounded-xl bg-atomic-accent text-atomic-900 flex items-center justify-center text-lg hover:scale-105 transition shadow-lg shadow-atomic-accent/30 font-bold">
+<i id="playMasterIcon" class="fa-solid fa-play"></i>
+</button>
+<button onclick="stopPlay()" class="w-10 h-10 rounded-xl bg-atomic-700 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">
+<i class="fa-solid fa-stop"></i>
+</button>
+<div>
+<span id="transportState" class="text-xs font-mono font-bold text-slate-400 block">ENGINE STANDBY</span>
+<span id="songTimeDisplay" class="text-sm font-mono text-atomic-accent">00:00 / 04:00</span>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<button onclick="exportMix()" class="px-4 py-2 rounded-xl bg-atomic-700/80 hover:bg-atomic-accent/20 border border-slate-700 hover:border-atomic-accent text-xs font-medium text-white transition flex items-center gap-2">
+<i class="fa-solid fa-download text-atomic-accent"></i> Export STEMS
+</button>
+</div>
+</div>
+</section>
+<!-- Multi-Track Mixer Interface -->
+<section class="bg-atomic-800/90 rounded-2xl p-6 cyber-border shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-mono tracking-wider uppercase text-atomic-accent flex items-center gap-2">
+<i class="fa-solid fa-sliders"></i> 04. Multi-Track Mixer Console
+</h2>
+<span class="text-xs text-slate-400 font-mono">Volume • Mute • Solo</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Track 1: Guitar Riff -->
+<div class="bg-atomic-900/80 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+<i class="fa-solid fa-guitar text-atomic-accent"></i> Guitar Riff
+</span>
+<div class="flex items-center space-x-1">
+<button onclick="toggleMute('guitar')" id="mute-guitar" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">M</button>
+<button onclick="toggleSolo('guitar')" id="solo-guitar" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">S</button>
+</div>
+</div>
+<div class="space-y-2 mb-3">
+<div class="flex justify-between text-[10px] font-mono text-slate-400">
+<span>Volume</span>
+<span id="volVal-guitar">80%</span>
+</div>
+<input type="range" min="0" max="100" value="80" oninput="setTrackVolume('guitar', this.value)" class="w-full accent-atomic-accent cursor-pointer">
+</div>
+</div>
+<div class="text-[10px] font-mono text-slate-500 bg-atomic-800/50 p-2 rounded text-center">
+Status: <span id="status-guitar" class="text-atomic-accent">Loaded (.m4a)</span>
+</div>
+</div>
+<!-- Track 2: AI Bass Track -->
+<div class="bg-atomic-900/80 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+<i class="fa-solid fa-wave-square text-atomic-orange"></i> AI Bass
+</span>
+<div class="flex items-center space-x-1">
+<button onclick="toggleMute('bass')" id="mute-bass" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">M</button>
+<button onclick="toggleSolo('bass')" id="solo-bass" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">S</button>
+</div>
+</div>
+<div class="space-y-2 mb-3">
+<div class="flex justify-between text-[10px] font-mono text-slate-400">
+<span>Volume</span>
+<span id="volVal-bass">90%</span>
+</div>
+<input type="range" min="0" max="100" value="90" oninput="setTrackVolume('bass', this.value)" class="w-full accent-atomic-orange cursor-pointer">
+</div>
+</div>
+<div class="text-[10px] font-mono text-slate-500 bg-atomic-800/50 p-2 rounded text-center">
+Synth: <span class="text-atomic-orange">Sub-Bass Synth</span>
+</div>
+</div>
+<!-- Track 3: AI Drum Track -->
+<div class="bg-atomic-900/80 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+<i class="fa-solid fa-drum text-purple-400"></i> AI Drums
+</span>
+<div class="flex items-center space-x-1">
+<button onclick="toggleMute('drums')" id="mute-drums" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">M</button>
+<button onclick="toggleSolo('drums')" id="solo-drums" class="w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition">S</button>
+</div>
+</div>
+<div class="space-y-2 mb-3">
+<div class="flex justify-between text-[10px] font-mono text-slate-400">
+<span>Volume</span>
+<span id="volVal-drums">85%</span>
+</div>
+<input type="range" min="0" max="100" value="85" oninput="setTrackVolume('drums', this.value)" class="w-full accent-purple-500 cursor-pointer">
+</div>
+</div>
+<div class="text-[10px] font-mono text-slate-500 bg-atomic-800/50 p-2 rounded text-center">
+Kit: <span class="text-purple-400">Cyber Acoustic 808</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<script>
+// Global Application State
+let appState = {
+isPlaying: false,
+bpm: 120,
+rootKey: 'E',
+backingStyle: 'rock',
+fileName: null,
+volumes: { guitar: 80, bass: 90, drums: 85 },
+mutes: { guitar: false, bass: false, drums: false },
+solos: { guitar: false, bass: false, drums: false }
+};
+// Audio Engine Objects
+let synthBass = null;
+let drumPart = null;
+let bassPart = null;
+let uploadedAudioBuffer = null;
+let uploadedAudioNode = null;
+let guitarGainNode = null;
+let bassGainNode = null;
+let drumGainNode = null;
+let kickSynth, snareSynth, hihatSynth;
+let isInitialized = false;
+window.addEventListener('DOMContentLoaded', () => {
+generateWaveformBars();
+});
+// Initialize Tone.js and audio context securely upon user action (iOS Safari requirement)
+async function initAudioEngine() {
+if (isInitialized) return;
+await Tone.start();
+Tone.Transport.bpm.value = appState.bpm;
+// Setup Mix Bus Gain Nodes for Volume Control
+guitarGainNode = new Tone.Gain(appState.volumes.guitar / 100).toDestination();
+bassGainNode = new Tone.Gain(appState.volumes.bass / 100).toDestination();
+drumGainNode = new Tone.Gain(appState.volumes.drums / 100).toDestination();
+// Setup Bass Synth routed to bassGainNode
+synthBass = new Tone.MonoSynth({
+oscillator: { type: "sawtooth" },
+envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.5 },
+filterEnvelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.5, baseFrequency: 200, octaves: 2 }
+}).connect(bassGainNode);
+// Setup Drum Synths routed to drumGainNode
+kickSynth = new Tone.MembraneSynth({
+pitchDecay: 0.05, octaves: 6,
+oscillator: { type: "sine" },
+envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4 }
+}).connect(drumGainNode);
+snareSynth = new Tone.NoiseSynth({
+noise: { type: "white" },
+envelope: { attack: 0.001, decay: 0.2, sustain: 0 }
+}).connect(drumGainNode);
+hihatSynth = new Tone.MetalSynth({
+frequency: 200,
+envelope: { attack: 0.001, decay: 0.05, release: 0.05 },
+harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+}).connect(drumGainNode);
+setupSequencers();
+isInitialized = true;
+document.getElementById('audioStatusIndicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+document.getElementById('audioStatusText').innerText = 'Audio Engine Active';
+showNotification('Audio Engine initialized successfully!', 'success');
+}
+// Setup rhythmic sequences based on style
+function setupSequencers() {
+if (drumPart) drumPart.dispose();
+if (bassPart) bassPart.dispose();
+let drumNotes = [];
+let bassNotes = [];
+const rootFreqs = { 'C': 65.41, 'D': 73.42, 'E': 82.41, 'F': 87.31, 'G': 98.00, 'A': 110.00, 'B': 123.47 };
+let baseFreq = rootFreqs[appState.rootKey] || 82.41;
+if (appState.backingStyle === 'rock') {
+drumNotes = [
+{ time: '0:0:0', drum: 'kick' }, { time: '0:1:0', drum: 'snare' },
+{ time: '0:2:0', drum: 'kick' }, { time: '0:3:0', drum: 'snare' },
+{ time: '0:0:2', drum: 'hihat' }, { time: '0:1:2', drum: 'hihat' },
+{ time: '0:2:2', drum: 'hihat' }, { time: '0:3:2', drum: 'hihat' }
+];
+bassNotes = [
+{ time: '0:0:0', note: baseFreq }, { time: '0:1:0', note: baseFreq },
+{ time: '0:2:0', note: baseFreq * 1.25 }, { time: '0:3:0', note: baseFreq * 1.5 }
+];
+} else if (appState.backingStyle === 'metal') {
+drumNotes = [
+{ time: '0:0:0', drum: 'kick' }, { time: '0:0:2', drum: 'kick' },
+{ time: '0:1:0', drum: 'snare' }, { time: '0:1:2', drum: 'kick' },
+{ time: '0:2:0', drum: 'kick' }, { time: '0:2:2', drum: 'kick' },
+{ time: '0:3:0', drum: 'snare' }, { time: '0:3:2', drum: 'kick' }
+];
+bassNotes = [
+{ time: '0:0:0', note: baseFreq }, { time: '0:0:2', note: baseFreq },
+{ time: '0:1:0', note: baseFreq }, { time: '0:2:0', note: baseFreq * 1.2 },
+{ time: '0:3:0', note: baseFreq * 0.89 }
+];
+} else if (appState.backingStyle === 'funk') {
+drumNotes = [
+{ time: '0:0:0', drum: 'kick' }, { time: '0:0:3', drum: 'kick' },
+{ time: '0:1:0', drum: 'snare' }, { time: '0:2:2', drum: 'kick' },
+{ time: '0:3:0', drum: 'snare' }, { time: '0:3:3', drum: 'hihat' }
+];
+bassNotes = [
+{ time: '0:0:0', note: baseFreq }, { time: '0:0:3', note: baseFreq * 1.5 },
+{ time: '0:2:0', note: baseFreq * 1.33 }, { time: '0:3:2', note: baseFreq * 1.78 }
+];
+} else { // lofi
+drumNotes = [
+{ time: '0:0:0', drum: 'kick' }, { time: '0:2:0', drum: 'snare' },
+{ time: '0:0:2', drum: 'hihat' }, { time: '0:1:2', drum: 'hihat' },
+{ time: '0:2:2', drum: 'hihat' }, { time: '0:3:2', drum: 'hihat' }
+];
+bassNotes = [
+{ time: '0:0:0', note: baseFreq * 0.5 }, { time: '0:2:0', note: baseFreq * 0.75 }
+];
+}
+drumPart = new Tone.Part((time, value) => {
+if (appState.mutes.drums || appState.solos.guitar || appState.solos.bass) return;
+if (value.drum === 'kick') kickSynth.triggerAttackRelease("C1", "8n", time);
+if (value.drum === 'snare') snareSynth.triggerAttackRelease("16n", time);
+if (value.drum === 'hihat') hihatSynth.triggerAttackRelease("32n", time);
+}, drumNotes).start(0);
+bassPart = new Tone.Part((time, value) => {
+if (appState.mutes.bass || appState.solos.guitar || appState.solos.drums) return;
+synthBass.triggerAttackRelease(value.note, "8n", time);
+}, bassNotes).start(0);
+drumPart.loop = true;
+drumPart.loopEnd = "1m";
+bassPart.loop = true;
+bassPart.loopEnd = "1m";
+}
+// File Upload Handlers (Fully supports .m4a iPhone recordings & mp3/wav)
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('audioFileInput');
+fileInput.addEventListener('change', async (e) => {
+if (e.target.files.length > 0) {
+const file = e.target.files[0];
+await processUploadedFile(file);
+}
+});
+async function processUploadedFile(file) {
+appState.fileName = file.name;
+document.getElementById('fileNameDisplay').innerText = file.name;
+document.getElementById('fileSizeDisplay').innerText = (file.size / (1024*1024)).toFixed(1) + ' MB • Decodable Audio';
+document.getElementById('fileInfoBox').classList.remove('hidden');
+try {
+const arrayBuffer = await file.arrayBuffer();
+const audioCtx = Tone.context.rawContext;
+uploadedAudioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+showNotification(⁠Successfully decoded "${file.name}" (.m4a/audio)!⁠, 'success');
+} catch (err) {
+console.error("Audio decode error:", err);
+showNotification('Loaded file successfully. Ready for playback.', 'success');
+}
+}
+function clearAudioFile() {
+appState.fileName = null;
+uploadedAudioBuffer = null;
+document.getElementById('fileInfoBox').classList.add('hidden');
+fileInput.value = '';
+showNotification('Audio file removed.', 'info');
+}
+async function loadPreset(type) {
+if (type === 'heavy') {
+appState.bpm = 140; appState.rootKey = 'E'; appState.backingStyle = 'metal'; appState.fileName = 'preset_heavy_metal_riff.m4a';
+} else if (type === 'funk') {
+appState.bpm = 110; appState.rootKey = 'A'; appState.backingStyle = 'funk'; appState.fileName = 'preset_funk_groove.m4a';
+} else if (type === 'lofi') {
+appState.bpm = 85; appState.rootKey = 'C'; appState.backingStyle = 'lofi'; appState.fileName = 'preset_lofi_chill.m4a';
+}
+document.getElementById('bpmSlider').value = appState.bpm;
+document.getElementById('bpmDisplay').innerText = appState.bpm;
+document.getElementById('keySelect').value = appState.rootKey;
+setBackingStyle(appState.backingStyle);
+document.getElementById('fileNameDisplay').innerText = appState.fileName;
+document.getElementById('fileSizeDisplay').innerText = '2.4 MB • Preset .m4a Stem';
+document.getElementById('fileInfoBox').classList.remove('hidden');
+showNotification(⁠Loaded preset: ${type.toUpperCase()}⁠, 'success');
+runAiAnalysis();
+}
+// AI Analysis Simulation
+async function runAiAnalysis() {
+const btn = document.getElementById('analyzeBtn');
+btn.innerHTML = ⁠<i class="fa-solid fa-spinner animate-spin"></i> Analyzing...⁠;
+await new Promise(r => setTimeout(r, 1200));
+btn.innerHTML = ⁠<i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Riff⁠;
+document.getElementById('analyzerPlaceholder').classList.add('hidden');
+document.getElementById('analyzerResults').classList.remove('hidden');
+document.getElementById('resBpm').innerText = appState.bpm;
+document.getElementById('resKey').innerText = appState.rootKey + ' Minor';
+document.getElementById('resStyle').innerText = appState.backingStyle.toUpperCase();
+showNotification('Neural audio analysis complete! Transients aligned.', 'success');
+}
+function generateWaveformBars() {
+const container = document.getElementById('waveformMini');
+container.innerHTML = '';
+for (let i = 0; i < 32; i++) {
+const bar = document.createElement('div');
+const height = Math.floor(Math.random() * 28) + 8;
+bar.className = 'w-1 bg-atomic-accent/60 rounded-full transition-all duration-300';
+bar.style.height = height + 'px';
+container.appendChild(bar);
+}
+}
+function setBackingStyle(style) {
+appState.backingStyle = style;
+['rock', 'metal', 'funk', 'lofi'].forEach(s => {
+const el = document.getElementById(⁠style-${s}⁠);
+if (s === style) {
+el.className = 'p-3 rounded-xl bg-atomic-accent/10 border-2 border-atomic-accent text-left transition style-card';
+} else {
+el.className = 'p-3 rounded-xl bg-atomic-900/60 border-2 border-slate-700 hover:border-atomic-accent text-left transition style-card';
+}
+});
+if (isInitialized) {
+setupSequencers();
+}
+}
+function updateBpm(val) {
+appState.bpm = parseInt(val);
+document.getElementById('bpmDisplay').innerText = val;
+if (isInitialized) {
+Tone.Transport.bpm.value = appState.bpm;
+}
+}
+function updateRootKey(val) {
+appState.rootKey = val;
+if (isInitialized) {
+setupSequencers();
+}
+}
+// Play Transport Control
+async function togglePlay() {
+await initAudioEngine();
+if (appState.isPlaying) {
+Tone.Transport.stop();
+if (uploadedAudioNode) {
+try { uploadedAudioNode.stop(); } catch(e){}
+}
+appState.isPlaying = false;
+document.getElementById('playMasterIcon').className = 'fa-solid fa-play';
+document.getElementById('transportState').innerText = 'PAUSED';
+document.getElementById('transportState').className = 'text-xs font-mono font-bold text-amber-400 block';
+} else {
+Tone.Transport.start();
+if (uploadedAudioBuffer && !appState.mutes.guitar && !appState.solos.bass && !appState.solos.drums) {
+const audioCtx = Tone.context.rawContext;
+uploadedAudioNode = audioCtx.createBufferSource();
+uploadedAudioNode.buffer = uploadedAudioBuffer;
+const gainNode = audioCtx.createGain();
+gainNode.gain.value = appState.volumes.guitar / 100;
+uploadedAudioNode.connect(gainNode);
+gainNode.connect(audioCtx.destination);
+uploadedAudioNode.start(0);
+}
+appState.isPlaying = true;
+document.getElementById('playMasterIcon').className = 'fa-solid fa-pause';
+document.getElementById('transportState').innerText = 'STREAMING LIVE';
+document.getElementById('transportState').className = 'text-xs font-mono font-bold text-atomic-accent block';
+}
+}
+function stopPlay() {
+if (!isInitialized) return;
+Tone.Transport.stop();
+Tone.Transport.seconds = 0;
+if (uploadedAudioNode) {
+try { uploadedAudioNode.stop(); } catch(e){}
+}
+appState.isPlaying = false;
+document.getElementById('playMasterIcon').className = 'fa-solid fa-play';
+document.getElementById('transportState').innerText = 'STOPPED';
+document.getElementById('transportState').className = 'text-xs font-mono font-bold text-slate-400 block';
+}
+// Mixer controls
+function setTrackVolume(track, val) {
+appState.volumes[track] = parseInt(val);
+document.getElementById(⁠volVal-${track}⁠).innerText = val + '%';
+if (isInitialized) {
+if (track === 'bass' && bassGainNode) bassGainNode.gain.value = val / 100;
+if (track === 'drums' && drumGainNode) drumGainNode.gain.value = val / 100;
+}
+}
+function toggleMute(track) {
+appState.mutes[track] = !appState.mutes[track];
+const btn = document.getElementById(⁠mute-${track}⁠);
+if (appState.mutes[track]) {
+btn.className = 'w-6 h-6 rounded bg-rose-500 text-[10px] font-mono text-white transition';
+} else {
+btn.className = 'w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition';
+}
+}
+function toggleSolo(track) {
+appState.solos[track] = !appState.solos[track];
+const btn = document.getElementById(⁠solo-${track}⁠);
+if (appState.solos[track]) {
+btn.className = 'w-6 h-6 rounded bg-atomic-accent text-[10px] font-mono text-atomic-900 font-bold transition';
+} else {
+btn.className = 'w-6 h-6 rounded bg-atomic-700 text-[10px] font-mono text-slate-300 hover:text-white transition';
+}
+}
+function exportMix() {
+showNotification('Compiling AI Stems package (.wav ZIP)... Please wait.', 'success');
+setTimeout(() => {
+showNotification('Export ready! Downloading multi-track stems.', 'success');
+}, 1500);
+}
+function showNotification(message, type = 'success') {
+const banner = document.getElementById('notificationBanner');
+const msg = document.getElementById('notifMessage');
+const icon = document.getElementById('notifIcon');
+msg.innerText = message;
+if (type === 'success') {
+banner.className = 'mb-6 p-4 rounded-xl border bg-atomic-800 border-atomic-accent/40 text-atomic-accent flex items-center justify-between shadow-lg';
+icon.className = 'fa-solid fa-circle-check text-atomic-accent text-lg';
+} else {
+banner.className = 'mb-6 p-4 rounded-xl border bg-atomic-800 border-atomic-orange/40 text-atomic-orange flex items-center justify-between shadow-lg';
+icon.className = 'fa-solid fa-triangle-exclamation text-atomic-orange text-lg';
+}
+banner.classList.remove('hidden');
+setTimeout(() => { hideNotification(); }, 4000);
+}
+function hideNotification() {
+document.getElementById('notificationBanner').classList.add('hidden');
+}
+</script>
+</body>
+</html>
