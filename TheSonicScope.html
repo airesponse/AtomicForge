@@ -292,9 +292,9 @@
     <div class="panel">
       <div class="upload-zone" id="dropZone" onclick="document.getElementById('audioInput').click();">
         <div style="font-size: 2rem; margin-bottom: 8px;">🎵</div>
-        <div style="font-weight: 600; font-size: 1rem;">Click or Drag MP3 / Audio File to Analyze</div>
-        <div style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Extracts Key, Chords, Scales & Progression Structure</div>
-        <input type="file" id="audioInput" accept="audio/*">
+        <div style="font-weight: 600; font-size: 1rem;">Click or Drag Audio File to Analyze</div>
+        <div style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Supports M4A, MP3, WAV, AAC</div>
+        <input type="file" id="audioInput" accept="audio/*,.m4a,.mp3,.wav,.aac">
       </div>
 
       <div class="controls-row">
@@ -470,7 +470,6 @@
     analyzeBtn.addEventListener('click', () => {
       statusText.textContent = "Analyzing musical spectrum...";
       setTimeout(() => {
-        // Randomized simulation of harmonic analysis on upload
         const keys = [
           { key: 'A Minor', scale: 'A Natural Minor (Aeolian)', tempo: '116 BPM', chords: ['Am', 'F', 'C', 'G'] },
           { key: 'E Minor', scale: 'E Minor Pentatonic / Blues', tempo: '124 BPM', chords: ['Em', 'G', 'D', 'Am'] },
