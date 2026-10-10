@@ -131,12 +131,25 @@
     .placeholder-card {
       border: 1px dashed var(--border);
       background: transparent;
-      opacity: 0.6;
+      opacity: 0.65;
+      cursor: default;
+    }
+
+    .placeholder-card:active, .placeholder-card:hover {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: var(--muted);
+      transform: none;
     }
 
     .placeholder-card .app-icon {
-      background: #2c2c2e;
+      background: #1c1c1e;
       border-color: #3a3a3c;
+    }
+
+    .placeholder-card .card-footer {
+      color: var(--muted);
+      font-weight: 400;
+      font-style: italic;
     }
 
     footer {
@@ -191,20 +204,20 @@
     </a>
 
     <a href="FretboardArt.html" class="app-card">
-        <div>
+      <div>
         <div class="card-header">
           <div class="app-icon">🥁</div>
           <div class="app-title">Fretboard Art</div>
         </div>
         <div class="app-desc">
-            Graphical guitar fretboard art creator; for use in logging your song chord and scale fingerings quickly and easily.
+          Graphical guitar fretboard art creator; for use in logging your song chord and scale fingerings quickly and easily.
         </div>
       </div>
       <div class="card-footer">
         <span>Launch App</span>
         <span>→</span>
       </div>
-    </div>
+    </a>
 
     <a href="ChordWheel.html" class="app-card">
       <div>
@@ -213,7 +226,7 @@
           <div class="app-title">Chord Wheel</div>
         </div>
         <div class="app-desc">
-            I'm not entirely sure what this does yet... let's find out!
+          I'm not entirely sure what this does yet... let's find out!
         </div>
       </div>
       <div class="card-footer">
@@ -235,6 +248,82 @@
       <div class="card-footer">
         <span>Launch App</span>
         <span>→</span>
+      </div>
+    </a>
+
+    <!-- Under Construction Slots -->
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Coming Soon</div>
+        </div>
+        <div class="app-desc">
+          New atomic tool currently being engineered in the workshop. Stay tuned.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Coming Soon</div>
+        </div>
+        <div class="app-desc">
+          New atomic tool currently being engineered in the workshop. Stay tuned.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Coming Soon</div>
+        </div>
+        <div class="app-desc">
+          New atomic tool currently being engineered in the workshop. Stay tuned.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Coming Soon</div>
+        </div>
+        <div class="app-desc">
+          New atomic tool currently being engineered in the workshop. Stay tuned.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Coming Soon</div>
+        </div>
+        <div class="app-desc">
+          New atomic tool currently being engineered in the workshop. Stay tuned.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
       </div>
     </div>
 
