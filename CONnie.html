@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>CONnie - M4A to MP3 Converter</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- lamejs for pure client-side MP3 encoding -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --card-bg: #1a1a1e;
+      --card-hover: #242429;
+      --accent: #00d2ff;
+      --accent-glow: rgba(0, 210, 255, 0.15);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --border: #2c2c2e;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    }
+    .custom-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+    }
+    .accent-btn {
+      background: var(--accent);
+      color: #000;
+      transition: all 0.2s ease;
+    }
+    .accent-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+
+  <!-- Header -->
+  <header class="w-full max-w-xl pb-6 border-b border-[#2c2c2e] flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <span>🔄</span> CONnie
+      </h1>
+      <p class="text-sm text-gray-400 mt-1">Convert iPhone .m4a Voice Memos to .mp3 instantly</p>
+    </div>
+    <a href="index.html" class="text-xs px-3 py-1.5 rounded-lg bg-[#242429] border border-[#2c2c2e] text-gray-300 hover:text-white transition">
+      ← Hub
+    </a>
+  </header>
+
+  <!-- Main Converter Interface -->
+  <main class="w-full max-w-xl my-8 flex flex-col gap-6">
+    
+    <!-- Dropzone / File Picker -->
+    <div id="drop-zone" class="custom-card rounded-2xl p-8 border-2 border-dashed border-[#3a3a3c] text-center cursor-pointer hover:border-[#00d2ff] transition flex flex-col items-center justify-center gap-4">
+      <div class="w-16 h-16 rounded-full bg-[#00d2ff]/10 border border-[#00d2ff]/30 flex items-center justify-center text-3xl">
+        🎙️
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-white">Tap or Drop your .m4a file here</h3>
+        <p class="text-xs text-gray-400 mt-1">Supports iPhone Voice Memos, GarageBand exports, and audio files</p>
+      </div>
+      <input type="file" id="file-input" accept=".m4a,audio/mp4,audio/*" class="hidden">
+      <button class="px-5 py-2.5 rounded-xl font-semibold text-sm accent-btn shadow-lg">
+        Select Audio File
+      </button>
+    </div>
+
+    <!-- File Info & Progress Panel -->
+    <div id="status-panel" class="custom-card rounded-2xl p-6 hidden flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🎵</span>
+          <div>
+            <h4 id="file-name" class="font-semibold text-white text-sm truncate max-w-[240px]">filename.m4a</h4>
+            <span id="file-size" class="text-xs text-gray-400">0 MB</span>
+          </div>
+        </div>
+        <span id="conversion-status" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          Ready to convert
+        </span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-[#2c2c2e] h-2 rounded-full overflow-hidden hidden" id="progress-container">
+        <div id="progress-bar" class="bg-[#00d2ff] h-full w-0 transition-all duration-300"></div>
+      </div>
+
+      <!-- Action Buttons & Preview -->
+      <div id="action-area" class="flex flex-col gap-3 mt-2">
+        <button id="convert-btn" class="w-full py-3 rounded-xl font-semibold text-sm accent-btn flex items-center justify-center gap-2">
+          <span>⚙️</span> Convert to MP3
+        </button>
+        
+        <div id="result-area" class="hidden flex flex-col gap-3">
+          <audio id="audio-preview" controls class="w-full rounded-xl"></audio>
+          <a id="download-btn" class="w-full py-3 rounded-xl font-semibold text-sm bg-emerald-500 text-black hover:bg-emerald-400 text-center transition flex items-center justify-center gap-2">
+            <span>⬇️</span> Download Converted .MP3
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-xl text-center text-xs text-gray-500 pt-4 border-t border-[#2c2c2e]">
+    Atomic Forge Collection • 100% Client-Side Conversion
+  </footer>
+
+  <!-- Converter Logic Script -->
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const statusPanel = document.getElementById('status-panel');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('
