@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="My Web Tools">
+  <meta name="apple-mobile-web-app-title" content="Atomic Forge">
+  <link rel="icon" type="image/png" href="Atomic Forge icon.png">
   <title>Atomic Forge</title>
   <style>
     :root {
@@ -42,6 +43,18 @@
       padding: 32px 0 24px;
       border-bottom: 1px solid var(--border);
       margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
     }
 
     h1 {
@@ -54,7 +67,7 @@
     .subtitle {
       font-size: 0.95rem;
       color: var(--muted);
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     .grid-container {
@@ -131,12 +144,12 @@
     .placeholder-card {
       border: 1px dashed var(--border);
       background: transparent;
-      opacity: 0.65;
+      opacity: 0.6;
       cursor: default;
     }
 
     .placeholder-card:active, .placeholder-card:hover {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.01);
       border-color: var(--muted);
       transform: none;
     }
@@ -144,6 +157,7 @@
     .placeholder-card .app-icon {
       background: #1c1c1e;
       border-color: #3a3a3c;
+      font-size: 1.1rem;
     }
 
     .placeholder-card .card-footer {
@@ -164,8 +178,11 @@
 <body>
 
   <header>
-    <h1>Atomic Forge by Atomic StormWorks</h1>
-    <div class="subtitle">Songwriting & Tools for Inspiration</div>
+    <img src="Atomic Forge icon.png" alt="Atomic Forge Icon" class="header-logo">
+    <div>
+      <h1>Atomic Forge by Atomic StormWorks</h1>
+      <div class="subtitle">Songwriting & Tools for Inspiration</div>
+    </div>
   </header>
 
   <main class="grid-container">
@@ -315,11 +332,13 @@
       <div class="card-footer">
         <span>Launch</span>
       </div>
-      
-   <a href="ChordBook.html" class="app-card">
+    </a>
+
+    <!-- Active App: The Chord Book -->
+    <a href="ChordBook.html" class="app-card">
       <div>
         <div class="card-header">
-          <div class="app-icon">🎼</div>
+          <div class="app-icon">📖</div>
           <div class="app-title">The Chord Book</div>
         </div>
         <div class="app-desc">
@@ -328,9 +347,100 @@
       </div>
       <div class="card-footer">
         <span>Launch</span>
+        <span>→</span>
+      </div>
+    </a>
+
+    <!-- 6 Empty Inactive Slots (Coming Soon / Under Construction) -->
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">⏳</div>
+          <div class="app-title">Future Tool 1</div>
+        </div>
+        <div class="app-desc">
+          Next-generation audio utility currently in planning.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Coming Soon</span>
       </div>
     </div>
-    </a>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🚧</div>
+          <div class="app-title">Future Tool 2</div>
+        </div>
+        <div class="app-desc">
+          Experimental module under active development.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🧪</div>
+          <div class="app-title">Future Tool 3</div>
+        </div>
+        <div class="app-desc">
+          Reserved slot for upcoming AtomicForge expansion.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Coming Soon</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🛠️</div>
+          <div class="app-title">Future Tool 4</div>
+        </div>
+        <div class="app-desc">
+          Placeholder for future custom hardware or plugin integration.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">💡</div>
+          <div class="app-title">Future Tool 5</div>
+        </div>
+        <div class="app-desc">
+          Brainstorming phase for auxiliary songwriting utility.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Coming Soon</span>
+      </div>
+    </div>
+
+    <div class="app-card placeholder-card">
+      <div>
+        <div class="card-header">
+          <div class="app-icon">🔒</div>
+          <div class="app-title">Future Tool 6</div>
+        </div>
+        <div class="app-desc">
+          Reserved slot in the Atomic Forge ecosystem suite.
+        </div>
+      </div>
+      <div class="card-footer">
+        <span>Under Construction</span>
+      </div>
+    </div>
 
   </main>
 
