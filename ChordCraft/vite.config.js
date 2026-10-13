@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // The Pages project root is /AtomicForge/.
+  // ChordCraft is published under the AtomicForge launcher at /ChordCraft/.
   // Keep the root path for local development and preview servers.
-  base: process.env.GITHUB_PAGES === 'true' ? '/AtomicForge/' : '/',
+  base: process.env.GITHUB_PAGES === 'true' ? '/AtomicForge/ChordCraft/' : '/',
 });

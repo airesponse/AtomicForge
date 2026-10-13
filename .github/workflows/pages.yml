@@ -48,10 +48,10 @@ jobs:
 
       - name: Assemble Pages site
         run: |
-          mkdir -p _site
-          cp -R ChordCraft/dist/. _site/
+          mkdir -p _site/ChordCraft
+          cp -R ChordCraft/dist/. _site/ChordCraft/
           for file in *.html; do
-            [ "$file" = "index.html" ] || cp "$file" _site/
+            cp "$file" _site/
           done
           cp *.png _site/
           touch _site/.nojekyll
