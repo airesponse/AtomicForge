@@ -71,9 +71,9 @@
 <script>
 (()=>{
 'use strict';
-const isiOSDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1),portraitQuery=window.matchMedia('(orientation: portrait)');
-function updateOrientationPrompt(){document.documentElement.classList.toggle('landscape-required',isiOSDevice&&portraitQuery.matches)}
-updateOrientationPrompt();portraitQuery.addEventListener?.('change',updateOrientationPrompt);window.addEventListener('orientationchange',updateOrientationPrompt);window.addEventListener('resize',updateOrientationPrompt);
+const isiOSDevice=/iPhone|iPad|iPod/i.test(`${navigator.userAgent} ${navigator.platform}`)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1)||navigator.userAgentData?.platform==='iOS',portraitQuery=window.matchMedia('(orientation: portrait)');
+function updateOrientationPrompt(){const viewport=window.visualViewport,portrait=portraitQuery.matches||(viewport?viewport.height>=viewport.width:window.innerHeight>=window.innerWidth);document.documentElement.classList.toggle('landscape-required',isiOSDevice&&portrait)}
+updateOrientationPrompt();portraitQuery.addEventListener?.('change',updateOrientationPrompt);window.addEventListener('orientationchange',updateOrientationPrompt);window.addEventListener('resize',updateOrientationPrompt);window.visualViewport?.addEventListener('resize',updateOrientationPrompt);
 const $=id=>document.getElementById(id), NOTE_NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'], FLAT_NAMES=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
 const COLORS=['#ff655e','#52a9ff','#51ce91','#f3c44f','#c783ec','#f28ab1','#42c7c1','#f2f0e8'];
 const TUNINGS={standard:['E2','A2','D3','G3','B3','E4'],dropd:['D2','A2','D3','G3','B3','E4'],dadgad:['D2','A2','D3','G3','A3','D4'],openg:['D2','G2','D3','G3','B3','D4'],opend:['D2','A2','D3','F♯3','A3','D4'],bass:['E1','A1','D2','G2'],ukulele:['G4','C4','E4','A4']};
@@ -126,7 +126,7 @@ $('savedList').addEventListener('click',e=>{const load=e.target.closest('[data-l
 }
 function initRoot(){const r=$('rootNote');r.innerHTML=(state.flatNames?FLAT_NAMES:NOTE_NAMES).map((n,i)=>`<option value="${i}">${n}</option>`).join('')}
 function fillPreset(id){const presets={major:['Major Scale',[0,2,4,5,7,9,11]],minor:['Natural Minor',[0,2,3,5,7,8,10]],majorPent:['Major Pentatonic',[0,2,4,7,9]],minorPent:['Minor Pentatonic',[0,3,5,7,10]],blues:['Blues Scale',[0,3,5,6,7,10]],majorTriad:['Major Triad',[0,4,7]],minorTriad:['Minor Triad',[0,3,7]],maj7:['Major 7',[0,4,7,11]],dom7:['Dominant 7',[0,4,7,10]],min7:['Minor 7',[0,3,7,10]]};const preset=presets[id];if(!preset)return;checkpoint();const root=Number(state.root),intervals=preset[1],frets=actualFrets(),start=visibleStart(),tunes=tuningMidi();state.notes={};state.stringModes={};state.labelMode='interval';for(let s=0;s<state.strings;s++)for(let j=0;j<frets;j++){const fret=start+j,semitone=(pc((tunes[s]||40)+fret)-root+12)%12,index=intervals.indexOf(semitone);if(index<0)continue;const color=COLORS[index%COLORS.length];state.notes[noteKey(s,fret)]=[{color,shape:'circle',finger:''}]}const rootName=(state.flatNames?FLAT_NAMES:NOTE_NAMES)[root];state.title=`${rootName} ${preset[0]}`;state.activeId=null;selectedMark=null;persist();syncControls();renderAll();toast(`${state.title} added to the fretboard.`)}
-initRoot();syncControls();bind();renderAll();if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./fretboard-sw.js',{scope:'./'}).catch(()=>{});
+initRoot();syncControls();bind();renderAll();if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./fretboard-sw.js?v=3',{scope:'./',updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 })();
 </script>
 </body>
