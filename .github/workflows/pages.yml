@@ -54,6 +54,7 @@ jobs:
             cp "$file" _site/
           done
           cp *.png _site/
+          cp *.svg _site/
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
