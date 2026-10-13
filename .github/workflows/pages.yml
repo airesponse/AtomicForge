@@ -55,6 +55,8 @@ jobs:
           done
           cp *.png _site/
           cp *.svg _site/
+          cp TriadMachineSoundfont.js _site/
+          cp TriadMachineSoundfont.LICENSE _site/
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
