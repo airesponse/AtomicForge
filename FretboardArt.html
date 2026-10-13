@@ -1,422 +1,127 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Responsive Fretboard Note Sketcher</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
-        }
-
-        body {
-            background-color: #1e1e1e;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 10px;
-        }
-
-        /* Controls Toolbar */
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 50px;
-            padding: 0 10px;
-            flex-shrink: 0;
-        }
-
-        .color-palette {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .color-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        .color-btn.active {
-            border-color: #ffffff;
-            transform: scale(1.15);
-        }
-
-        .btn-red { background-color: #ff3b30; }
-        .btn-blue { background-color: #007aff; }
-        .btn-green { background-color: #34c759; }
-        .btn-yellow { background-color: #ffcc00; }
-        .btn-purple { background-color: #af52de; }
-
-        .action-btn {
-            background-color: #333333;
-            color: white;
-            border: 1px solid #555555;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .action-btn:active {
-            background-color: #444444;
-        }
-
-        /* Responsive Wrapper */
-        .fretboard-container {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            padding: 15px 5px;
-        }
-
-        .fretboard-wrapper {
-            display: flex;
-            flex-direction: column; /* Landscape default */
-            width: 100%;
-            height: 90%;
-            max-width: 1000px;
-        }
-
-        /* Main CSS Grid Fretboard */
-        .fretboard {
-            display: grid;
-            flex-grow: 1;
-            background-color: #3d2a1d;
-            border: 2px solid #291c14;
-            border-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-            /* Landscape Layout: 16 columns (nut + 15), 6 rows (strings) */
-            grid-template-columns: 40px repeat(15, minmax(0, 1fr));
-            grid-template-rows: repeat(6, 1fr);
-            position: relative;
-        }
-
-        /* Marker Row/Column Outside the Wood */
-        .fret-markers {
-            display: flex;
-            flex-direction: row; /* Landscape default */
-            margin-left: 40px; /* Accounts for the Nut */
-            height: 25px;
-        }
-
-        .fret-marker {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-            font-weight: 500;
-            color: #8a8a8f;
-        }
-
-        .fret-marker.nut-marker {
-            width: 40px;
-            flex: none;
-            margin-left: -40px;
-        }
-
-        /* Fret Cells & Wires */
-        .fret-cell {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 2px;
-            grid-row: var(--row-land);
-            grid-column: var(--col-land);
-            border-right: 2px solid #b5b5b5; /* Landscape Fret Wire */
-            border-bottom: 1px solid rgba(0, 0, 0, 0.15); /* String separation visual */
-        }
-
-        .fret-cell.nut {
-            border-right: 5px solid #e5e5ea;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-
-        .fret-cell.last-fret { border-right: none; }
-        .fret-cell.highest-string { border-bottom: none; }
-
-        /* String Lines */
-        .string-line {
-            position: absolute;
-            background-color: #cccccc;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.6);
-            pointer-events: none;
-            z-index: 1;
-            /* Landscape styling */
-            width: 100%;
-            height: var(--str-thick);
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
-        }
-
-        /* Inlays */
-        .inlay-dot {
-            background-color: rgba(255, 255, 255, 0.25);
-            border-radius: 50%;
-            width: 14px;
-            height: 14px;
-            margin: auto;
-            pointer-events: none;
-            z-index: 0;
-            /* Landscape placement spanning between specified string rows */
-            grid-row: var(--row-land-start) / var(--row-land-end);
-            grid-column: var(--col-land);
-        }
-
-        /* Note Markers */
-        .note-marker {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            z-index: 3;
-            border: 2px solid #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        /* ========================================= */
-        /* PORTRAIT MODE OVERRIDES                   */
-        /* ========================================= */
-        @media screen and (orientation: portrait) {
-            .fretboard-wrapper {
-                flex-direction: row; 
-                width: 95%;
-                height: 100%;
-                max-width: none;
-            }
-
-            .fretboard {
-                /* Portrait Layout: 6 columns (strings), 16 rows (nut + 15) */
-                grid-template-columns: repeat(6, 1fr);
-                grid-template-rows: 40px repeat(15, minmax(0, 1fr));
-            }
-
-            .fret-markers {
-                flex-direction: column;
-                margin-left: 0;
-                margin-top: 40px; 
-                width: 30px;
-                height: auto;
-            }
-
-            .fret-marker.nut-marker {
-                width: 100%;
-                height: 40px;
-                margin-left: 0;
-                margin-top: -40px;
-            }
-
-            .fret-cell {
-                flex-direction: column;
-                grid-row: var(--row-port);
-                grid-column: var(--col-port);
-                border-right: 1px solid rgba(0, 0, 0, 0.15); /* String separation visual */
-                border-bottom: 2px solid #b5b5b5; /* Portrait Fret Wire */
-            }
-
-            .fret-cell.nut {
-                border-right: 1px solid rgba(0, 0, 0, 0.15);
-                border-bottom: 5px solid #e5e5ea;
-            }
-
-            .fret-cell.last-fret { border-bottom: none; }
-            .fret-cell.highest-string { border-right: none; }
-
-            .string-line {
-                width: var(--str-thick);
-                height: 100%;
-                top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-
-            .inlay-dot {
-                /* Portrait placement spanning between specified string columns */
-                grid-row: var(--row-port);
-                grid-column: var(--col-port-start) / var(--col-port-end);
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#120e18">
+<meta name="description" content="Create, save, and export guitar fretboard diagrams and chord sheets offline.">
+<title>Fretboard Art — Atomic Forge</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<style>
+:root{color-scheme:dark;--bg:#120e18;--panel:#1c1722;--panel2:#241d2d;--line:#3d3347;--text:#f5f0fa;--muted:#ad9fb6;--purple:#c9a4f5;--purple2:#8857bd;--mint:#89d8c1;--amber:#f2bb69;--red:#ed7f93;--shadow:0 22px 65px #08050b80;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 12% -8%,#8955b51e,transparent 34%),radial-gradient(ellipse at 100% 20%,#dba35e0c,transparent 28%),var(--bg);color:var(--text)}button,input,select,textarea{font:inherit;color:inherit}button,select,input,textarea{accent-color:var(--purple)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--purple);outline-offset:2px}a{color:inherit}.app{max-width:1540px;width:calc(100% - 40px);margin:auto}.topbar{height:68px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff14}.brand{display:inline-flex;align-items:center;gap:11px;color:var(--text);text-decoration:none}.brand-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:linear-gradient(145deg,#e3ceff,#8052b3);color:#251834;font-size:20px;font-weight:900;box-shadow:0 0 28px #ba90e627}.brand-copy{font-size:12px;letter-spacing:.15em;font-weight:800;text-transform:uppercase}.brand-copy small{display:block;margin-top:4px;color:var(--muted);font-size:9px;font-weight:550;letter-spacing:.13em}.top-actions{display:flex;align-items:center;gap:8px}.button,.icon-button,.menu summary{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:37px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#ffffff06;color:var(--text);font-size:12px;font-weight:650;cursor:pointer;text-decoration:none}.button:hover,.icon-button:hover,.menu summary:hover{border-color:#a98bc7;background:#ffffff0c}.button.primary{background:var(--purple);border-color:var(--purple);color:#24182e}.button.primary:hover{background:#dfc9fc}.button.subtle{color:var(--muted)}.button.small{min-height:31px;padding:6px 9px;font-size:11px}.icon-button{width:37px;padding:0;font-size:16px}.menu{position:relative}.menu summary{list-style:none}.menu summary::-webkit-details-marker{display:none}.menu-pop{position:absolute;z-index:20;right:0;top:calc(100% + 7px);min-width:205px;padding:6px;background:#251d2e;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}.menu-pop button,.menu-pop a{display:flex;width:100%;padding:10px;border:0;border-radius:7px;background:transparent;color:var(--text);font-size:12px;text-align:left;text-decoration:none;cursor:pointer}.menu-pop button:hover,.menu-pop a:hover{background:#ffffff0c}.hero{display:flex;align-items:end;justify-content:space-between;gap:22px;padding:28px 0 19px}.eyebrow{color:var(--purple);font-size:10px;font-weight:750;letter-spacing:.19em;text-transform:uppercase}.hero h1{margin:7px 0 5px;font-size:clamp(27px,4vw,40px);line-height:1;letter-spacing:-.045em}.hero p{max-width:700px;margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.55}.song-title{display:grid;gap:5px;min-width:min(330px,100%)}.song-title label,.field-label{color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}.song-title input,.field,.song-notes{width:100%;min-height:39px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#120e18;color:var(--text)}.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 12px;background:#1c1722d9;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.tool{display:flex;align-items:center;gap:7px}.tool label{color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}.tool select,.tool input{height:35px;max-width:175px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:#120e18;color:var(--text);font-size:11px}.tool input[type=number]{width:65px}.tool input[type=checkbox]{width:16px;height:16px}.divider{width:1px;height:25px;background:var(--line)}.toggle{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;margin-top:14px;align-items:start}.stack{display:grid;gap:14px}.card{overflow:hidden;border:1px solid var(--line);border-radius:16px;background:linear-gradient(140deg,#ffffff05,transparent 43%),var(--panel);box-shadow:var(--shadow)}.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #ffffff11}.card-head h2,.card-head h3{margin:0;font-size:13px;letter-spacing:-.02em}.card-head p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.card-body{padding:14px 16px}.board-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.board-scroll{overflow:auto;padding:12px;background:#100c14;overscroll-behavior-inline:contain;scrollbar-color:#655173 transparent}.board-svg{display:block;max-width:none;height:auto}.board-caption{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 15px;color:var(--muted);font-size:10px}.palette{display:flex;gap:8px;flex-wrap:wrap}.swatch-btn{width:30px;height:30px;border:2px solid #ffffff2a;border-radius:50%;cursor:pointer;box-shadow:0 2px 8px #0005}.swatch-btn.active{border-color:#fff;box-shadow:0 0 0 2px var(--purple),0 2px 8px #0008;transform:scale(1.08)}.palette-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.shape-picks{display:flex;gap:5px}.shape-picks button{width:32px;height:30px;border:1px solid var(--line);border-radius:7px;background:#ffffff06;cursor:pointer}.shape-picks button.active{border-color:var(--purple);color:var(--purple)}.inspector{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px;padding-top:12px;border-top:1px solid #ffffff12}.inspector .field-label{grid-column:1/-1}.inspector select{width:100%;height:34px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#120e18;font-size:11px}.hint{margin:9px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.statline{display:flex;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:10px}.statline span{padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:#ffffff04}.list{display:grid;gap:7px}.list-row{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#ffffff04}.list-row.active{border-color:var(--purple)}.list-row-main{min-width:0;flex:1;cursor:pointer}.list-row strong{display:block;overflow:hidden;font-size:11px;text-overflow:ellipsis;white-space:nowrap}.list-row small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.list-actions{display:flex;gap:4px}.empty{padding:12px 5px;color:var(--muted);font-size:11px;line-height:1.5}.sheet-card{margin-top:14px}.sheet-grid{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);gap:14px}.song-notes{min-height:126px;resize:vertical;font-size:12px;line-height:1.5}.sheet-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px}.sheet-item{position:relative;min-width:0;padding:9px;border:1px solid var(--line);border-radius:10px;background:#ffffff04}.sheet-item-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px}.sheet-item input{min-width:0;width:100%;padding:5px 6px;border:1px solid transparent;border-radius:5px;background:transparent;font-size:11px;font-weight:700}.sheet-item input:focus{border-color:var(--line)}.sheet-item .remove{border:0;background:transparent;color:var(--muted);cursor:pointer}.sheet-item svg{width:100%;max-height:95px;object-fit:contain}.sheet-hint{color:var(--muted);font-size:10px;line-height:1.5}.toast{position:fixed;z-index:50;bottom:18px;left:50%;transform:translate(-50%,12px);opacity:0;padding:10px 14px;border-radius:9px;background:#f5f0fa;color:#251834;font-size:11px;font-weight:750;box-shadow:var(--shadow);pointer-events:none;transition:.18s}.toast.show{transform:translate(-50%,0);opacity:1}.hidden{display:none!important}
+@media(max-width:1000px){.workspace{grid-template-columns:minmax(0,1fr) 275px}.toolbar .divider:nth-of-type(2){display:none}}
+@media(max-width:760px){.app{width:calc(100% - 22px)}.topbar{height:58px}.brand-copy small{display:none}.top-actions .wide-label{display:none}.hero{align-items:stretch;flex-direction:column;padding:22px 0 15px;gap:14px}.song-title{min-width:0}.workspace{grid-template-columns:1fr}.side{grid-row:2}.sheet-grid{grid-template-columns:1fr}.toolbar{gap:8px;padding:9px}.tool{gap:5px}.tool select{max-width:140px}.board-scroll{padding:8px}.card-head{padding:12px}.card-body{padding:12px}}
+@media print{body{background:#fff!important;color:#111!important}.app,.toast{display:none!important}#printSheet{display:block!important;font:12pt Arial,sans-serif;color:#111}#printSheet h1{margin:0 0 4mm;font-size:21pt}#printSheet .print-sub{margin:0 0 6mm;color:#555;white-space:pre-wrap}#printSheet .print-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7mm}#printSheet figure{break-inside:avoid;margin:0;padding:3mm;border:1px solid #bbb;border-radius:2mm}#printSheet figure h2{margin:0 0 2mm;font-size:12pt}#printSheet svg{display:block;width:100%;height:auto;max-height:58mm}#printSheet .print-note{margin-top:2mm;color:#555;font-size:9pt;white-space:pre-wrap}}
+</style>
 </head>
 <body>
-
-    <!-- Controls -->
-    <div class="toolbar">
-        <div class="color-palette">
-            <div class="color-btn btn-red active" data-color="#ff3b30"></div>
-            <div class="color-btn btn-blue" data-color="#007aff"></div>
-            <div class="color-btn btn-green" data-color="#34c759"></div>
-            <div class="color-btn btn-yellow" data-color="#ffcc00"></div>
-            <div class="color-btn btn-purple" data-color="#af52de"></div>
-        </div>
-        <button class="action-btn" id="clear-btn">Clear All</button>
-    </div>
-
-    <!-- Responsive App Container -->
-    <div class="fretboard-container">
-        <div class="fretboard-wrapper">
-            <!-- Markers injected by JS -->
-            <div class="fret-markers" id="fret-markers"></div>
-            
-            <!-- Grid injected by JS -->
-            <div class="fretboard" id="guitar-fretboard"></div>
-        </div>
-    </div>
-
-    <script>
-        const fretboard = document.getElementById('guitar-fretboard');
-        const fretMarkersContainer = document.getElementById('fret-markers');
-        const clearBtn = document.getElementById('clear-btn');
-        const colorButtons = document.querySelectorAll('.color-btn');
-        
-        let currentColor = '#ff3b30';
-        
-        // Map string thicknesses (6 is Low E thickest, 1 is High E thinnest)
-        const stringThicknesses = { 6: 3.0, 5: 2.5, 4: 2.0, 3: 1.5, 2: 1.2, 1: 1.0 };
-
-        // Color Selection Logic
-        colorButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                colorButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentColor = btn.getAttribute('data-color');
-            });
-        });
-
-        // 1. Generate Fret Markers Container (Numbers)
-        for (let fretNum = 0; fretNum <= 15; fretNum++) {
-            const marker = document.createElement('div');
-            marker.classList.add('fret-marker');
-            if (fretNum === 0) marker.classList.add('nut-marker');
-            marker.textContent = fretNum;
-            fretMarkersContainer.appendChild(marker);
-        }
-
-        // 2. Generate Inlays (placed directly into the grid background)
-        const singleInlays = [3, 5, 7, 9, 15];
-        const doubleInlays = [12];
-
-        singleInlays.forEach(fretNum => {
-            const inlay = document.createElement('div');
-            inlay.classList.add('inlay-dot');
-            // Landscape spans between string 3 & 4 (Rows 3 to 5)
-            inlay.style.setProperty('--row-land-start', 3);
-            inlay.style.setProperty('--row-land-end', 5);
-            inlay.style.setProperty('--col-land', fretNum + 1);
-            // Portrait spans between string 3 & 4 (Columns 3 to 5)
-            inlay.style.setProperty('--row-port', fretNum + 1);
-            inlay.style.setProperty('--col-port-start', 3);
-            inlay.style.setProperty('--col-port-end', 5);
-            fretboard.appendChild(inlay);
-        });
-
-        doubleInlays.forEach(fretNum => {
-            // Dot 1 (Between strings 5 & 4)
-            const inlay1 = document.createElement('div');
-            inlay1.classList.add('inlay-dot');
-            inlay1.style.setProperty('--row-land-start', 2);
-            inlay1.style.setProperty('--row-land-end', 4);
-            inlay1.style.setProperty('--col-land', fretNum + 1);
-            inlay1.style.setProperty('--row-port', fretNum + 1);
-            inlay1.style.setProperty('--col-port-start', 2);
-            inlay1.style.setProperty('--col-port-end', 4);
-            fretboard.appendChild(inlay1);
-
-            // Dot 2 (Between strings 2 & 1)
-            const inlay2 = document.createElement('div');
-            inlay2.classList.add('inlay-dot');
-            inlay2.style.setProperty('--row-land-start', 5);
-            inlay2.style.setProperty('--row-land-end', 7);
-            inlay2.style.setProperty('--col-land', fretNum + 1);
-            inlay2.style.setProperty('--row-port', fretNum + 1);
-            inlay2.style.setProperty('--col-port-start', 5);
-            inlay2.style.setProperty('--col-port-end', 7);
-            fretboard.appendChild(inlay2);
-        });
-
-        // 3. Generate Interactive Fret Cells and Strings
-        for (let stringNum = 1; stringNum <= 6; stringNum++) {
-            for (let fretNum = 0; fretNum <= 15; fretNum++) {
-                const cell = document.createElement('div');
-                cell.classList.add('fret-cell');
-                
-                if (fretNum === 0) cell.classList.add('nut');
-                if (fretNum === 15) cell.classList.add('last-fret');
-                if (stringNum === 1) cell.classList.add('highest-string');
-
-                // Map logical matrix to CSS Grid rows/cols physically based on orientation
-                let landRow = 7 - stringNum; // Thickest string (6) at top (Row 1)
-                let portCol = 7 - stringNum; // Thickest string (6) at left (Col 1)
-                
-                cell.style.setProperty('--row-land', landRow);
-                cell.style.setProperty('--col-land', fretNum + 1);
-                cell.style.setProperty('--row-port', fretNum + 1);
-                cell.style.setProperty('--col-port', portCol);
-                cell.style.setProperty('--str-thick', stringThicknesses[stringNum] + 'px');
-
-                // Visual String Line overlay
-                const stringLine = document.createElement('div');
-                stringLine.classList.add('string-line');
-                cell.appendChild(stringLine);
-
-                // Tap Logic for multiple note markers
-                cell.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('note-marker')) {
-                        e.target.remove();
-                        return;
-                    }
-
-                    const existingNotes = cell.querySelectorAll('.note-marker');
-                    if (existingNotes.length >= 2) {
-                        existingNotes.forEach(note => note.remove());
-                    } else {
-                        const note = document.createElement('div');
-                        note.classList.add('note-marker');
-                        note.style.backgroundColor = currentColor;
-                        cell.appendChild(note);
-                    }
-                });
-
-                fretboard.appendChild(cell);
-            }
-        }
-
-        // Global Action Clear All Notes
-        clearBtn.addEventListener('click', () => {
-            document.querySelectorAll('.note-marker').forEach(note => note.remove());
-        });
-
-        // Prevent iOS bounce scrolling
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1 || e.target.closest('.fretboard-container')) { 
-                e.preventDefault(); 
-            }
-        }, { passive: false });
-    </script>
+<div class="app">
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="Return to Atomic Forge home"><span class="brand-mark">✦</span><span class="brand-copy">Atomic Forge<small>Fretboard Art Studio</small></span></a>
+  <div class="top-actions">
+    <button class="button subtle" id="undoBtn" type="button" title="Undo (⌘/Ctrl+Z)">↶ <span class="wide-label">Undo</span></button>
+    <button class="button subtle" id="redoBtn" type="button" title="Redo (⌘/Ctrl+Shift+Z)">↷ <span class="wide-label">Redo</span></button>
+    <details class="menu"><summary>Export ▾</summary><div class="menu-pop"><button type="button" data-export="png">Download diagram · PNG</button><button type="button" data-export="svg">Download diagram · SVG</button><button type="button" id="printBtn">Print / Save as PDF</button><button type="button" id="saveProjectBtn">Download project file</button><button type="button" id="importProjectBtn">Open project file</button><a href="FretboardArtOriginal.html">Open original Fretboard Art</a></div></details>
+    <input id="importFile" class="hidden" type="file" accept="application/json,.json">
+  </div>
+</header>
+<section class="hero"><div><div class="eyebrow">Sketch · Save · Share</div><h1>Fretboard Art</h1><p>Capture chord shapes, scale patterns, and fingerings while they’re fresh. Save diagrams to a local library, assemble a song sheet, and export crisp files that stay on your device.</p></div><div class="song-title"><label for="songTitle">Song / project title</label><input id="songTitle" value="Untitled Song" maxlength="90" placeholder="Name this song or project"></div></section>
+<section class="toolbar" aria-label="Fretboard settings">
+  <div class="tool"><label for="instrument">Instrument</label><select id="instrument"><option value="guitar">Guitar</option><option value="bass">Bass</option><option value="ukulele">Ukulele</option><option value="custom">Custom strings</option></select></div>
+  <div class="tool"><label for="stringCount">Strings</label><select id="stringCount"><option>4</option><option>5</option><option selected>6</option><option>7</option><option>8</option></select></div>
+  <div class="tool"><label for="tuning">Tuning</label><select id="tuning"><option value="standard">Standard</option><option value="dropd">Drop D</option><option value="dadgad">DADGAD</option><option value="openg">Open G</option><option value="opend">Open D</option><option value="bass">Bass standard</option><option value="ukulele">Ukulele</option><option value="custom">Custom…</option></select></div>
+  <div class="tool hidden" id="customTuningWrap"><label for="customTuning">Low → high</label><input id="customTuning" value="E2 A2 D3 G3 B3 E4" aria-label="Custom tuning, low string to high string"></div>
+  <span class="divider"></span>
+  <div class="tool"><label for="viewMode">View</label><select id="viewMode"><option value="neck">Full neck</option><option value="box">5-fret window</option></select></div>
+  <div class="tool hidden" id="positionWrap"><label for="position">Starts at</label><input id="position" type="number" min="1" max="20" value="1"></div>
+  <div class="tool"><label for="fretCount">Frets</label><select id="fretCount"><option>12</option><option>15</option><option>17</option><option>22</option><option>24</option></select></div>
+  <span class="divider"></span>
+  <div class="tool"><label for="orientation">Layout</label><select id="orientation"><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select></div>
+  <label class="toggle"><input id="leftHanded" type="checkbox"> Left-handed</label>
+  <div class="tool"><label for="labelMode">Dot labels</label><select id="labelMode"><option value="off">None</option><option value="finger">Finger numbers</option><option value="note">Note names</option><option value="interval">Intervals</option></select></div>
+  <div class="tool"><label for="rootNote">Root</label><select id="rootNote"></select></div>
+  <div class="tool"><label for="spelling">Spelling</label><select id="spelling"><option value="sharp">Sharps</option><option value="flat">Flats</option></select></div>
+  <div class="tool"><label for="quickFill">Quick fill</label><select id="quickFill"><option value="">Choose chord / scale…</option><optgroup label="Scales"><option value="major">Major scale</option><option value="minor">Natural minor</option><option value="majorPent">Major pentatonic</option><option value="minorPent">Minor pentatonic</option><option value="blues">Blues scale</option></optgroup><optgroup label="Chord tones"><option value="majorTriad">Major triad</option><option value="minorTriad">Minor triad</option><option value="maj7">Major 7</option><option value="dom7">Dominant 7</option><option value="min7">Minor 7</option></optgroup></select></div>
+</section>
+<main>
+<div class="workspace">
+  <section class="card board-card">
+    <div class="card-head"><div><h2 id="diagramTitleHeading">Current diagram</h2><p>Tap a fret to add a marker · tap a marker to remove it · tap the string badge to set open or muted.</p></div><div class="board-tools"><button class="button small" id="clearBtn" type="button">Clear board</button><button class="button small primary" id="saveDiagramBtn" type="button">＋ Save diagram</button></div></div>
+    <div class="board-scroll"><svg id="fretboard" class="board-svg" role="img" aria-label="Editable fretboard diagram"></svg></div>
+    <div class="board-caption"><span id="boardSummary">Standard tuning · 6 strings</span><span>Color dots carry across into exports and song sheets.</span></div>
+  </section>
+  <aside class="stack side">
+    <section class="card"><div class="card-head"><div><h3>Mark style</h3><p>Choose a color and marker shape for the next note.</p></div></div><div class="card-body">
+      <div class="palette-row"><div class="palette" id="palette" aria-label="Marker color palette"></div><div class="shape-picks" id="shapePicks" aria-label="Marker shape"><button type="button" data-shape="circle" title="Circle">●</button><button type="button" data-shape="square" title="Square">■</button><button type="button" data-shape="diamond" title="Diamond">◆</button></div></div>
+      <div class="inspector" id="inspector"><span class="field-label">Selected marker</span><span id="selectedPosition" class="hint" style="margin:0">Select a dot to label it.</span><label class="field-label" for="fingerSelect">Fingering</label><select id="fingerSelect"><option value="">None</option><option value="T">Thumb</option><option value="1">1 · Index</option><option value="2">2 · Middle</option><option value="3">3 · Ring</option><option value="4">4 · Pinky</option></select><span class="field-label">Clear marker</span><button class="button small" id="removeMarkerBtn" type="button" disabled>Remove selected</button></div>
+      <p class="hint">Each fret can hold two colored notes, matching the original sketcher. A third tap clears that fret. All edits are saved locally in this browser.</p>
+    </div></section>
+    <section class="card"><div class="card-head"><div><h3>Saved diagrams</h3><p>Your local chord, scale, and fingering library.</p></div><span class="statline"><span id="savedCount">0 saved</span></span></div><div class="card-body"><div class="list" id="savedList"></div></div></section>
+  </aside>
+</div>
+<section class="card sheet-card"><div class="card-head"><div><h2>Song sheet</h2><p>Add saved shapes in song order, label each chord, and export a print-ready PDF.</p></div><div class="board-tools"><button class="button small" id="addCurrentToSheet" type="button">＋ Add current diagram</button><button class="button small primary" id="sheetPrintBtn" type="button">Print song sheet</button></div></div><div class="card-body sheet-grid"><div><label class="field-label" for="songNotes">Lyrics, structure, or performance notes</label><textarea class="song-notes" id="songNotes" placeholder="Verse: ...&#10;Chorus: ..."></textarea><p class="sheet-hint" style="margin-top:8px">Saved on this device. Export a project JSON file to back up or move the song to another browser.</p></div><div><div id="sheetList" class="sheet-list"></div><div id="sheetEmpty" class="empty">No diagrams on the song sheet yet. Save a shape, then add it here.</div></div></div></section>
+</main>
+<footer class="board-caption" style="justify-content:center;padding:22px 0 28px">Fretboard Art · Offline-first workspace · Your song sketches stay in this browser</footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<section id="printSheet" class="hidden" aria-hidden="true"></section>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), NOTE_NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'], FLAT_NAMES=['C','D♭','D','E♭','E','F','G♭','G','A♭','A','B♭','B'];
+const COLORS=['#ff655e','#52a9ff','#51ce91','#f3c44f','#c783ec','#f28ab1','#42c7c1','#f2f0e8'];
+const TUNINGS={standard:['E2','A2','D3','G3','B3','E4'],dropd:['D2','A2','D3','G3','B3','E4'],dadgad:['D2','A2','D3','G3','A3','D4'],openg:['D2','G2','D3','G3','B3','D4'],opend:['D2','A2','D3','F♯3','A3','D4'],bass:['E1','A1','D2','G2'],ukulele:['G4','C4','E4','A4']};
+const DEFAULT={instrument:'guitar',strings:6,tuning:'standard',customTuning:'E2 A2 D3 G3 B3 E4',frets:15,view:'neck',position:1,orientation:'horizontal',leftHanded:false,labelMode:'off',root:0,flatNames:false,color:COLORS[0],shape:'circle',title:'Untitled diagram',notes:{},stringModes:{},projectTitle:'Untitled Song',songNotes:'',library:[],sheet:[]};
+const KEY='atomicforge.fretboardArt.v2';let state=loadState(),selectedMark=null,undoStack=[],redoStack=[],toastTimer;
+function copy(x){return JSON.parse(JSON.stringify(x))}function loadState(){try{return {...copy(DEFAULT),...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{return copy(DEFAULT)}}function persist(){localStorage.setItem(KEY,JSON.stringify(state))}function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2200)}
+function checkpoint(){undoStack.push(copy(state));if(undoStack.length>60)undoStack.shift();redoStack.length=0;updateHistoryButtons()}
+function undo(){if(!undoStack.length)return;redoStack.push(copy(state));state=undoStack.pop();selectedMark=null;persist();syncControls();renderAll();updateHistoryButtons()}function redo(){if(!redoStack.length)return;undoStack.push(copy(state));state=redoStack.pop();selectedMark=null;persist();syncControls();renderAll();updateHistoryButtons()}
+function updateHistoryButtons(){$('undoBtn').disabled=!undoStack.length;$('redoBtn').disabled=!redoStack.length}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function parseNote(s){const m=String(s).trim().match(/^([A-Ga-g])([#♯b♭]?)(-?\d+)$/);if(!m)return null;const base={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1].toUpperCase()]+({'#':1,'♯':1,'b':-1,'♭':-1,'':0}[m[2]]);return (Number(m[3])+1)*12+base}
+function midiName(midi){return (state.flatNames?FLAT_NAMES:NOTE_NAMES)[((midi%12)+12)%12]+(Math.floor(midi/12)-1)}
+function tuning(){if(state.tuning==='custom'){const a=state.customTuning.split(/[\s,]+/).filter(Boolean);while(a.length<state.strings)a.push(TUNINGS.standard[a.length%TUNINGS.standard.length]);return a.slice(0,state.strings)}const base=TUNINGS[state.tuning]||TUNINGS.standard;if(base.length===state.strings)return [...base];if(state.instrument==='bass')return [...TUNINGS.bass,...TUNINGS.standard].slice(0,state.strings);if(state.instrument==='ukulele')return [...TUNINGS.ukulele,...TUNINGS.standard].slice(0,state.strings);if(state.strings===7)return ['A1',...TUNINGS.standard];if(state.strings===8)return ['F#1','A1',...TUNINGS.standard];if(state.strings<6)return TUNINGS.standard.slice(6-state.strings);return [...TUNINGS.standard,...Array.from({length:state.strings-6},(_,i)=>`${['A','D'][i%2]}${5+Math.floor(i/2)}`)]}
+function tuningMidi(){return tuning().map(parseNote)}function actualFrets(){return state.view==='box'?5:Number(state.frets)+1}function visibleStart(){return state.view==='box'?Math.max(1,Number(state.position)||1):0}
+function noteKey(s,f){return `${s}:${f}`}function pc(m){return ((m%12)+12)%12}
+function displayDot(s,f,n){if(state.labelMode==='finger')return n.finger||'';const midi=(tuningMidi()[s]||40)+f;if(state.labelMode==='note')return midiName(midi).replace(/-?\d+$/,'');if(state.labelMode==='interval'){const sem=(pc(midi)-Number(state.root)+12)%12;return ({0:'R',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'})[sem]}return ''}
+function renderSvg(forPrint=false){const strings=Number(state.strings),frets=actualFrets(),start=visibleStart(),tn=tuning(),mids=tuningMidi(),H=state.orientation==='horizontal';const padL=H?94:74,padT=H?48:54,cw=H?70:54,sh=H?53:58;const W=H?padL+frets*cw+(state.leftHanded?55:22):padL+strings*sh+26,Height=H?padT+strings*sh+27:padT+frets*cw+24;const sx=i=>H?padL+cw/2+i*cw:padL+sh/2+(state.leftHanded?strings-1-i:i)*sh;const fy=j=>H?padT+sh/2+j*sh:padT+cw/2+(state.leftHanded?frets-1-j:j)*cw;const absf=j=>start+j;let out=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${Height}" width="${W}" height="${Height}" role="img" aria-label="${escapeHtml(state.title)} fretboard diagram"><defs><linearGradient id="wood" x2="0" y2="1"><stop stop-color="#483451"/><stop offset="1" stop-color="#30243a"/></linearGradient></defs><rect width="100%" height="100%" rx="12" fill="#17121c"/><text x="17" y="25" fill="#e8ddf0" font-size="14" font-family="Arial,sans-serif" font-weight="700">${escapeHtml(state.title)}</text><rect x="${padL}" y="${padT}" width="${H?frets*cw:strings*sh}" height="${H?strings*sh:frets*cw}" rx="4" fill="url(#wood)" stroke="#211729" stroke-width="3"/>`;
+if(H){for(let j=0;j<strings;j++){const y=fy(j),label=tn[j]||'',labelX=state.leftHanded?padL+frets*cw+12:padL-12,badgeX=state.leftHanded?padL+frets*cw+39:padL-39;out+=`<text x="${labelX}" y="${y+4}" text-anchor="${state.leftHanded?'start':'end'}" fill="#e2d9e8" font-size="11" font-family="Arial,sans-serif">${escapeHtml(label)}</text>`;const mode=state.stringModes[j]||'';out+=`<g data-stringmode="${j}" class="stringmode" style="cursor:pointer"><circle cx="${badgeX}" cy="${y}" r="10" fill="#211a28" stroke="#6e5a7a"/><text x="${badgeX}" y="${y+4}" text-anchor="middle" fill="${mode==='mute'?'#ed7f93':mode==='open'?'#89d8c1':'#b6a9be'}" font-size="12" font-family="Arial,sans-serif">${mode==='mute'?'×':mode==='open'?'○':'·'}</text></g>`;out+=`<line x1="${padL}" y1="${y}" x2="${padL+frets*cw}" y2="${y}" stroke="#d9cbdc" stroke-width="${Math.max(1,3.1-j*.34)}" opacity=".82"/>`}
+for(let j=0;j<=frets;j++){const x=padL+(state.leftHanded?frets-j:j)*cw;out+=`<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+strings*sh}" stroke="${j===0?'#eadff0':'#c5b9cb'}" stroke-width="${j===0?5:2}" opacity="${j===0?.95:.62}"/>`;if(j<frets)out+=`<text x="${padL+(state.leftHanded?frets-j-.5:j+.5)*cw}" y="${padT-8}" text-anchor="middle" fill="#a99bae" font-size="10" font-family="Arial,sans-serif">${absf(j)===0?'0':absf(j)}</text>`}
+}else{for(let j=0;j<strings;j++){const x=sx(j),label=tn[j]||'';out+=`<text x="${x}" y="${padT-25}" text-anchor="middle" fill="#e2d9e8" font-size="11" font-family="Arial,sans-serif">${escapeHtml(label)}</text>`;const mode=state.stringModes[j]||'';out+=`<g data-stringmode="${j}" class="stringmode" style="cursor:pointer"><circle cx="${x}" cy="${padT-8}" r="9" fill="#211a28" stroke="#6e5a7a"/><text x="${x}" y="${padT-4}" text-anchor="middle" fill="${mode==='mute'?'#ed7f93':mode==='open'?'#89d8c1':'#b6a9be'}" font-size="11" font-family="Arial,sans-serif">${mode==='mute'?'×':mode==='open'?'○':'·'}</text></g>`;out+=`<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+frets*cw}" stroke="#d9cbdc" stroke-width="${Math.max(1,3.1-j*.34)}" opacity=".82"/>`}
+for(let j=0;j<=frets;j++){const y=padT+(state.leftHanded?frets-j:j)*cw;out+=`<line x1="${padL}" y1="${y}" x2="${padL+strings*sh}" y2="${y}" stroke="${j===0?'#eadff0':'#c5b9cb'}" stroke-width="${j===0?5:2}" opacity="${j===0?.95:.62}"/>`;if(j<frets)out+=`<text x="${padL-10}" y="${padT+(state.leftHanded?frets-j-.5:j+.5)*cw+4}" text-anchor="end" fill="#a99bae" font-size="10" font-family="Arial,sans-serif">${absf(j)===0?'0':absf(j)}</text>`}}
+// Fretboard position inlays
+const inlays=[3,5,7,9,12,15,17,19,21,24];for(const f of inlays){const local=f-start;if(local<1||local>=frets)continue;const localPos=state.leftHanded?frets-1-local:local;if(H){const x=padL+localPos*cw+cw/2,y=padT+strings*sh/2;out+=`<circle cx="${x}" cy="${y}" r="5" fill="#f0e6f0" opacity=".13"/>`}else{const y=padT+localPos*cw+cw/2,x=padL+strings*sh/2;out+=`<circle cx="${x}" cy="${y}" r="5" fill="#f0e6f0" opacity=".13"/>`}}
+for(let s=0;s<strings;s++)for(let j=0;j<frets;j++){const f=absf(j),x=H?sx(j):sx(s),y=H?fy(s):fy(j),k=noteKey(s,f),arr=state.notes[k]||[];if(state.stringModes[s]==='mute')continue;const hitX=H?padL+(state.leftHanded?frets-1-j:j)*cw:padL,hitY=H?padT+s*sh:padT+(state.leftHanded?frets-1-j:j)*cw,hitW=H?cw:strings*sh,hitH=H?sh:cw;out+=`<rect class="hit" data-s="${s}" data-f="${f}" x="${hitX}" y="${hitY}" width="${hitW}" height="${hitH}" fill="#ffffff" fill-opacity="0.001" style="cursor:pointer"/>`;arr.forEach((n,i)=>{const dx=arr.length>1?(i===0?-8:8):0,dy=arr.length>1?(i===0?-3:3):0,cx=x+dx,cy=y+dy,shape=n.shape||'circle',selected=selectedMark&&!forPrint&&selectedMark.s===s&&selectedMark.f===f&&selectedMark.i===i;const label=displayDot(s,f,n);const shapeEl=shape==='square'?`<rect x="${cx-12}" y="${cy-12}" width="24" height="24" rx="4" fill="${n.color}" stroke="${selected?'#fff':'#211729'}" stroke-width="${selected?4:2}"/>`:shape==='diamond'?`<path d="M ${cx} ${cy-14} L ${cx+14} ${cy} L ${cx} ${cy+14} L ${cx-14} ${cy} Z" fill="${n.color}" stroke="${selected?'#fff':'#211729'}" stroke-width="${selected?4:2}"/>`:`<circle cx="${cx}" cy="${cy}" r="13" fill="${n.color}" stroke="${selected?'#fff':'#211729'}" stroke-width="${selected?4:2}"/>`;out+=`<g class="mark" data-s="${s}" data-f="${f}" data-i="${i}" style="cursor:pointer">${shapeEl}${label?`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#211729" font-size="${label.length>2?8:10}" font-family="Arial,sans-serif" font-weight="700" pointer-events="none">${escapeHtml(label)}</text>`:''}</g>`})}
+return out+'</svg>'}
+function renderBoard(){const host=$('fretboard');host.outerHTML=renderSvg();$('fretboard').id='fretboard';$('boardSummary').textContent=`${state.view==='box'?`${visibleStart()}–${visibleStart()+4} fret view`:`${state.frets}-fret neck`} · ${state.strings} strings · ${tuning().join('  ')}`;$('diagramTitleHeading').textContent=state.title||'Current diagram'}
+function syncControls(){initRoot();for(const id of ['instrument','stringCount','tuning','viewMode','position','fretCount','orientation','labelMode','rootNote']){if($(id))$(id).value=String(({fretCount:state.frets,stringCount:state.strings,viewMode:state.view,rootNote:state.root})[id]??state[id])} $('leftHanded').checked=state.leftHanded;$('spelling').value=state.flatNames?'flat':'sharp';$('customTuning').value=state.customTuning;$('customTuningWrap').classList.toggle('hidden',state.tuning!=='custom');$('positionWrap').classList.toggle('hidden',state.view!=='box');$('songTitle').value=state.projectTitle;$('songNotes').value=state.songNotes}
+function drawPalette(){const root=$('palette');root.innerHTML=COLORS.map(c=>`<button type="button" class="swatch-btn${c===state.color?' active':''}" data-color="${c}" style="background:${c}" aria-label="Select ${c} marker color" title="${c}"></button>`).join('');$('shapePicks').querySelectorAll('[data-shape]').forEach(b=>b.classList.toggle('active',b.dataset.shape===state.shape))}
+function renderLibrary(){const list=$('savedList');$('savedCount').textContent=`${state.library.length} saved`;list.innerHTML=state.library.length?state.library.map((d,i)=>`<div class="list-row${d.id===state.activeId?' active':''}"><div class="list-row-main" data-load="${escapeHtml(d.id)}"><strong>${escapeHtml(d.title||'Untitled diagram')}</strong><small>${escapeHtml(d.kind||'Fretboard')} · ${d.strings} strings · ${new Date(d.updated||Date.now()).toLocaleDateString()}</small></div><div class="list-actions"><button class="icon-button" type="button" data-add="${escapeHtml(d.id)}" title="Add to song sheet">＋</button><button class="icon-button" type="button" data-delete="${escapeHtml(d.id)}" title="Delete diagram">×</button></div></div>`).join(''):'<div class="empty">Your saved shapes will appear here. Use one library for chords, scale positions, and song-specific fingerings.</div>';renderSheet()}
+function snapshot(){return {title:state.title,strings:state.strings,tuning:state.tuning,customTuning:state.customTuning,frets:state.frets,view:state.view,position:state.position,orientation:state.orientation,leftHanded:state.leftHanded,labelMode:state.labelMode,root:state.root,flatNames:state.flatNames,notes:copy(state.notes),stringModes:copy(state.stringModes)}}
+function loadDiagram(d){checkpoint();Object.assign(state,d.state);state.activeId=d.id;persist();selectedMark=null;syncControls();renderAll();toast(`Loaded ${d.title}`)}
+function saveDiagram(){const title=prompt('Name this diagram',state.title==='Untitled diagram'?'New chord or scale':state.title);if(title===null)return;checkpoint();state.title=title.trim()||'Untitled diagram';const id=state.activeId||`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;const item={id,title:state.title,kind:state.labelMode==='interval'?'Scale / chord map':'Fretboard diagram',strings:state.strings,updated:Date.now(),state:snapshot()};const idx=state.library.findIndex(x=>x.id===id);if(idx>=0)state.library[idx]=item;else state.library.unshift(item);state.activeId=id;persist();renderAll();toast('Diagram saved to this browser.')}
+function addToSheet(id){const item=state.library.find(d=>d.id===id);if(!item)return;checkpoint();state.sheet.push({id:`${Date.now()}-${Math.random().toString(36).slice(2,6)}`,diagramId:id,title:item.title,note:''});persist();renderSheet();toast('Added to song sheet.')}
+function renderSheet(){const host=$('sheetList');host.innerHTML=state.sheet.map((entry,i)=>{const d=state.library.find(x=>x.id===entry.diagramId);if(!d)return '';return `<article class="sheet-item" draggable="true" data-sheet="${escapeHtml(entry.id)}"><div class="sheet-item-head"><input data-sheet-title="${escapeHtml(entry.id)}" value="${escapeHtml(entry.title||d.title)}" aria-label="Chord sheet label"><button type="button" class="remove" data-sheet-delete="${escapeHtml(entry.id)}" aria-label="Remove from song sheet">×</button></div>${svgForSaved(d)}<input data-sheet-note="${escapeHtml(entry.id)}" value="${escapeHtml(entry.note||'')}" placeholder="Section, fingering, or notes" aria-label="Diagram notes"></article>`}).join('');$('sheetEmpty').classList.toggle('hidden',state.sheet.some(e=>state.library.some(d=>d.id===e.diagramId)));}
+function svgForSaved(d){const old=state,savedSel=selectedMark;state={...copy(old),...copy(d.state)};const svg=renderSvg(true).replace('<svg ','<svg style="width:100%;height:auto" ');state=old;selectedMark=savedSel;return svg}
+function renderAll(){renderBoard();drawPalette();renderLibrary();updateInspector();updateHistoryButtons()}
+function updateInspector(){const m=selectedMark,arr=m?state.notes[noteKey(m.s,m.f)]:null,n=arr?.[m?.i];$('selectedPosition').textContent=n?`String ${state.strings-m.s} · fret ${m.f}${m.f===0?' (open)':''}`:'Select a dot to label it.';$('fingerSelect').disabled=!n;$('fingerSelect').value=n?.finger||'';$('removeMarkerBtn').disabled=!n}
+function updateSelection(s,f,i){selectedMark={s,f,i};renderBoard();updateInspector()}
+function onBoardClick(e){const mode=e.target.closest('[data-stringmode]');if(mode){const s=Number(mode.dataset.stringmode);checkpoint();const current=state.stringModes[s]||'';state.stringModes[s]=current===''?'open':current==='open'?'mute':'';if(state.stringModes[s]==='mute')Object.keys(state.notes).filter(k=>k.startsWith(`${s}:`)).forEach(k=>delete state.notes[k]);persist();renderAll();return}const mark=e.target.closest('[data-i]');if(mark){const s=Number(mark.dataset.s),f=Number(mark.dataset.f),i=Number(mark.dataset.i);checkpoint();const arr=state.notes[noteKey(s,f)]||[];arr.splice(i,1);if(arr.length)state.notes[noteKey(s,f)]=arr;else delete state.notes[noteKey(s,f)];selectedMark=null;persist();renderAll();return}const hit=e.target.closest('[data-s][data-f]');if(!hit)return;const s=Number(hit.dataset.s),f=Number(hit.dataset.f),key=noteKey(s,f);if(state.stringModes[s]==='mute'){toast('This string is muted. Tap its string badge to unmute it.');return}checkpoint();const arr=state.notes[key]||[];if(arr.length>=2){delete state.notes[key];selectedMark=null}else{arr.push({color:state.color,shape:state.shape,finger:$('fingerSelect').value||''});state.notes[key]=arr;selectedMark={s,f,i:arr.length-1}}persist();renderAll()}
+function updateField(id,fn){$(id).addEventListener('change',()=>{checkpoint();fn($(id).value);persist();selectedMark=null;syncControls();renderAll()})}
+function download(name,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}function safeName(s){return (s||'fretboard').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'fretboard'}
+function exportSvg(){const svg=renderSvg(true);download(`${safeName(state.title)}.svg`,new Blob([svg],{type:'image/svg+xml;charset=utf-8'}))}
+function exportPng(){const svg=renderSvg(true),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'})),img=new Image();img.onload=()=>{const scale=2,canvas=document.createElement('canvas');canvas.width=img.width*scale;canvas.height=img.height*scale;const ctx=canvas.getContext('2d');ctx.fillStyle='#17121c';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(blob=>download(`${safeName(state.title)}.png`,blob),'image/png')};img.onerror=()=>{URL.revokeObjectURL(url);toast('Could not export diagram image.')};img.src=url}
+function printSheet(){const items=state.sheet.map(e=>({e,d:state.library.find(d=>d.id===e.diagramId)})).filter(x=>x.d);if(!items.length){const temp={id:`current-${Date.now()}`,title:state.title||'Current diagram',note:''};state.library.push({...temp,strings:state.strings,state:snapshot()});state.sheet.push({id:temp.id,diagramId:temp.id,title:temp.title,note:''});persist();renderLibrary()}const fresh=state.sheet.map(e=>({e,d:state.library.find(d=>d.id===e.diagramId)})).filter(x=>x.d);$('printSheet').innerHTML=`<h1>${escapeHtml(state.projectTitle||'Untitled Song')}</h1><p class="print-sub">${escapeHtml(state.songNotes||'')}</p><div class="print-grid">${fresh.map(({e,d})=>`<figure><h2>${escapeHtml(e.title||d.title)}</h2>${svgForSaved(d)}${e.note?`<div class="print-note">${escapeHtml(e.note)}</div>`:''}</figure>`).join('')}</div>`;$('printSheet').classList.remove('hidden');window.print();setTimeout(()=>$('printSheet').classList.add('hidden'),500)}
+function projectFile(){download(`${safeName(state.projectTitle)}.fretboard.json`,new Blob([JSON.stringify({format:'AtomicForgeFretboardArt',version:2,exported:new Date().toISOString(),state},null,2)],{type:'application/json'}))}
+function bind(){
+$('fretboard').parentElement.addEventListener('click',onBoardClick);$('fretboard').parentElement.addEventListener('contextmenu',e=>{const hit=e.target.closest('[data-s][data-f]');if(!hit)return;e.preventDefault();const s=Number(hit.dataset.s);checkpoint();state.stringModes[s]='mute';Object.keys(state.notes).filter(k=>k.startsWith(`${s}:`)).forEach(k=>delete state.notes[k]);persist();renderAll()});$('palette').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(!b)return;state.color=b.dataset.color;if(selectedMark){const arr=state.notes[noteKey(selectedMark.s,selectedMark.f)];if(arr?.[selectedMark.i]){checkpoint();arr[selectedMark.i].color=state.color;persist()}}drawPalette();renderBoard()});$('shapePicks').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b)return;state.shape=b.dataset.shape;if(selectedMark){const arr=state.notes[noteKey(selectedMark.s,selectedMark.f)];if(arr?.[selectedMark.i]){checkpoint();arr[selectedMark.i].shape=state.shape;persist();renderBoard()}}drawPalette()});$('fingerSelect').addEventListener('change',e=>{if(!selectedMark)return;const a=state.notes[noteKey(selectedMark.s,selectedMark.f)];if(!a?.[selectedMark.i])return;checkpoint();a[selectedMark.i].finger=e.target.value;persist();renderBoard()});$('removeMarkerBtn').addEventListener('click',()=>{if(!selectedMark)return;const a=state.notes[noteKey(selectedMark.s,selectedMark.f)];if(!a)return;checkpoint();a.splice(selectedMark.i,1);if(!a.length)delete state.notes[noteKey(selectedMark.s,selectedMark.f)];selectedMark=null;persist();renderAll()});$('clearBtn').addEventListener('click',()=>{if(!Object.keys(state.notes).length&&!Object.keys(state.stringModes).length)return;checkpoint();state.notes={};state.stringModes={};selectedMark=null;persist();renderAll()});$('saveDiagramBtn').addEventListener('click',saveDiagram);$('addCurrentToSheet').addEventListener('click',()=>{checkpoint();let id=state.activeId||`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;state.activeId=id;const title=state.title==='Untitled diagram'?`Shape ${state.library.length+1}`:state.title;state.title=title;const item={id,title,kind:state.labelMode==='interval'?'Scale / chord map':'Fretboard diagram',strings:state.strings,updated:Date.now(),state:snapshot()};const index=state.library.findIndex(x=>x.id===id);if(index>=0)state.library[index]=item;else state.library.unshift(item);persist();renderAll();addToSheet(id)});
+updateField('instrument',v=>{state.instrument=v;if(v==='bass'){state.strings=4;state.tuning='bass'}else if(v==='ukulele'){state.strings=4;state.tuning='ukulele'}else{state.strings=6;state.tuning='standard'}});updateField('stringCount',v=>state.strings=Number(v));updateField('tuning',v=>{state.tuning=v;if(v==='bass'){state.instrument='bass';state.strings=4}else if(v==='ukulele'){state.instrument='ukulele';state.strings=4}else if(v==='custom'){state.instrument='custom'}});updateField('customTuning',v=>state.customTuning=v);updateField('fretCount',v=>state.frets=Number(v));updateField('viewMode',v=>state.view=v);updateField('position',v=>state.position=Math.max(1,Math.min(20,Number(v)||1)));updateField('orientation',v=>state.orientation=v);updateField('labelMode',v=>state.labelMode=v);updateField('rootNote',v=>state.root=Number(v));$('spelling').addEventListener('change',e=>{checkpoint();state.flatNames=e.target.value==='flat';persist();initRoot();$('rootNote').value=String(state.root);renderAll()});$('quickFill').addEventListener('change',e=>{const v=e.target.value;if(v)fillPreset(v);e.target.value=''});$('leftHanded').addEventListener('change',e=>{checkpoint();state.leftHanded=e.target.checked;persist();renderAll()});$('songTitle').addEventListener('input',e=>{state.projectTitle=e.target.value;persist()});$('songNotes').addEventListener('input',e=>{state.songNotes=e.target.value;persist()});$('undoBtn').addEventListener('click',undo);$('redoBtn').addEventListener('click',redo);document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}});$('printBtn').addEventListener('click',printSheet);$('sheetPrintBtn').addEventListener('click',printSheet);$('saveProjectBtn').addEventListener('click',projectFile);$('importProjectBtn').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),incoming=j.state||j;if(!incoming||typeof incoming!=='object')throw Error('Invalid file');checkpoint();state={...copy(DEFAULT),...incoming};persist();syncControls();renderAll();toast('Project loaded.')}catch{toast('That project file could not be opened.')}e.target.value=''});document.querySelector('.menu').addEventListener('click',e=>{const b=e.target.closest('[data-export]');if(!b)return;document.querySelector('.menu').open=false;b.dataset.export==='svg'?exportSvg():exportPng()});
+$('savedList').addEventListener('click',e=>{const load=e.target.closest('[data-load]'),add=e.target.closest('[data-add]'),del=e.target.closest('[data-delete]');if(load){const d=state.library.find(x=>x.id===load.dataset.load);if(d)loadDiagram(d)}if(add)addToSheet(add.dataset.add);if(del){checkpoint();state.library=state.library.filter(x=>x.id!==del.dataset.delete);state.sheet=state.sheet.filter(x=>x.diagramId!==del.dataset.delete);persist();renderAll()}});$('sheetList').addEventListener('input',e=>{const t=e.target.closest('[data-sheet-title]'),n=e.target.closest('[data-sheet-note]');const entry=state.sheet.find(x=>x.id===(t||n)?.dataset[t?'sheetTitle':'sheetNote']);if(!entry)return;if(t)entry.title=t.value;else entry.note=n.value;persist()});$('sheetList').addEventListener('click',e=>{const b=e.target.closest('[data-sheet-delete]');if(b){checkpoint();state.sheet=state.sheet.filter(x=>x.id!==b.dataset.sheetDelete);persist();renderSheet()}});let dragged=null;$('sheetList').addEventListener('dragstart',e=>{const card=e.target.closest('[data-sheet]');if(card){dragged=card.dataset.sheet;e.dataTransfer.effectAllowed='move'}});$('sheetList').addEventListener('dragover',e=>e.preventDefault());$('sheetList').addEventListener('drop',e=>{e.preventDefault();const target=e.target.closest('[data-sheet]')?.dataset.sheet;if(!dragged||!target||dragged===target)return;checkpoint();const a=state.sheet.findIndex(x=>x.id===dragged),b=state.sheet.findIndex(x=>x.id===target),[item]=state.sheet.splice(a,1);state.sheet.splice(b,0,item);dragged=null;persist();renderSheet()});
+}
+function initRoot(){const r=$('rootNote');r.innerHTML=(state.flatNames?FLAT_NAMES:NOTE_NAMES).map((n,i)=>`<option value="${i}">${n}</option>`).join('')}
+function fillPreset(id){const presets={major:['Major Scale',[0,2,4,5,7,9,11]],minor:['Natural Minor',[0,2,3,5,7,8,10]],majorPent:['Major Pentatonic',[0,2,4,7,9]],minorPent:['Minor Pentatonic',[0,3,5,7,10]],blues:['Blues Scale',[0,3,5,6,7,10]],majorTriad:['Major Triad',[0,4,7]],minorTriad:['Minor Triad',[0,3,7]],maj7:['Major 7',[0,4,7,11]],dom7:['Dominant 7',[0,4,7,10]],min7:['Minor 7',[0,3,7,10]]};const preset=presets[id];if(!preset)return;checkpoint();const root=Number(state.root),intervals=preset[1],frets=actualFrets(),start=visibleStart(),tunes=tuningMidi();state.notes={};state.stringModes={};state.labelMode='interval';for(let s=0;s<state.strings;s++)for(let j=0;j<frets;j++){const fret=start+j,semitone=(pc((tunes[s]||40)+fret)-root+12)%12,index=intervals.indexOf(semitone);if(index<0)continue;const color=COLORS[index%COLORS.length];state.notes[noteKey(s,fret)]=[{color,shape:'circle',finger:''}]}const rootName=(state.flatNames?FLAT_NAMES:NOTE_NAMES)[root];state.title=`${rootName} ${preset[0]}`;state.activeId=null;selectedMark=null;persist();syncControls();renderAll();toast(`${state.title} added to the fretboard.`)}
+initRoot();syncControls();bind();renderAll();if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./fretboard-sw.js',{scope:'./'}).catch(()=>{});
+})();
+</script>
 </body>
 </html>

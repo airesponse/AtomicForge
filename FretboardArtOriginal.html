@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Responsive Fretboard Note Sketcher</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        /* Controls Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            padding: 0 10px;
+            flex-shrink: 0;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .color-btn.active {
+            border-color: #ffffff;
+            transform: scale(1.15);
+        }
+
+        .btn-red { background-color: #ff3b30; }
+        .btn-blue { background-color: #007aff; }
+        .btn-green { background-color: #34c759; }
+        .btn-yellow { background-color: #ffcc00; }
+        .btn-purple { background-color: #af52de; }
+
+        .action-btn {
+            background-color: #333333;
+            color: white;
+            border: 1px solid #555555;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .action-btn:active {
+            background-color: #444444;
+        }
+
+        /* Responsive Wrapper */
+        .fretboard-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 15px 5px;
+        }
+
+        .fretboard-wrapper {
+            display: flex;
+            flex-direction: column; /* Landscape default */
+            width: 100%;
+            height: 90%;
+            max-width: 1000px;
+        }
+
+        /* Main CSS Grid Fretboard */
+        .fretboard {
+            display: grid;
+            flex-grow: 1;
+            background-color: #3d2a1d;
+            border: 2px solid #291c14;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            /* Landscape Layout: 16 columns (nut + 15), 6 rows (strings) */
+            grid-template-columns: 40px repeat(15, minmax(0, 1fr));
+            grid-template-rows: repeat(6, 1fr);
+            position: relative;
+        }
+
+        /* Marker Row/Column Outside the Wood */
+        .fret-markers {
+            display: flex;
+            flex-direction: row; /* Landscape default */
+            margin-left: 40px; /* Accounts for the Nut */
+            height: 25px;
+        }
+
+        .fret-marker {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: #8a8a8f;
+        }
+
+        .fret-marker.nut-marker {
+            width: 40px;
+            flex: none;
+            margin-left: -40px;
+        }
+
+        /* Fret Cells & Wires */
+        .fret-cell {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            grid-row: var(--row-land);
+            grid-column: var(--col-land);
+            border-right: 2px solid #b5b5b5; /* Landscape Fret Wire */
+            border-bottom: 1px solid rgba(0, 0, 0, 0.15); /* String separation visual */
+        }
+
+        .fret-cell.nut {
+            border-right: 5px solid #e5e5ea;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .fret-cell.last-fret { border-right: none; }
+        .fret-cell.highest-string { border-bottom: none; }
+
+        /* String Lines */
+        .string-line {
+            position: absolute;
+            background-color: #cccccc;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 1;
+            /* Landscape styling */
+            width: 100%;
+            height: var(--str-thick);
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        /* Inlays */
+        .inlay-dot {
+            background-color: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            margin: auto;
+            pointer-events: none;
+            z-index: 0;
+            /* Landscape placement spanning between specified string rows */
+            grid-row: var(--row-land-start) / var(--row-land-end);
+            grid-column: var(--col-land);
+        }
+
+        /* Note Markers */
+        .note-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            z-index: 3;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* ========================================= */
+        /* PORTRAIT MODE OVERRIDES                   */
+        /* ========================================= */
+        @media screen and (orientation: portrait) {
+            .fretboard-wrapper {
+                flex-direction: row; 
+                width: 95%;
+                height: 100%;
+                max-width: none;
+            }
+
+            .fretboard {
+                /* Portrait Layout: 6 columns (strings), 16 rows (nut + 15) */
+                grid-template-columns: repeat(6, 1fr);
+                grid-template-rows: 40px repeat(15, minmax(0, 1fr));
+            }
+
+            .fret-markers {
+                flex-direction: column;
+                margin-left: 0;
+                margin-top: 40px; 
+                width: 30px;
+                height: auto;
+            }
+
+            .fret-marker.nut-marker {
+                width: 100%;
+                height: 40px;
+                margin-left: 0;
+                margin-top: -40px;
+            }
+
+            .fret-cell {
+                flex-direction: column;
+                grid-row: var(--row-port);
+                grid-column: var(--col-port);
+                border-right: 1px solid rgba(0, 0, 0, 0.15); /* String separation visual */
+                border-bottom: 2px solid #b5b5b5; /* Portrait Fret Wire */
+            }
+
+            .fret-cell.nut {
+                border-right: 1px solid rgba(0, 0, 0, 0.15);
+                border-bottom: 5px solid #e5e5ea;
+            }
+
+            .fret-cell.last-fret { border-bottom: none; }
+            .fret-cell.highest-string { border-right: none; }
+
+            .string-line {
+                width: var(--str-thick);
+                height: 100%;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .inlay-dot {
+                /* Portrait placement spanning between specified string columns */
+                grid-row: var(--row-port);
+                grid-column: var(--col-port-start) / var(--col-port-end);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Controls -->
+    <div class="toolbar">
+        <div class="color-palette">
+            <div class="color-btn btn-red active" data-color="#ff3b30"></div>
+            <div class="color-btn btn-blue" data-color="#007aff"></div>
+            <div class="color-btn btn-green" data-color="#34c759"></div>
+            <div class="color-btn btn-yellow" data-color="#ffcc00"></div>
+            <div class="color-btn btn-purple" data-color="#af52de"></div>
+        </div>
+        <button class="action-btn" id="clear-btn">Clear All</button>
+    </div>
+
+    <!-- Responsive App Container -->
+    <div class="fretboard-container">
+        <div class="fretboard-wrapper">
+            <!-- Markers injected by JS -->
+            <div class="fret-markers" id="fret-markers"></div>
+            
+            <!-- Grid injected by JS -->
+            <div class="fretboard" id="guitar-fretboard"></div>
+        </div>
+    </div>
+
+    <script>
+        const fretboard = document.getElementById('guitar-fretboard');
+        const fretMarkersContainer = document.getElementById('fret-markers');
+        const clearBtn = document.getElementById('clear-btn');
+        const colorButtons = document.querySelectorAll('.color-btn');
+        
+        let currentColor = '#ff3b30';
+        
+        // Map string thicknesses (6 is Low E thickest, 1 is High E thinnest)
+        const stringThicknesses = { 6: 3.0, 5: 2.5, 4: 2.0, 3: 1.5, 2: 1.2, 1: 1.0 };
+
+        // Color Selection Logic
+        colorButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentColor = btn.getAttribute('data-color');
+            });
+        });
+
+        // 1. Generate Fret Markers Container (Numbers)
+        for (let fretNum = 0; fretNum <= 15; fretNum++) {
+            const marker = document.createElement('div');
+            marker.classList.add('fret-marker');
+            if (fretNum === 0) marker.classList.add('nut-marker');
+            marker.textContent = fretNum;
+            fretMarkersContainer.appendChild(marker);
+        }
+
+        // 2. Generate Inlays (placed directly into the grid background)
+        const singleInlays = [3, 5, 7, 9, 15];
+        const doubleInlays = [12];
+
+        singleInlays.forEach(fretNum => {
+            const inlay = document.createElement('div');
+            inlay.classList.add('inlay-dot');
+            // Landscape spans between string 3 & 4 (Rows 3 to 5)
+            inlay.style.setProperty('--row-land-start', 3);
+            inlay.style.setProperty('--row-land-end', 5);
+            inlay.style.setProperty('--col-land', fretNum + 1);
+            // Portrait spans between string 3 & 4 (Columns 3 to 5)
+            inlay.style.setProperty('--row-port', fretNum + 1);
+            inlay.style.setProperty('--col-port-start', 3);
+            inlay.style.setProperty('--col-port-end', 5);
+            fretboard.appendChild(inlay);
+        });
+
+        doubleInlays.forEach(fretNum => {
+            // Dot 1 (Between strings 5 & 4)
+            const inlay1 = document.createElement('div');
+            inlay1.classList.add('inlay-dot');
+            inlay1.style.setProperty('--row-land-start', 2);
+            inlay1.style.setProperty('--row-land-end', 4);
+            inlay1.style.setProperty('--col-land', fretNum + 1);
+            inlay1.style.setProperty('--row-port', fretNum + 1);
+            inlay1.style.setProperty('--col-port-start', 2);
+            inlay1.style.setProperty('--col-port-end', 4);
+            fretboard.appendChild(inlay1);
+
+            // Dot 2 (Between strings 2 & 1)
+            const inlay2 = document.createElement('div');
+            inlay2.classList.add('inlay-dot');
+            inlay2.style.setProperty('--row-land-start', 5);
+            inlay2.style.setProperty('--row-land-end', 7);
+            inlay2.style.setProperty('--col-land', fretNum + 1);
+            inlay2.style.setProperty('--row-port', fretNum + 1);
+            inlay2.style.setProperty('--col-port-start', 5);
+            inlay2.style.setProperty('--col-port-end', 7);
+            fretboard.appendChild(inlay2);
+        });
+
+        // 3. Generate Interactive Fret Cells and Strings
+        for (let stringNum = 1; stringNum <= 6; stringNum++) {
+            for (let fretNum = 0; fretNum <= 15; fretNum++) {
+                const cell = document.createElement('div');
+                cell.classList.add('fret-cell');
+                
+                if (fretNum === 0) cell.classList.add('nut');
+                if (fretNum === 15) cell.classList.add('last-fret');
+                if (stringNum === 1) cell.classList.add('highest-string');
+
+                // Map logical matrix to CSS Grid rows/cols physically based on orientation
+                let landRow = 7 - stringNum; // Thickest string (6) at top (Row 1)
+                let portCol = 7 - stringNum; // Thickest string (6) at left (Col 1)
+                
+                cell.style.setProperty('--row-land', landRow);
+                cell.style.setProperty('--col-land', fretNum + 1);
+                cell.style.setProperty('--row-port', fretNum + 1);
+                cell.style.setProperty('--col-port', portCol);
+                cell.style.setProperty('--str-thick', stringThicknesses[stringNum] + 'px');
+
+                // Visual String Line overlay
+                const stringLine = document.createElement('div');
+                stringLine.classList.add('string-line');
+                cell.appendChild(stringLine);
+
+                // Tap Logic for multiple note markers
+                cell.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('note-marker')) {
+                        e.target.remove();
+                        return;
+                    }
+
+                    const existingNotes = cell.querySelectorAll('.note-marker');
+                    if (existingNotes.length >= 2) {
+                        existingNotes.forEach(note => note.remove());
+                    } else {
+                        const note = document.createElement('div');
+                        note.classList.add('note-marker');
+                        note.style.backgroundColor = currentColor;
+                        cell.appendChild(note);
+                    }
+                });
+
+                fretboard.appendChild(cell);
+            }
+        }
+
+        // Global Action Clear All Notes
+        clearBtn.addEventListener('click', () => {
+            document.querySelectorAll('.note-marker').forEach(note => note.remove());
+        });
+
+        // Prevent iOS bounce scrolling
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 1 || e.target.closest('.fretboard-container')) { 
+                e.preventDefault(); 
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
