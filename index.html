@@ -2,22 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#101114">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Atomic Forge">
+  <meta name="description" content="Atomic Forge by Atomic StormWorks — a growing collection of songwriting, guitar and audio tools.">
   <link rel="icon" type="image/png" href="AtomicForgeIcon.png">
-  <title>Atomic Forge</title>
+  <title>Atomic Forge — Songwriting &amp; Creative Tools</title>
+
   <style>
     :root {
-      --bg: #0f0f11;
-      --card-bg: #1a1a1e;
-      --card-hover: #242429;
-      --accent: #f39c12;
-      --accent-glow: rgba(243, 156, 18, 0.15);
-      --text: #f5f5f7;
-      --muted: #8e8e93;
-      --border: #2c2c2e;
+      color-scheme: dark;
+      --bg: #101114;
+      --surface: #191a20;
+      --surface-hover: #202229;
+      --accent: #f4a62a;
+      --accent-soft: rgba(244,166,42,.12);
+      --text: #f6f7fb;
+      --muted: #a0a3af;
+      --border: #30323b;
+      --focus: #ffd07b;
     }
 
     * {
@@ -25,428 +30,629 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      margin: 0;
-      padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+    html {
+      min-height: 100%;
       background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
       min-height: 100vh;
+      margin: 0;
+      padding: env(safe-area-inset-top) 22px env(safe-area-inset-bottom);
+      background:
+        radial-gradient(
+          ellipse at 50% -18%,
+          rgba(244,166,42,.09),
+          transparent 48%
+        ),
+        var(--bg);
+      color: var(--text);
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    header {
+    a {
+      color: inherit;
+    }
+
+    .site-header,
+    main,
+    footer {
       width: 100%;
-      max-width: 800px;
-      padding: 32px 0 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+      max-width: 980px;
+    }
+
+    .site-header {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 17px;
+      padding: 30px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
     }
 
     .header-logo {
-      width: 54px;
-      height: 54px;
-      border-radius: 12px;
+      width: 58px;
+      height: 58px;
+      border-radius: 15px;
       object-fit: cover;
-      border: 1px solid var(--accent);
-      box-shadow: 0 0 15px var(--accent-glow);
+      border: 1px solid rgba(244,166,42,.7);
+      box-shadow: 0 0 24px rgba(244,166,42,.1);
     }
 
     h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
       margin: 0;
-      letter-spacing: -0.02em;
+      font-size: clamp(1.35rem, 4vw, 1.9rem);
+      line-height: 1.15;
+      letter-spacing: -.035em;
+      font-weight: 760;
     }
 
     .subtitle {
-      font-size: 0.95rem;
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 7px;
+      font-size: .94rem;
+      line-height: 1.4;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 15px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: .78rem;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: #c4c6cf;
+      font-weight: 750;
+    }
+
+    .section-heading span {
+      font-size: .78rem;
+      color: var(--muted);
     }
 
     .grid-container {
-      width: 100%;
-      max-width: 800px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, 275px), 1fr)
+      );
+      gap: 15px;
     }
 
     .app-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
+      min-width: 0;
+      min-height: 202px;
       padding: 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      gap: 18px;
       text-decoration: none;
       color: var(--text);
-      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.018), transparent 70%),
+        var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       position: relative;
       overflow: hidden;
+      transition:
+        transform .18s ease,
+        border-color .18s ease,
+        background-color .18s ease,
+        box-shadow .18s ease;
     }
 
-    .app-card:active, .app-card:hover {
-      background: var(--card-hover);
-      border-color: var(--accent);
+    .app-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: transparent;
+      transition: background .18s ease;
+    }
+
+    .app-card:hover {
+      background-color: var(--surface-hover);
+      border-color: rgba(244,166,42,.7);
       transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.16);
+    }
+
+    .app-card:hover::before {
+      background: var(--accent);
+    }
+
+    .app-card:active {
+      transform: translateY(0);
+    }
+
+    .app-card:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
     }
 
     .card-header {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 13px;
       margin-bottom: 12px;
     }
 
     .app-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: var(--accent-glow);
-      border: 1px solid var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      flex-shrink: 0;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      font-size: 1.42rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(244,166,42,.42);
     }
 
     .app-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #fff;
+      font-size: 1.05rem;
+      line-height: 1.25;
+      font-weight: 720;
+      letter-spacing: -.015em;
     }
 
     .app-desc {
-      font-size: 0.85rem;
+      margin: 0;
       color: var(--muted);
-      line-height: 1.4;
-      margin-bottom: 16px;
+      font-size: .88rem;
+      line-height: 1.55;
     }
 
     .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 0.8rem;
-      font-weight: 600;
+      gap: 10px;
       color: var(--accent);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .card-footer .arrow {
+      font-size: 1.15rem;
+      transition: transform .18s ease;
+    }
+
+    .app-card:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    .status {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: #e8bb70;
+      border: 1px solid rgba(244,166,42,.3);
+      background: rgba(244,166,42,.07);
+      padding: 4px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
     }
 
     .placeholder-card {
-      border: 1px dashed var(--border);
-      background: transparent;
-      opacity: 0.6;
-      cursor: default;
+      min-height: 185px;
+      border-style: dashed;
+      background: rgba(255,255,255,.012);
+      color: #c4c6ce;
     }
 
-    .placeholder-card:active, .placeholder-card:hover {
-      background: rgba(255, 255, 255, 0.01);
-      border-color: var(--muted);
+    .placeholder-card:hover {
+      background: rgba(255,255,255,.025);
+      border-color: #5b5e69;
       transform: none;
+      box-shadow: none;
+    }
+
+    .placeholder-card::before {
+      display: none;
     }
 
     .placeholder-card .app-icon {
-      background: #1c1c1e;
-      border-color: #3a3a3c;
-      font-size: 1.1rem;
+      background: #202127;
+      border-color: #393b45;
+      filter: grayscale(.45);
+    }
+
+    .placeholder-card .app-desc {
+      color: #888b97;
     }
 
     .placeholder-card .card-footer {
-      color: var(--muted);
-      font-weight: 400;
-      font-style: italic;
+      color: #9396a2;
+      font-weight: 500;
+    }
+
+    .group {
+      margin-bottom: 30px;
     }
 
     footer {
       margin-top: auto;
-      padding: 32px 0 16px;
-      color: var(--muted);
-      font-size: 0.8rem;
+      padding: 28px 0 18px;
       text-align: center;
+      color: #858894;
+      font-size: .8rem;
+      line-height: 1.6;
+    }
+
+    footer strong {
+      color: #b5b7c0;
+      font-weight: 650;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+
+      .site-header {
+        padding-top: 23px;
+        gap: 13px;
+      }
+
+      .header-logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 13px;
+      }
+
+      .subtitle {
+        font-size: .86rem;
+      }
+
+      .app-card {
+        min-height: 190px;
+        padding: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
-<body>
 
-  <header>
-    <img src="Atomic Forge icon.png" alt="Atomic Forge Icon" class="header-logo">
+<body>
+  <header class="site-header">
+    <img
+      src="Atomic Forge icon.png"
+      alt="Atomic Forge icon"
+      class="header-logo"
+    >
+
     <div>
-      <h1>Atomic Forge by Atomic StormWorks</h1>
-      <div class="subtitle">Songwriting & Tools for Inspiration</div>
+      <h1>
+        Atomic Forge
+        <span style="font-weight:500;color:#c0c2cb">
+          by Atomic StormWorks
+        </span>
+      </h1>
+      <div class="subtitle">
+        Songwriting, guitar tools and creative inspiration.
+      </div>
     </div>
   </header>
 
-  <main class="grid-container">
-    
-    <!-- Active App: Progression Studio -->
-    <a href="ProgressionStudio.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎸</div>
-          <div class="app-title">Progression Studio</div>
-        </div>
-        <div class="app-desc">
-          Interactive songwriter progression studio with real-time polyphonic audio synth, customizable timbres, and song presets.
-        </div>
+  <main>
+    <section class="group" aria-labelledby="apps-heading">
+      <div class="section-heading">
+        <h2 id="apps-heading">Your creative toolkit</h2>
+        <span>Choose an app to get started</span>
       </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
 
-    <a href="TriadMachine.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎸</div>
-          <div class="app-title">Triad Machine</div>
-        </div>
-        <div class="app-desc">
-          Chord finder and helper with the Circle of Fifths.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+      <div class="grid-container">
 
-    <a href="FretboardArt.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🥁</div>
-          <div class="app-title">Fretboard Art</div>
-        </div>
-        <div class="app-desc">
-          Graphical guitar fretboard art creator; for use in logging your song chord and scale fingerings quickly and easily.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+        <!-- ChordCraft: featured first app -->
+        <a href="ChordCraft/" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎼</div>
+              <div class="app-title">ChordCraft</div>
+            </div>
+            <p class="app-desc">
+              A guitar-focused songwriting studio for building, hearing,
+              comparing and saving chord progressions, with guitar voicings,
+              song sections and MIDI export.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <a href="ChordWheel.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎸</div>
-          <div class="app-title">Chord Wheel</div>
-        </div>
-        <div class="app-desc">
-          I'm not entirely sure what this does yet... let's find out!
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+        <a href="TriadMachine.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎸</div>
+              <div class="app-title">Triad Machine</div>
+            </div>
+            <p class="app-desc">
+              Chord finder and helper with the Circle of Fifths.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <a href="LyricAlly.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎛️</div>
-          <div class="app-title">LyricAlly</div>
-        </div>
-        <div class="app-desc">
-          Lyric writing helper with syllable / beats counter, stanza controls and AI rhyming and word-finding utilities.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+        <a href="FretboardArt.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎨</div>
+              <div class="app-title">Fretboard Art</div>
+            </div>
+            <p class="app-desc">
+              Create clear graphical guitar fretboard diagrams to log chord
+              shapes and scale fingerings quickly.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- Active App: GrooveMachine -->
-    <a href="GrooveMachine.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎚️</div>
-          <div class="app-title">GrooveMachine</div>
-        </div>
-        <div class="app-desc">
-          AI backing track generator that creates matching bass and drum grooves for your uploaded guitar riffs and m4a recordings.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+        <a href="ChordWheel.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎡</div>
+              <div class="app-title">Chord Wheel</div>
+            </div>
+            <p class="app-desc">
+              Explore chord relationships and discover new directions for
+              a progression.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- Active App: CONnie (M4A to MP3 Converter) -->
-    <a href="CONnie.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">💽</div>
-          <div class="app-title">CONnie</div>
-        </div>
-        <div class="app-desc">
-          Fast client-side audio converter that turns iPhone .m4a Voice Memos and files into playable .mp3 format.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch App</span>
-        <span>→</span>
-      </div>
-    </a>
+        <a href="LyricAlly.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">✍️</div>
+              <div class="app-title">LyricAlly</div>
+            </div>
+            <p class="app-desc">
+              Lyric-writing helper with syllable and beat counting, stanza
+              controls, rhymes and word-finding utilities.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- In Development: TabLab -->
-    <a href="TabLab.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🎼</div>
-          <div class="app-title">TabLab</div>
-        </div>
-        <div class="app-desc">
-          Converts MP3s and raw guitar audio into professional-quality tablature and fretboard notation.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch</span>
-      </div>
-    </a>
+        <a href="GrooveMachine.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🥁</div>
+              <div class="app-title">GrooveMachine</div>
+            </div>
+            <p class="app-desc">
+              Create matching bass and drum backing grooves for uploaded
+              guitar riffs and M4A recordings.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- In Development: The Sonic Scope -->
-    <a href="TheSonicScope.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🔍</div>
-          <div class="app-title">The Sonic Scope</div>
-        </div>
-        <div class="app-desc">
-          Analyzes audio tracks to reveal key signatures, scale choices, chord progressions, and musical suggestions.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch</span>
-      </div>
-    </a>
+        <a href="CONnie.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">💽</div>
+              <div class="app-title">CONnie</div>
+            </div>
+            <p class="app-desc">
+              A fast, client-side audio converter for turning iPhone Voice
+              Memos and other M4A files into MP3.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- Active App: The Chord Book -->
-    <a href="ChordBook.html" class="app-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">📖</div>
-          <div class="app-title">The Chord Book</div>
-        </div>
-        <div class="app-desc">
-          An advanced chord book, chord finder and general chord tool.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Launch</span>
-        <span>→</span>
-      </div>
-    </a>
+        <a href="TabLab.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎼</div>
+              <div class="app-title">TabLab</div>
+              <span class="status">In development</span>
+            </div>
+            <p class="app-desc">
+              Turn recordings into guitar tablature and fretboard notation.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Open project</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <!-- 6 Empty Inactive Slots (Coming Soon / Under Construction) -->
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">⏳</div>
-          <div class="app-title">Future Tool 1</div>
-        </div>
-        <div class="app-desc">
-          Next-generation audio utility currently in planning.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Coming Soon</span>
-      </div>
-    </div>
+        <a href="TheSonicScope.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🔎</div>
+              <div class="app-title">The Sonic Scope</div>
+              <span class="status">In development</span>
+            </div>
+            <p class="app-desc">
+              Analyze tracks for key signatures, scales, chord progressions
+              and musical ideas.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Open project</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🚧</div>
-          <div class="app-title">Future Tool 2</div>
-        </div>
-        <div class="app-desc">
-          Experimental module under active development.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Under Construction</span>
-      </div>
-    </div>
+        <a href="ChordBook.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">📖</div>
+              <div class="app-title">The Chord Book</div>
+            </div>
+            <p class="app-desc">
+              An advanced chord book, chord finder and general-purpose
+              chord reference.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🧪</div>
-          <div class="app-title">Future Tool 3</div>
-        </div>
-        <div class="app-desc">
-          Reserved slot for upcoming AtomicForge expansion.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Coming Soon</span>
-      </div>
-    </div>
+        <!-- Progression Studio moved from the former top slot -->
+        <a href="ProgressionStudio.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎹</div>
+              <div class="app-title">Progression Studio</div>
+            </div>
+            <p class="app-desc">
+              Interactive progression studio with real-time polyphonic synth,
+              customizable timbres and song presets.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🛠️</div>
-          <div class="app-title">Future Tool 4</div>
+        <div class="app-card placeholder-card"
+             aria-label="Future Tool 2, under construction">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🚧</div>
+              <div class="app-title">Future Tool 2</div>
+            </div>
+            <p class="app-desc">
+              Experimental module under active development.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Under construction</span>
+            <span>•</span>
+          </div>
         </div>
-        <div class="app-desc">
-          Placeholder for future custom hardware or plugin integration.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Under Construction</span>
-      </div>
-    </div>
 
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">💡</div>
-          <div class="app-title">Future Tool 5</div>
+        <div class="app-card placeholder-card"
+             aria-label="Future Tool 3, coming soon">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🧪</div>
+              <div class="app-title">Future Tool 3</div>
+            </div>
+            <p class="app-desc">
+              Reserved for a future Atomic Forge tool.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Coming soon</span>
+            <span>•</span>
+          </div>
         </div>
-        <div class="app-desc">
-          Brainstorming phase for auxiliary songwriting utility.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Coming Soon</span>
-      </div>
-    </div>
 
-    <div class="app-card placeholder-card">
-      <div>
-        <div class="card-header">
-          <div class="app-icon">🔒</div>
-          <div class="app-title">Future Tool 6</div>
+        <div class="app-card placeholder-card"
+             aria-label="Future Tool 4, under construction">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🛠️</div>
+              <div class="app-title">Future Tool 4</div>
+            </div>
+            <p class="app-desc">
+              A future utility for creative workflows and integrations.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Under construction</span>
+            <span>•</span>
+          </div>
         </div>
-        <div class="app-desc">
-          Reserved slot in the Atomic Forge ecosystem suite.
-        </div>
-      </div>
-      <div class="card-footer">
-        <span>Under Construction</span>
-      </div>
-    </div>
 
+        <div class="app-card placeholder-card"
+             aria-label="Future Tool 5, coming soon">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">💡</div>
+              <div class="app-title">Future Tool 5</div>
+            </div>
+            <p class="app-desc">
+              A new idea for the Atomic Forge songwriting toolkit.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Coming soon</span>
+            <span>•</span>
+          </div>
+        </div>
+
+        <div class="app-card placeholder-card"
+             aria-label="Future Tool 6, under construction">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🔒</div>
+              <div class="app-title">Future Tool 6</div>
+            </div>
+            <p class="app-desc">
+              A reserved space for a future addition to the suite.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Under construction</span>
+            <span>•</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
   </main>
 
   <footer>
-    Apps built by Atomic StormWorks, 2026
+    <strong>Atomic Forge</strong> · Built by Atomic StormWorks · 2026
   </footer>
-
 </body>
 </html>
