@@ -288,34 +288,6 @@
       font-weight: 500;
     }
 
-    .preview-card {
-      cursor: pointer;
-    }
-
-    .preview-card:hover {
-      border-color: rgba(244,166,42,.7);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 26px rgba(0,0,0,.16);
-    }
-
-    .preview-card:hover::before {
-      display: block;
-      background: var(--accent);
-    }
-
-    .preview-card .app-icon {
-      filter: none;
-    }
-
-    .preview-card .app-desc {
-      color: var(--muted);
-    }
-
-    .preview-card .card-footer {
-      color: var(--accent);
-      font-weight: 700;
-    }
-
     .group {
       margin-bottom: 30px;
     }
@@ -417,6 +389,38 @@
           </div>
           <div class="card-footer">
             <span>Launch App</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
+
+        <a href="TriadMachineOriginal.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎸</div>
+              <div class="app-title">Triad Machine · Original</div>
+            </div>
+            <p class="app-desc">
+              The original Atomic Forge triad and scale explorer. Compare its fretboard workflow with the rebuilt version.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch original</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </div>
+        </a>
+
+        <a href="TriadMachine.html" class="app-card">
+          <div>
+            <div class="card-header">
+              <div class="app-icon" aria-hidden="true">🎸</div>
+              <div class="app-title">Triad Machine · Rebuilt</div>
+            </div>
+            <p class="app-desc">
+              A responsive triad trainer with playable voicings, progression practice, audio, and note-finding challenges.
+            </p>
+          </div>
+          <div class="card-footer">
+            <span>Launch rebuilt app</span>
             <span class="arrow" aria-hidden="true">→</span>
           </div>
         </a>
@@ -572,23 +576,6 @@
           </div>
           <div class="card-footer">
             <span>Launch App</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </div>
-        </a>
-
-        <a href="TriadMachine.html" class="app-card placeholder-card preview-card"
-             aria-label="Triad Machine, under construction; open preview">
-          <div>
-            <div class="card-header">
-              <div class="app-icon" aria-hidden="true">🎸</div>
-              <div class="app-title">Triad Machine</div>
-            </div>
-            <p class="app-desc">
-              Explore triads, inversions, scale overlays, playable shapes, and practice tools across the guitar neck.
-            </p>
-          </div>
-          <div class="card-footer">
-            <span>Under construction · Preview</span>
             <span class="arrow" aria-hidden="true">→</span>
           </div>
         </a>

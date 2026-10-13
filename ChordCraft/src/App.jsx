@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Soundfont from 'soundfont-player';
 import { chordMidiVoicing, strumSchedule, velocityForString } from './audioEngine.js';
 import {
-  Guitar, Music2, Play, Square, Save, Download, Plus, Minus, Trash2, RotateCcw,
+  Guitar, Music2, Play, Square, Save, Download, Plus, Minus, Trash2, RotateCcw, ArrowLeft,
   Sparkles, SlidersHorizontal, ChevronDown, Info, CircleHelp, Bookmark, AudioLines,
   Headphones, Dices, WandSparkles, Copy, ArrowLeftRight, Piano, Layers3, Music,
   Check, Guitar as GuitarIcon, Repeat
@@ -232,7 +232,7 @@ export default function App(){
  const roman=mode==='Major'?ROMAJ:ROMIN;
 
  return <div className="app-shell">
-  <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><Guitar size={20}/></span><span><strong>chordcraft</strong><small>SONGWRITING STUDIO</small></span></a><div className="topbar-right"><span className="autosave"><i className="status-dot"/> Local workspace</span><button className="icon-button" onClick={exportProject} title="Export project"><Download size={17}/></button><button className="save-top" onClick={save}><Save size={16}/> Save idea</button></div></header>
+  <header className="topbar"><a className="brand" href="#"><span className="brand-mark"><Guitar size={20}/></span><span><strong>chordcraft</strong><small>SONGWRITING STUDIO</small></span></a><div className="topbar-right"><a className="return-atomic-forge" href="../index.html" aria-label="Return to Atomic Forge" title="Return to Atomic Forge"><ArrowLeft size={15}/> <span>Atomic Forge</span></a><span className="autosave"><i className="status-dot"/> Local workspace</span><button className="icon-button" onClick={exportProject} title="Export project"><Download size={17}/></button><button className="save-top" onClick={save}><Save size={16}/> Save idea</button></div></header>
   <main className="workspace">
    <section className="welcome-row"><div><div className="eyebrow"><Sparkles size={14}/> YOUR NEXT SONG STARTS HERE</div><h1>Find the feeling.<br/><em>Build the progression.</em></h1><p className="intro">Explore chords, hear how they move, and turn the ideas worth keeping into a song.</p></div><div className="project-field"><label>WORKING TITLE</label><input value={projectName} onChange={e=>setProjectName(e.target.value)} maxLength={70}/><span className="field-hint"><Music2 size={13}/> Saved ideas stay in this browser.</span></div></section>
 

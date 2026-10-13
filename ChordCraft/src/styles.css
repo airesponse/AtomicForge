@@ -8,3 +8,5 @@
 .loop-toggle{border:1px solid #394637;border-radius:8px;background:#151b16;color:#aab6a7;padding:10px 11px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600}.loop-toggle.enabled{border-color:#718f52;background:#283624;color:var(--lime)}.loop-state{font:9px 'DM Mono',monospace;color:#718071}.loop-toggle.enabled .loop-state{color:var(--lime)}
 
 .inline-value{float:right;color:var(--lime);font:10px 'DM Mono',monospace}.room-row{margin-top:2px;margin-bottom:18px}.room-row input{accent-color:var(--lime)}
+
+.return-atomic-forge{display:inline-flex;align-items:center;gap:6px;border:1px solid #3a4938;border-radius:9px;padding:9px 11px;color:#c9d5c2;background:#202a20;text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap;transition:background .18s,border-color .18s,color .18s}.return-atomic-forge:hover{border-color:#738969;background:#2a3829;color:var(--lime)}.return-atomic-forge:focus-visible{outline:2px solid var(--lime);outline-offset:3px}@media(max-width:390px){.return-atomic-forge{padding:9px}}@media(max-width:350px){.return-atomic-forge span{display:none}}
