@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atomic-forge-fretboard-v1';
+const CACHE_NAME = 'atomic-forge-fretboard-v2';
 const APP_FILES = ['./FretboardArt.html', './FretboardArtOriginal.html', './index.html', './favicon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
