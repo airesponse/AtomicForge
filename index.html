@@ -288,6 +288,34 @@
       font-weight: 500;
     }
 
+    .preview-card {
+      cursor: pointer;
+    }
+
+    .preview-card:hover {
+      border-color: rgba(244,166,42,.7);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.16);
+    }
+
+    .preview-card:hover::before {
+      display: block;
+      background: var(--accent);
+    }
+
+    .preview-card .app-icon {
+      filter: none;
+    }
+
+    .preview-card .app-desc {
+      color: var(--muted);
+    }
+
+    .preview-card .card-footer {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
     .group {
       margin-bottom: 30px;
     }
@@ -385,22 +413,6 @@
               A guitar-focused songwriting studio for building, hearing,
               comparing and saving chord progressions, with guitar voicings,
               song sections and MIDI export.
-            </p>
-          </div>
-          <div class="card-footer">
-            <span>Launch App</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </div>
-        </a>
-
-        <a href="TriadMachine.html" class="app-card">
-          <div>
-            <div class="card-header">
-              <div class="app-icon" aria-hidden="true">🎸</div>
-              <div class="app-title">Triad Machine</div>
-            </div>
-            <p class="app-desc">
-              Chord finder and helper with the Circle of Fifths.
             </p>
           </div>
           <div class="card-footer">
@@ -564,22 +576,22 @@
           </div>
         </a>
 
-        <div class="app-card placeholder-card"
-             aria-label="Future Tool 2, under construction">
+        <a href="TriadMachine.html" class="app-card placeholder-card preview-card"
+             aria-label="Triad Machine, under construction; open preview">
           <div>
             <div class="card-header">
-              <div class="app-icon" aria-hidden="true">🚧</div>
-              <div class="app-title">Future Tool 2</div>
+              <div class="app-icon" aria-hidden="true">🎸</div>
+              <div class="app-title">Triad Machine</div>
             </div>
             <p class="app-desc">
-              Experimental module under active development.
+              Explore triads, inversions, scale overlays, playable shapes, and practice tools across the guitar neck.
             </p>
           </div>
           <div class="card-footer">
-            <span>Under construction</span>
-            <span>•</span>
+            <span>Under construction · Preview</span>
+            <span class="arrow" aria-hidden="true">→</span>
           </div>
-        </div>
+        </a>
 
         <div class="app-card placeholder-card"
              aria-label="Future Tool 3, coming soon">
