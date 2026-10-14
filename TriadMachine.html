@@ -54,7 +54,7 @@
       <div class="control"><label for="degreeSelect">Degree</label><select id="degreeSelect"></select></div>
       <div class="control"><label for="qualitySelect">Chord</label><select id="qualitySelect"><option value="triad">Diatonic triad</option><option value="dom7">Dominant 7</option><option value="maj7">Major 7</option><option value="9th">9th</option><option value="sus4">Sus 4</option><option value="sus2">Sus 2</option><option value="6th">6th</option></select></div>
       <span class="sep"></span>
-      <div class="control"><label for="stringSetSelect">Strings</label><select id="stringSetSelect"><option value="all">All sets</option><optgroup label="Three-string sets"><option value="0,1,2">1 · 2 · 3 (eBG)</option><option value="1,2,3">2 · 3 · 4 (BGD)</option><option value="2,3,4">3 · 4 · 5 (GDA)</option><option value="3,4,5">4 · 5 · 6 (DAE)</option></optgroup><optgroup label="Four-string sets"><option value="0,1,2,3">1 · 2 · 3 · 4 (eBGD)</option><option value="1,2,3,4">2 · 3 · 4 · 5 (BGDA)</option><option value="2,3,4,5">3 · 4 · 5 · 6 (GDAE)</option></optgroup></select></div>
+      <div class="control"><label for="stringSetSelect">Strings</label><select id="stringSetSelect"><option value="all">All ranges (automatic)</option><optgroup label="Three-string areas"><option value="0,1,2">Top 3 · 1–3 (eBG)</option><option value="1,2,3">2–4 (BGD)</option><option value="2,3,4">3–5 (GDA)</option><option value="3,4,5">Bottom 3 · 4–6 (DAE)</option></optgroup><optgroup label="Four-string areas"><option value="0,1,2,3">Top 4 · 1–4 (eBGD)</option><option value="1,2,3,4">2–5 (BGDA)</option><option value="2,3,4,5">Bottom 4 · 3–6 (GDAE)</option></optgroup><optgroup label="Five-string areas"><option value="0,1,2,3,4">Top 5 · 1–5 (eBGDA)</option><option value="1,2,3,4,5">Bottom 5 · 2–6 (BGDAE)</option></optgroup><optgroup label="Six-string area"><option value="0,1,2,3,4,5">All 6 · 1–6 (eBGDAE)</option></optgroup></select></div>
       <div class="control"><label for="inversionSelect">Inversion</label><select id="inversionSelect"><option value="all">Any inversion</option><option value="0">Root position</option><option value="1">1st inversion</option><option value="2">2nd inversion</option></select></div>
       <span class="sep"></span>
       <div class="control"><label>Fret view</label><div class="seg" id="rangeControl"><button type="button" data-range="all" class="active">Full neck</button><button type="button" data-range="window">Window</button></div></div>
@@ -208,10 +208,10 @@
       const stringGroups3=[[0,1,2],[1,2,3],[2,3,4],[3,4,5]],stringGroups4=[[0,1,2,3],[1,2,3,4],[2,3,4,5]];
       function generateVoicings(degree=state.degree){
         const tones=expectedNotes(degree),target=new Set(tones.map(n=>n.pc)),root=triadRoot(degree),size=tones.length>=4?4:3;
-        const groups=size===4?stringGroups4:stringGroups3;const requestedMin=state.rangeMode==='window'?Math.max(0,state.startFret):0;const min=state.allowOpen?requestedMin:Math.max(1,requestedMin);const max=state.rangeMode==='window'?Math.min(24,requestedMin+state.fretSpan):17;
+        const groups=size===4?stringGroups4:stringGroups3;const requestedStrings=state.stringSet==='all'?null:new Set(state.stringSet.split(',').map(Number));const requestedMin=state.rangeMode==='window'?Math.max(0,state.startFret):0;const min=state.allowOpen?requestedMin:Math.max(1,requestedMin);const max=state.rangeMode==='window'?Math.min(24,requestedMin+state.fretSpan):17;
         let found=[];
         for(const group of groups){
-          if(state.stringSet!=='all'&&state.stringSet!==group.join(','))continue;
+          if(requestedStrings&&!group.every(string=>requestedStrings.has(string)))continue;
           const choices=group.map(string=>{const pcs=[];for(let fret=min;fret<=max;fret++){const pc=pcOfKey(TUNING[string]+fret);if(target.has(pc))pcs.push({string,fret,pc})}return pcs});
           if(choices.some(a=>!a.length))continue;
           const visit=(i,notes,used)=>{
@@ -228,28 +228,40 @@
       function roleForPc(pc,degree=state.degree){const tone=expectedNotes(degree).find(n=>n.pc===pc);return tone||null}
       function modeScale(){return SCALE_LIST.find(s=>s[0]===state.scale)?.[2]||SCALE_LIST[0][2]}
       function getRun(){
-        const run=[];let previous=getVoicing();
-        for(let d=0;d<8;d++){
-          const degree=d%7,list=generateVoicings(degree);if(!list.length)continue;
+        const saved={type:state.type,inversion:state.inversion,rangeMode:state.rangeMode,startFret:state.startFret,fretSpan:state.fretSpan,stringSet:state.stringSet};
+        try{
+          const requestedStrings=state.stringSet;state.type='triad';state.inversion='all';state.rangeMode='all';state.startFret=0;state.stringSet='all';
+          const lists=Array.from({length:7},(_,degree)=>generateVoicings(degree));
+          const requested=new Set(requestedStrings==='all'?[]:requestedStrings.split(',').map(Number));
+          const groups=requestedStrings==='all'?stringGroups3:stringGroups3.filter(group=>group.every(string=>requested.has(string)));
           const ordered=notes=>[...notes].sort((a,b)=>toMidi(a.string,a.fret)-toMidi(b.string,b.fret));
-          const prior=previous?ordered(previous.notes):[];
-          const voicing=list.reduce((best,candidate)=>{
-            if(!best)return candidate;
-            const next=ordered(candidate.notes),count=Math.min(prior.length,next.length);
-            const movement=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(toMidi(n.string,n.fret)-toMidi(next[i].string,next[i].fret)),0);
-            const stringShift=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(n.string-next[i].string)*1.5,0);
-            const cost=movement+stringShift, bestNotes=ordered(best.notes);
-            const bestCost=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(toMidi(n.string,n.fret)-toMidi(bestNotes[i].string,bestNotes[i].fret))+Math.abs(n.string-bestNotes[i].string)*1.5,0);
-            return cost<bestCost?candidate:best;
-          },null);
-          run.push({degree,roman:(state.mode==='major'?ROMAN_MAJOR:ROMAN_MINOR)[d],name:chordName(degree),color:CHORD_COLORS[d],voicing});previous=voicing;
-        }
-        return run;
+          const moveCost=(from,to)=>{const a=ordered(from.notes),b=ordered(to.notes);return a.reduce((sum,n,i)=>sum+Math.abs(toMidi(n.string,n.fret)-toMidi(b[i].string,b[i].fret))+Math.abs(n.string-b[i].string)*2,0)};
+          let bestPath=null,bestScore=Infinity;
+          for(const group of groups){
+            const groupKey=group.join(','),tonics=lists[0].filter(v=>v.group.join(',')===groupKey&&v.notes.every(n=>n.fret<=5));
+            for(const tonic of tonics){
+              const path=[tonic];let score=tonic.score*.25;
+              for(let degree=1;degree<7;degree++){
+                const candidates=lists[degree].filter(v=>v.group.join(',')===groupKey);
+                if(!candidates.length){path.length=0;break}
+                const previous=path[path.length-1],next=candidates.reduce((best,v)=>!best||moveCost(previous,v)+v.score*.02<moveCost(previous,best)+best.score*.02?v:best,null);
+                score+=moveCost(previous,next);path.push(next);
+              }
+              if(!path.length)continue;
+              const octaveTonic={...tonic,notes:tonic.notes.map(n=>({...n,fret:n.fret+12})),minFret:tonic.minFret+12,avg:tonic.avg+12};
+              if(octaveTonic.notes.some(n=>n.fret>17))continue;
+              score+=moveCost(path[path.length-1],octaveTonic);
+              if(score<bestScore){bestScore=score;bestPath=[...path,octaveTonic]}
+            }
+          }
+          if(!bestPath)return [];
+          return bestPath.map((voicing,degree)=>({degree,roman:(state.mode==='major'?ROMAN_MAJOR:ROMAN_MINOR)[degree],name:chordName(degree),color:CHORD_COLORS[degree],voicing}));
+        }finally{Object.assign(state,saved)}
       }
       function fmtFret(f){return f===0?'0':String(f)}
 
       function renderBoard(){
-        const NS='http://www.w3.org/2000/svg',W=1040,H=360,left=68,right=24,top=45,bottom=43,frets=state.rangeMode==='window'?Math.max(3,Math.min(15,state.fretSpan)):15,start=state.rangeMode==='window'?Math.max(0,state.startFret):0,cell=(W-left-right)/frets,boardBottom=top+5*51;
+        const NS='http://www.w3.org/2000/svg',W=1040,H=360,left=68,right=24,top=45,bottom=43,frets=state.showRun?17:state.rangeMode==='window'?Math.max(3,Math.min(15,state.fretSpan)):15,start=state.showRun?0:state.rangeMode==='window'?Math.max(0,state.startFret):0,cell=(W-left-right)/frets,boardBottom=top+5*51;
         const el=(tag,attrs={},content='')=>{const node=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,String(v));if(content)node.textContent=content;return node};
         board.replaceChildren();board.setAttribute('viewBox',`0 0 ${W} ${H}`);board.setAttribute('aria-label',`Interactive guitar fretboard for ${chordName()}`);
         board.appendChild(el('rect',{x:left-6,y:top-6,width:cell*frets+6,height:boardBottom-top+12,rx:8,class:'fretboard-bg'}));
@@ -261,8 +273,8 @@
         board.appendChild(el('text',{x:left-6,y:top-18,class:'fret-number','text-anchor':'middle'},start===0?'OPEN':`FRET ${start}`));
         const voicing=getVoicing();const selected=new Set(voicing?voicing.notes.map(n=>`${n.string}:${n.fret}`):[]);
         const chordToneMap=new Map();const currentTones=expectedNotes();
-        if(state.showAll){for(let s=0;s<6;s++)for(let f=start;f<=start+frets;f++){const pc=pcOfKey(TUNING[s]+f);const tone=roleForPc(pc);if(tone)chordToneMap.set(`${s}:${f}`,{string:s,fret:f,pc,role:tone.role,interval:tone.name,selected:selected.has(`${s}:${f}`)})}}
-        else if(voicing)for(const n of voicing.notes){const tone=currentTones.find(t=>t.pc===n.pc);chordToneMap.set(`${n.string}:${n.fret}`,{...n,role:tone?.role||'root',interval:tone?.name||'R',selected:true})}
+        if(state.showAll&&!state.showRun){for(let s=0;s<6;s++)for(let f=start;f<=start+frets;f++){const pc=pcOfKey(TUNING[s]+f);const tone=roleForPc(pc);if(tone)chordToneMap.set(`${s}:${f}`,{string:s,fret:f,pc,role:tone.role,interval:tone.name,selected:selected.has(`${s}:${f}`)})}}
+        else if(voicing&&!state.showRun)for(const n of voicing.notes){const tone=currentTones.find(t=>t.pc===n.pc);chordToneMap.set(`${n.string}:${n.fret}`,{...n,role:tone?.role||'root',interval:tone?.name||'R',selected:true})}
         const run=state.showRun?getRun():[];const runMap=new Map();
         if(state.showRun)run.forEach(item=>item.voicing.notes.forEach(n=>{const key=`${n.string}:${n.fret}`;if(!runMap.has(key))runMap.set(key,[]);runMap.get(key).push({item,note:n})}));
         const scaleRoot=state.scaleRoot==='auto'?triadRoot():Number(state.scaleRoot);const scalePcs=new Set(modeScale().map(i=>pcOfKey(scaleRoot+i)));
@@ -271,8 +283,8 @@
           const pc=pcOfKey(TUNING[s]+f),key=`${s}:${f}`;if(!scalePcs.has(pc)||chordToneMap.has(key))continue;
           const x=f===0?left-15:left+(f-start-.5)*cell,y=top+s*51,g=el('g',{class:'note scale','data-note':'true','data-pc':pc,'data-midi':toMidi(s,f),tabindex:0,role:'button','aria-label':`${noteName(pc)}, string ${STRINGS[s]}, fret ${f}`});g.appendChild(el('circle',{cx:x,cy:y,r:11}));g.appendChild(el('text',{x,y},state.quiz?'·':(state.label==='interval'?String((pc-scaleRoot+12)%12):noteName(pc))));board.appendChild(g)
         }
-        // The full-neck run is displayed as compact degree-colored markers.
-        if(state.showRun)for(const [key,items] of runMap){const [s,f]=key.split(':').map(Number);if(f<start||f>start+frets)continue;const x=f===0?left-15:left+(f-start-.5)*cell,y=top+s*51,color=items.length>1?'#eee7d6':items[0].item.color,g=el('g',{class:'note'+(selected.has(key)?' selected':''),'data-note':'true','data-pc':pcOfKey(TUNING[s]+f),'data-midi':toMidi(s,f),tabindex:0,role:'button','aria-label':`${items.map(i=>i.item.roman).join(', ')} note on string ${STRINGS[s]}, fret ${f}`});g.appendChild(el('circle',{cx:x,cy:y,r:14,fill:color}));g.appendChild(el('text',{x,y},items.length>1?'•':items[0].item.roman));board.appendChild(g)}
+        // Each run note is split into chord-colored wedges when several triads share it.
+        if(state.showRun)for(const [key,items] of runMap){const [s,f]=key.split(':').map(Number);if(f<start||f>start+frets)continue;const x=f===0?left-15:left+(f-start-.5)*cell,y=top+s*51,r=17,g=el('g',{class:'note run-note','data-note':'true','data-pc':pcOfKey(TUNING[s]+f),'data-midi':toMidi(s,f),tabindex:0,role:'button','aria-label':`${items.map(i=>i.item.roman).join(', ')} on string ${STRINGS[s]}, fret ${f}`});const count=items.length;if(count===1)g.appendChild(el('circle',{cx:x,cy:y,r,fill:items[0].item.color,stroke:'#11130f','stroke-width':2}));else items.forEach((entry,index)=>{const a1=(-90+index*360/count)*Math.PI/180,a2=(-90+(index+1)*360/count)*Math.PI/180,x1=x+r*Math.cos(a1),y1=y+r*Math.sin(a1),x2=x+r*Math.cos(a2),y2=y+r*Math.sin(a2);g.appendChild(el('path',{d:`M ${x} ${y} L ${x1} ${y1} A ${r} ${r} 0 ${count>2&&a2-a1>Math.PI?1:0} 1 ${x2} ${y2} Z`,fill:entry.item.color,stroke:'#11130f','stroke-width':1.5}))});const labels=items.map(entry=>entry.item.roman).join('·'),labelAttrs={x,y,'font-size':count===1?9:Math.max(5,8-count*.7)};if(count>1){labelAttrs.textLength=Math.min(29,labels.length*4.2);labelAttrs.lengthAdjust='spacingAndGlyphs'}g.appendChild(el('text',labelAttrs,labels));board.appendChild(g)}
         // The selected shape stays bright; optional chord-map notes show every occurrence.
         for(const [key,n] of chordToneMap){if(n.fret<start||n.fret>start+frets)continue;const x=n.fret===0?left-15:left+(n.fret-start-.5)*cell,y=top+n.string*51,active=selected.has(key),g=el('g',{class:`note${active?' selected':''}${!active?' soft':''}`,'data-note':'true','data-pc':n.pc,'data-midi':toMidi(n.string,n.fret),tabindex:0,role:'button','aria-label':`${noteName(n.pc)} ${n.interval}, string ${STRINGS[n.string]}, fret ${n.fret}`});g.appendChild(el('circle',{cx:x,cy:y,r:active?17:14,fill:roleColor(n.role)}));g.appendChild(el('text',{x,y},state.quiz?'·':state.label==='interval'?n.interval:noteName(n.pc)));board.appendChild(g)}
         if(state.quiz)for(let s=0;s<6;s++)for(let f=start;f<=start+frets;f++){const x=f===0?left-15:left+(f-start-.5)*cell,y=top+s*51,pc=pcOfKey(TUNING[s]+f),g=el('g',{class:'note','data-note':'true','data-pc':pc,'data-midi':toMidi(s,f),tabindex:0,role:'button','aria-label':`String ${STRINGS[s]}, fret ${f}`});g.appendChild(el('circle',{cx:x,cy:y,r:16,class:'quiz-target'}));if(quizRevealed&&pc===quizTarget)g.appendChild(el('circle',{cx:x,cy:y,r:9,class:'quiz-answer'}));board.appendChild(g)}
