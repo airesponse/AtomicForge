@@ -11,20 +11,21 @@
             padding: 0;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none;
+            touch-action: manipulation;
         }
 
         body {
             background-color: #1e1e1e;
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
+            width: 100%;
+            min-height: 100svh;
+            overflow-x: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 10px;
+            justify-content: flex-start;
+            padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
         }
 
         /* Controls Toolbar */
@@ -79,20 +80,23 @@
 
         /* Responsive Wrapper */
         .fretboard-container {
-            flex-grow: 1;
+            flex: 0 0 auto;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: stretch;
             width: 100%;
-            padding: 15px 5px;
+            height: calc(100svh - 76px);
+            min-height: 180px;
+            padding: 6px 5px;
         }
 
         .fretboard-wrapper {
             display: flex;
             flex-direction: column; /* Landscape default */
             width: 100%;
-            height: 90%;
-            max-width: 1000px;
+            height: 100%;
+            min-height: 0;
+            max-width: 1200px;
         }
 
         /* Main CSS Grid Fretboard */
@@ -199,71 +203,37 @@
             100% { transform: scale(1); }
         }
 
-        /* ========================================= */
-        /* PORTRAIT MODE OVERRIDES                   */
-        /* ========================================= */
-        @media screen and (orientation: portrait) {
-            .fretboard-wrapper {
-                flex-direction: row; 
-                width: 95%;
-                height: 100%;
-                max-width: none;
-            }
+        .orientation-prompt {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+            background: #1e1e1ef5;
+            text-align: center;
+            font-size: 17px;
+            line-height: 1.5;
+        }
 
-            .fretboard {
-                /* Portrait Layout: 6 columns (strings), 16 rows (nut + 15) */
-                grid-template-columns: repeat(6, 1fr);
-                grid-template-rows: 40px repeat(15, minmax(0, 1fr));
-            }
+        @media screen and (orientation: portrait) and (max-width: 760px) {
+            .orientation-prompt { display: flex; }
+            body > :not(.orientation-prompt) { visibility: hidden; }
+        }
 
-            .fret-markers {
-                flex-direction: column;
-                margin-left: 0;
-                margin-top: 40px; 
-                width: 30px;
-                height: auto;
-            }
-
-            .fret-marker.nut-marker {
-                width: 100%;
-                height: 40px;
-                margin-left: 0;
-                margin-top: -40px;
-            }
-
-            .fret-cell {
-                flex-direction: column;
-                grid-row: var(--row-port);
-                grid-column: var(--col-port);
-                border-right: 1px solid rgba(0, 0, 0, 0.15); /* String separation visual */
-                border-bottom: 2px solid #b5b5b5; /* Portrait Fret Wire */
-            }
-
-            .fret-cell.nut {
-                border-right: 1px solid rgba(0, 0, 0, 0.15);
-                border-bottom: 5px solid #e5e5ea;
-            }
-
-            .fret-cell.last-fret { border-bottom: none; }
-            .fret-cell.highest-string { border-right: none; }
-
-            .string-line {
-                width: var(--str-thick);
-                height: 100%;
-                top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-
-            .inlay-dot {
-                /* Portrait placement spanning between specified string columns */
-                grid-row: var(--row-port);
-                grid-column: var(--col-port-start) / var(--col-port-end);
-            }
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            body { padding-top: max(4px, env(safe-area-inset-top)); }
+            .toolbar { height: 36px; padding: 0 4px; }
+            .color-palette { gap: 8px; }
+            .color-btn { width: 25px; height: 25px; }
+            .action-btn { padding: 5px 10px; font-size: 11px; }
+            .fretboard-container { height: calc(100svh - 58px); padding: 3px; }
         }
     </style>
 </head>
 <body>
+    <div class="orientation-prompt" role="status" aria-live="polite">Turn your iPhone sideways to use Fretboard Art.</div>
 
     <!-- Controls -->
     <div class="toolbar">
@@ -411,12 +381,6 @@
             document.querySelectorAll('.note-marker').forEach(note => note.remove());
         });
 
-        // Prevent iOS bounce scrolling
-        document.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1 || e.target.closest('.fretboard-container')) { 
-                e.preventDefault(); 
-            }
-        }, { passive: false });
     </script>
 </body>
 </html>
