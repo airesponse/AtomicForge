@@ -38,12 +38,6 @@
         <div class="archive-menu-pop"><a href="TriadMachineOriginal.html">Triad Machine · Original</a></div>
       </details>
       <div class="top-actions">
-        <div class="playback-dock" role="group" aria-label="Play and choose a shape">
-          <button class="button primary" id="playChord" type="button" aria-label="Play shape">▶ <span>Play</span></button>
-          <button class="button" id="playArpeggio" type="button" aria-label="Arpeggiate shape">♪ <span>Arpeggiate</span></button>
-          <button class="button small" id="previousShape" type="button" aria-label="Previous shape" title="Previous shape">←</button>
-          <button class="button small" id="nextShape" type="button" aria-label="Next shape" title="Next shape">→</button>
-        </div>
         <button class="button ghost" id="saveButton" type="button">☆ <span>Save shape</span></button>
         <button class="button" id="exportButton" type="button">⇩ <span>Export fretboard</span></button>
       </div>
@@ -66,10 +60,17 @@
       <div class="control"><label>Fret view</label><div class="seg" id="rangeControl"><button type="button" data-range="all" class="active">Full neck</button><button type="button" data-range="window">Window</button></div></div>
       <div class="control" id="rangeFields" hidden><label for="startFret">From</label><input id="startFret" type="number" min="0" max="20" value="0"><label for="fretSpan">Span</label><input id="fretSpan" type="number" min="3" max="15" value="7"></div>
       <div class="control"><label for="labelSelect">Labels</label><select id="labelSelect"><option value="interval">Intervals</option><option value="note">Note names</option></select></div>
-      <label class="open-string-toggle"><input id="allowOpenStrings" type="checkbox" checked><span>Allow open strings</span></label>
+      <label class="open-string-toggle"><input id="allowOpenStrings" type="checkbox"><span>Allow open strings</span></label>
       <div class="control"><label for="instrumentSelect">Sound</label><select id="instrumentSelect"><option value="acoustic_grand_piano" selected>Grand piano</option><option value="acoustic_guitar_steel">Steel-string guitar</option><option value="acoustic_guitar_nylon">Nylon guitar</option><option value="electric_guitar_clean">Clean electric guitar</option><option value="overdriven_guitar">Overdriven guitar</option><option value="electric_piano_1">Electric piano</option><option value="string_ensemble_1">String ensemble</option><option value="fingered_bass">Fingered bass</option><option value="synth_strings_1">Synth strings</option></select></div>
       <span class="sep"></span>
       <div class="scale-settings" aria-label="Scale overlay settings"><button class="button small" id="scaleButton" type="button" aria-pressed="false">+ Scale</button><span class="tag" id="scaleState">Off</span><div class="control"><label for="scaleRoot">Root</label><select id="scaleRoot" class="field"></select></div><div class="control"><label for="scaleSelect">Scale</label><select id="scaleSelect" class="field"></select></div></div>
+      <span class="sep"></span>
+      <div class="playback-dock" role="group" aria-label="Play and choose a shape">
+        <button class="button primary" id="playChord" type="button" aria-label="Play shape">▶ <span>Play</span></button>
+        <button class="button" id="playArpeggio" type="button" aria-label="Arpeggiate shape">♪ <span>Arpeggiate</span></button>
+        <button class="button small" id="previousShape" type="button" aria-label="Previous shape" title="Previous shape">←</button>
+        <button class="button small" id="nextShape" type="button" aria-label="Next shape" title="Next shape">→</button>
+      </div>
     </section>
 
     <main>
@@ -150,7 +151,7 @@
       const chordQualities = {
         triad:'Diatonic triad',dom7:'Dominant 7',maj7:'Major 7', '9th':'9th',sus4:'Suspended 4',sus2:'Suspended 2','6th':'6th'
       };
-      const freshState = () => ({key:7,mode:'major',degree:0,type:'triad',label:'interval',stringSet:'all',inversion:'all',rangeMode:'all',startFret:0,fretSpan:7,showAll:false,showScale:false,scaleRoot:'auto',scale:'ionian',showRun:false,allowOpen:true,voicingIndex:0,quiz:false,loop:true,score:0,streak:0,best:0});
+      const freshState = () => ({key:7,mode:'major',degree:0,type:'triad',label:'interval',stringSet:'all',inversion:'all',rangeMode:'all',startFret:0,fretSpan:7,showAll:false,showScale:false,scaleRoot:'auto',scale:'ionian',showRun:false,allowOpen:false,voicingIndex:0,quiz:false,loop:true,score:0,streak:0,best:0});
       const state = freshState();
       let audioContext, activeInstrument = null, activeInstrumentName = '', pendingInstrument = null;
       let practiceTimer = null, beatTimer = null, practiceStep = 0, progression = [0,4,5,3], metronomeBeat = 0;
