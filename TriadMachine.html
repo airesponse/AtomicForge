@@ -227,7 +227,25 @@
       function invName(inv){return ['Root position','1st inversion','2nd inversion','Extension in bass'][inv]||'Inversion'}
       function roleForPc(pc,degree=state.degree){const tone=expectedNotes(degree).find(n=>n.pc===pc);return tone||null}
       function modeScale(){return SCALE_LIST.find(s=>s[0]===state.scale)?.[2]||SCALE_LIST[0][2]}
-      function getRun(){const run=[];for(let d=0;d<8;d++){const degree=d%7;const original=state.degree;state.degree=degree;const list=generateVoicings(degree);state.degree=original;if(!list.length)continue;run.push({degree,roman:(state.mode==='major'?ROMAN_MAJOR:ROMAN_MINOR)[d],name:chordName(degree),color:CHORD_COLORS[d],voicing:list[0]})}return run}
+      function getRun(){
+        const run=[];let previous=getVoicing();
+        for(let d=0;d<8;d++){
+          const degree=d%7,list=generateVoicings(degree);if(!list.length)continue;
+          const ordered=notes=>[...notes].sort((a,b)=>toMidi(a.string,a.fret)-toMidi(b.string,b.fret));
+          const prior=previous?ordered(previous.notes):[];
+          const voicing=list.reduce((best,candidate)=>{
+            if(!best)return candidate;
+            const next=ordered(candidate.notes),count=Math.min(prior.length,next.length);
+            const movement=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(toMidi(n.string,n.fret)-toMidi(next[i].string,next[i].fret)),0);
+            const stringShift=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(n.string-next[i].string)*1.5,0);
+            const cost=movement+stringShift, bestNotes=ordered(best.notes);
+            const bestCost=prior.slice(0,count).reduce((sum,n,i)=>sum+Math.abs(toMidi(n.string,n.fret)-toMidi(bestNotes[i].string,bestNotes[i].fret))+Math.abs(n.string-bestNotes[i].string)*1.5,0);
+            return cost<bestCost?candidate:best;
+          },null);
+          run.push({degree,roman:(state.mode==='major'?ROMAN_MAJOR:ROMAN_MINOR)[d],name:chordName(degree),color:CHORD_COLORS[d],voicing});previous=voicing;
+        }
+        return run;
+      }
       function fmtFret(f){return f===0?'0':String(f)}
 
       function renderBoard(){
