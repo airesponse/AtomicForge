@@ -94,7 +94,7 @@
                 <i class="fa-solid fa-compact-disc fa-spin-pulse" style="--fa-animation-duration: 12s;"></i>
             </div>
             <span class="font-bold tracking-tight text-white text-base flex items-center gap-2 leading-tight">
-                LyricAlly <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v3.4</span>
+                LyricAlly <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v3.5</span>
             </span>
         </a>
 
@@ -143,7 +143,7 @@
     <!-- DAW Main Workspace -->
     <div class="flex-1 flex overflow-hidden">
         
-        <!-- Left Sidebar: Project Manager -->
+        <!-- Left Sidebar: Project Manager & Backup/Restore -->
         <aside class="w-64 bg-daw-panel border-r border-daw-border flex flex-col hidden lg:flex select-none">
             <div class="p-3 border-b border-daw-border flex items-center justify-between">
                 <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -153,11 +153,21 @@
             </div>
             <div id="songProjectList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
 
+            <!-- Offline Backup & Restore Panel -->
             <div class="p-3 border-t border-daw-border bg-daw-bg/50 space-y-2">
-                <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block">Offline Sheet Export</span>
-                <button onclick="exportSongAsPdf()" class="w-full py-1.5 bg-daw-card hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded text-xs font-medium flex items-center justify-center gap-2 transition-all">
-                    <i class="fa-solid fa-file-pdf"></i> Print / Save as PDF
-                </button>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block">Offline Backup & Restore</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="backupActiveSong()" class="py-1 bg-daw-card hover:bg-slate-800 text-indigo-400 border border-indigo-500/30 rounded text-[11px] font-medium flex items-center justify-center gap-1" title="Export Active Song JSON">
+                        <i class="fa-solid fa-file-arrow-down"></i> Export Song
+                    </button>
+                    <button onclick="backupAllSongs()" class="py-1 bg-daw-card hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 rounded text-[11px] font-medium flex items-center justify-center gap-1" title="Export All Songs Suite JSON">
+                        <i class="fa-solid fa-database"></i> Export All
+                    </button>
+                </div>
+                <label class="w-full py-1.5 bg-daw-card hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-all">
+                    <i class="fa-solid fa-file-arrow-up"></i> Restore from Backup JSON
+                    <input type="file" id="importBackupInput" accept=".json" class="hidden" onchange="importBackupFile(event)">
+                </label>
             </div>
         </aside>
 
@@ -173,7 +183,7 @@
                     <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">+ Outro</button>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <span><i class="fa-solid fa-chart-bar text-cyan-400"></i> Click (+) on AI Studio suggestions to insert into active line</span>
+                    <span><i class="fa-solid fa-arrows-up-down text-indigo-400"></i> Use arrows on lines to move lyrics & attached images up/down</span>
                 </div>
             </div>
 
@@ -543,13 +553,13 @@
                     <div class="flex items-center justify-between pb-3 border-b border-daw-border mb-3 select-none">
                         <span class="px-2.5 py-0.5 rounded-full border text-xs font-semibold ${badgeStyle}">${stanza.type}</span>
                         <div class="flex items-center gap-1 no-print">
-                            <button onclick="moveStanza('${stanza.id}', -1)" class="p-1 text-gray-500 hover:text-white"><i class="fa-solid fa-arrow-up text-xs"></i></button>
-                            <button onclick="moveStanza('${stanza.id}', 1)" class="p-1 text-gray-500 hover:text-white"><i class="fa-solid fa-arrow-down text-xs"></i></button>
-                            <button onclick="deleteStanza('${stanza.id}')" class="p-1 text-gray-500 hover:text-rose-400 ml-2"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                            <button onclick="moveStanza('${stanza.id}', -1)" class="p-1 text-gray-500 hover:text-white" title="Move Stanza Up"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+                            <button onclick="moveStanza('${stanza.id}', 1)" class="p-1 text-gray-500 hover:text-white" title="Move Stanza Down"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+                            <button onclick="deleteStanza('${stanza.id}')" class="p-1 text-gray-500 hover:text-rose-400 ml-2" title="Delete Stanza"><i class="fa-solid fa-trash-can text-xs"></i></button>
                         </div>
                     </div>
                     <div class="space-y-4" id="stanzaLines-${stanza.id}">
-                        ${stanza.lines.map((lineObj, lineIdx) => renderLineRow(stanza.id, lineObj, lineIdx)).join('')}
+                        ${stanza.lines.map((lineObj, lineIdx) => renderLineRow(stanza.id, stanza.lines, lineIdx)).join('')}
                     </div>
                     <button onclick="addLineToStanza('${stanza.id}')" class="mt-3 w-full py-1.5 border border-dashed border-daw-border hover:border-indigo-500/50 rounded-lg text-xs text-gray-400 hover:text-indigo-300 transition-all flex items-center justify-center gap-1.5 no-print">
                         <i class="fa-solid fa-plus text-[10px]"></i> Add Line
@@ -613,9 +623,9 @@
             return svg;
         }
 
-        function renderLineRow(stanzaId, lineObj, lineIdx) {
-            const syllables = countSyllables(lineObj.text);
-            const estimatedBeats = Math.max(1, Math.round(syllables / 2));
+        function renderLineRow(stanzaId, linesArray, lineIdx) {
+            const lineObj = linesArray[lineIdx];
+            const beatsCount = countSyllables(lineObj.text);
 
             return `
                 <div class="flex flex-col gap-2 p-2 rounded-lg bg-daw-bg/40 border border-daw-border/50 group/line" id="lineRow-${stanzaId}-${lineIdx}">
@@ -637,9 +647,9 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <div class="flex items-center gap-1 px-2 py-1 bg-daw-card border border-daw-border rounded text-[11px] font-mono text-cyan-400 shrink-0" title="Estimated Beats based on Syllables">
+                        <div class="flex items-center gap-1 px-2 py-1 bg-daw-card border border-daw-border rounded text-[11px] font-mono text-cyan-400 shrink-0" title="Calculated Beats">
                             <i class="fa-solid fa-clock text-[9px] text-indigo-400"></i>
-                            <span>BEATS: <strong>${estimatedBeats}</strong> (${syllables} syl)</span>
+                            <span>BEATS: <strong>${beatsCount}</strong></span>
                         </div>
                         <input type="text" 
                                value="${escapeHtml(lineObj.text)}" 
@@ -647,10 +657,30 @@
                                oninput="updateLineText('${stanzaId}', ${lineIdx}, this.value)"
                                class="flex-1 bg-daw-bg border border-daw-border text-sm text-gray-100 focus:outline-none focus:border-indigo-500 font-sans px-3 py-1.5 rounded" 
                                placeholder="Type lyrics here...">
-                        <button onclick="deleteLine('${stanzaId}', ${lineIdx})" class="p-1 text-gray-400 hover:text-rose-400 opacity-60 group-hover/line:opacity-100 no-print"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        
+                        <!-- Line Reordering Controls -->
+                        <div class="flex items-center gap-1 no-print">
+                            <button onclick="moveLine('${stanzaId}', ${lineIdx}, -1)" ${lineIdx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Up"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button onclick="moveLine('${stanzaId}', ${lineIdx}, 1)" ${lineIdx === linesArray.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Down"><i class="fa-solid fa-chevron-down"></i></button>
+                            <button onclick="deleteLine('${stanzaId}', ${lineIdx})" class="p-1 text-gray-400 hover:text-rose-400 ml-1" title="Delete Line"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        </div>
                     </div>
                 </div>
             `;
+        }
+
+        function moveLine(stanzaId, lineIdx, direction) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (!stanza) return;
+            const newIdx = lineIdx + direction;
+            if (newIdx >= 0 && newIdx < stanza.lines.length) {
+                const temp = stanza.lines[lineIdx];
+                stanza.lines[lineIdx] = stanza.lines[newIdx];
+                stanza.lines[newIdx] = temp;
+                saveState();
+                renderCurrentSong();
+            }
         }
 
         function dragCardStart(event, stanzaId, lineIdx, cardIdx) {
@@ -759,16 +789,65 @@
 
         function switchSong(songId) { state.currentSongId = songId; renderSongList(); renderCurrentSong(); }
 
+        // Offline Global Backup & Restore (JSON Export / Import)
+        function backupActiveSong() {
+            const song = getCurrentSong();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(song, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `${song.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_backup.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function backupAllSongs() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.songs, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `lyrically_all_songs_suite_backup.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function importBackupFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        state.songs = imported;
+                    } else if (imported && imported.id && imported.stanzas) {
+                        const idx = state.songs.findIndex(s => s.id === imported.id);
+                        if (idx >= 0) { state.songs[idx] = imported; } else { state.songs.push(imported); }
+                        state.currentSongId = imported.id;
+                    }
+                    saveState();
+                    renderSongList();
+                    renderCurrentSong();
+                    alert("Backup successfully restored!");
+                } catch (err) {
+                    alert("Invalid JSON backup file format.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function exportSongAsPdf() { window.print(); }
 
-        // Voice Scratchpad Recording Logic
+        // Voice Scratchpad Recording Logic (Fixed Blob Playback)
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
 
-                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) audioChunks.push(event.data);
+                };
                 mediaRecorder.onstop = saveVoiceTake;
 
                 mediaRecorder.start();
@@ -801,14 +880,18 @@
 
         function saveVoiceTake() {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const song = getCurrentSong();
-            const takeNum = (song.recordings ? song.recordings.length : 0) + 1;
-            
-            if (!song.recordings) song.recordings = [];
-            song.recordings.push({ id: 'rec_' + Date.now(), title: `Take #${takeNum}`, url: audioUrl });
-            saveState();
-            renderScratchpadList();
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = function() {
+                const base64Audio = reader.result;
+                const song = getCurrentSong();
+                const takeNum = (song.recordings ? song.recordings.length : 0) + 1;
+                
+                if (!song.recordings) song.recordings = [];
+                song.recordings.push({ id: 'rec_' + Date.now(), title: `Take #${takeNum}`, data: base64Audio });
+                saveState();
+                renderScratchpadList();
+            };
         }
 
         function renderScratchpadList() {
@@ -821,9 +904,9 @@
             list.innerHTML = song.recordings.map((rec, idx) => `
                 <div class="p-2 bg-daw-bg border border-daw-border rounded-lg flex items-center justify-between gap-2">
                     <span class="text-xs font-mono text-cyan-400 font-bold">${rec.title}</span>
-                    <audio src="${rec.url}" controls class="h-7 w-40"></audio>
-                    <a href="${rec.url}" download="${song.title}_${rec.title}.webm" class="p-1 text-emerald-400 hover:text-white text-xs" title="Download Audio"><i class="fa-solid fa-download"></i></a>
-                    <button onclick="deleteTake(${idx})" class="p-1 text-gray-500 hover:text-rose-400 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                    <audio src="${rec.data}" controls class="h-7 w-40"></audio>
+                    <a href="${rec.data}" download="${song.title}_${rec.title}.webm" class="p-1 text-emerald-400 hover:text-white text-xs" title="Download Audio"><i class="fa-solid fa-download"></i></a>
+                    <button onclick="deleteTake(${idx})" class="p-1 text-gray-500 hover:text-rose-400 text-xs" title="Delete Take"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             `).join('');
         }
@@ -836,7 +919,7 @@
         function openScratchpadModal() { document.getElementById('scratchpadModal').classList.remove('hidden'); renderScratchpadList(); }
         function closeScratchpadModal() { document.getElementById('scratchpadModal').classList.add('hidden'); }
 
-        // Robust Phonetic Rhyming Engine
+        // Phonetic Rhyming Engine
         function triggerRhymeLookup() {
             const wordInput = document.getElementById('rhymeTargetWord').value.trim().toLowerCase();
             const word = wordInput || 'rain';
@@ -846,26 +929,21 @@
             const phoneticRhymesDB = {
                 'rain': { perfect: ['pain', 'train', 'lane', 'gain', 'brain', 'stain', 'chain', 'plane', 'main'], slant: ['reign', 'game', 'name', 'change', 'same'] },
                 'night': { perfect: ['light', 'fight', 'sight', 'flight', 'white', 'bright', 'tight', 'might'], slant: ['mind', 'time', 'line', 'drive', 'wide'] },
-                'heart': { perfect: ['start', 'part', 'art', 'smart', 'chart', 'dart', 'part'], slant: ['hark', 'hurt', 'hard', 'spark', 'start'] },
+                'heart': { perfect: ['start', 'part', 'art', 'smart', 'chart', 'dart'], slant: ['hark', 'hurt', 'hard', 'spark'] },
                 'dream': { perfect: ['stream', 'beam', 'gleam', 'team', 'cream', 'scream', 'theme'], slant: ['green', 'deep', 'sleep', 'seen', 'leap'] },
                 'time': { perfect: ['prime', 'rhyme', 'crime', 'climb', 'mime', 'chime'], slant: ['line', 'shine', 'mind', 'find'] }
             };
 
-            let data = phoneticRhymesDB[word];
-            if (!data) {
-                // Phonetic suffix matching for unrecognized words
-                let suf = word.slice(-3);
-                data = {
-                    perfect: [word.slice(0, -2) + 'ight', word.slice(0, -2) + 'een', word.slice(0, -2) + 'ake', word.slice(0, -2) + 'ore'],
-                    slant: [word.slice(0, -1) + 'ed', word.slice(0, -2) + 'ing', word + 's']
-                };
-            }
+            let data = phoneticRhymesDB[word] || {
+                perfect: [word.slice(0, -2) + 'ight', word.slice(0, -2) + 'een', word.slice(0, -2) + 'ake'],
+                slant: [word.slice(0, -1) + 'ed', word.slice(0, -2) + 'ing', word + 's']
+            };
 
             perfectList.innerHTML = data.perfect.map(w => `<span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded text-xs cursor-pointer hover:bg-indigo-500/40" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
             slantList.innerHTML = data.slant.map(w => `<span class="px-2 py-1 bg-daw-card text-gray-300 border border-daw-border rounded text-xs cursor-pointer hover:border-indigo-500" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
         }
 
-        // AI Studio Line Continuation & Reset with Working (+) Insert
+        // AI Studio & Concepts
         let aiIdeasBank = [
             `Tracing echoes down the boulevard tonight`,
             `Fading out before the morning breaks the dawn`,
@@ -877,9 +955,7 @@
 
         function aiSuggestNextLine() {
             const resultsDiv = document.getElementById('aiNextLineResults');
-            // Shuffle or pick random subset for immediate variation
             let shuffled = [...aiIdeasBank].sort(() => 0.5 - Math.random()).slice(0, 3);
-
             resultsDiv.innerHTML = shuffled.map(s => `
                 <div class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-gray-200 hover:border-cyan-500 cursor-pointer flex items-center justify-between group transition-all" onclick="insertAiLine('${escapeHtml(s)}')">
                     <span>${s}</span>
@@ -933,7 +1009,7 @@
             document.getElementById('conceptResults').innerHTML = `<p class="text-xs text-gray-500 italic">Click Generate Metaphors for imagery ideas.</p>`;
         }
 
-        // Auto Chord Generator & Studio
+        // Auto Chord & Studio Functions
         function updateAutoChordPreview() {
             const root = document.getElementById('autoChordRoot').value;
             const type = document.getElementById('autoChordType').value;
@@ -1089,3 +1165,4 @@
     </script>
 </body>
 </html>
+
