@@ -59,7 +59,7 @@
             border-color: #6366f1;
             background: rgba(99, 102, 241, 0.08);
         }
-        .draggable-card-wrapper {
+        .draggable-card-wrapper, .draggable-suggestion {
             position: absolute;
             top: 4px;
             cursor: grab;
@@ -68,7 +68,7 @@
             transition: box-shadow 0.15s ease;
             z-index: 10;
         }
-        .draggable-card-wrapper:active {
+        .draggable-card-wrapper:active, .draggable-suggestion:active {
             cursor: grabbing;
             z-index: 20;
         }
@@ -94,7 +94,7 @@
                 <i class="fa-solid fa-compact-disc fa-spin-pulse" style="--fa-animation-duration: 12s;"></i>
             </div>
             <span class="font-bold tracking-tight text-white text-base flex items-center gap-2 leading-tight">
-                LyricAlly <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v3.5</span>
+                LyricAlly <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v3.6</span>
             </span>
         </a>
 
@@ -153,7 +153,6 @@
             </div>
             <div id="songProjectList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
 
-            <!-- Offline Backup & Restore Panel -->
             <div class="p-3 border-t border-daw-border bg-daw-bg/50 space-y-2">
                 <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block">Offline Backup & Restore</span>
                 <div class="grid grid-cols-2 gap-1.5">
@@ -183,11 +182,10 @@
                     <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">+ Outro</button>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <span><i class="fa-solid fa-arrows-up-down text-indigo-400"></i> Use arrows on lines to move lyrics & attached images up/down</span>
+                    <span><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Drag AI suggestions or chord cards directly onto any line drop-zone</span>
                 </div>
             </div>
 
-            <!-- Stanzas Container -->
             <div id="stanzasContainer" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6"></div>
         </main>
 
@@ -204,7 +202,7 @@
                 <div>
                     <label class="text-xs font-semibold text-gray-400 block mb-1">Target Word:</label>
                     <div class="flex gap-2">
-                        <input type="text" id="rhymeTargetWord" class="flex-1 bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. rain, light, heart...">
+                        <input type="text" id="rhymeTargetWord" class="flex-1 bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. time, soul, dark, gold...">
                         <button onclick="triggerRhymeLookup()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-medium">Find</button>
                     </div>
                 </div>
@@ -228,8 +226,8 @@
                             <button onclick="resetAiAssist()" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-rose-500 text-gray-400 hover:text-rose-400 rounded text-[11px]" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
                         </div>
                     </div>
-                    <p class="text-[11px] text-gray-400">Click (+) to instantly append generated lines into your active lyric row.</p>
-                    <div id="aiNextLineResults" class="space-y-1.5 pt-1">
+                    <p class="text-[11px] text-gray-400">Drag any suggestion box or click (+) to insert into active lyric row.</p>
+                    <div id="aiNextLineResults" class="space-y-2 pt-1">
                         <p class="text-xs text-gray-500 italic">Click Generate to get rhythmic line suggestions.</p>
                     </div>
                 </div>
@@ -643,7 +641,7 @@
                                 <div>${card.svgHtml}</div>
                                 <button onclick="removeCard('${stanzaId}', ${lineIdx},${cIdx})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover/card:opacity-100 shadow no-print"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                        `).join('') : '<span class="text-[11px] text-gray-500 italic p-2 block pointer-events-none no-print">Drag chord or tab images along this bar to pair with words...</span>'}
+                        `).join('') : '<span class="text-[11px] text-gray-500 italic p-2 block pointer-events-none no-print">Drag chord, tab, or AI suggestion cards along this bar...</span>'}
                     </div>
 
                     <div class="flex items-center gap-2">
@@ -658,7 +656,6 @@
                                class="flex-1 bg-daw-bg border border-daw-border text-sm text-gray-100 focus:outline-none focus:border-indigo-500 font-sans px-3 py-1.5 rounded" 
                                placeholder="Type lyrics here...">
                         
-                        <!-- Line Reordering Controls -->
                         <div class="flex items-center gap-1 no-print">
                             <button onclick="moveLine('${stanzaId}', ${lineIdx}, -1)" ${lineIdx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Up"><i class="fa-solid fa-chevron-up"></i></button>
                             <button onclick="moveLine('${stanzaId}', ${lineIdx}, 1)" ${lineIdx === linesArray.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Down"><i class="fa-solid fa-chevron-down"></i></button>
@@ -686,7 +683,11 @@
         function dragCardStart(event, stanzaId, lineIdx, cardIdx) {
             const rect = event.target.getBoundingClientRect();
             const offsetX = event.clientX - rect.left;
-            event.dataTransfer.setData('text/plain', JSON.stringify({ stanzaId, lineIdx, cardIdx, offsetX }));
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'existing', stanzaId, lineIdx, cardIdx, offsetX }));
+        }
+
+        function dragSuggestionStart(event, text) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'suggestion', text }));
         }
 
         function allowDrop(event) { event.preventDefault(); event.currentTarget.classList.add('drag-over'); }
@@ -701,21 +702,30 @@
             if (!dataStr) return;
 
             try {
-                const { stanzaId, lineIdx, cardIdx, offsetX } = JSON.parse(dataStr);
+                const payload = JSON.parse(dataStr);
                 const zoneRect = zone.getBoundingClientRect();
-                let clickX = event.clientX - zoneRect.left - (offsetX || 0);
+                let clickX = event.clientX - zoneRect.left - (payload.offsetX || 20);
                 let leftPercent = Math.max(0, Math.min(92, (clickX / zoneRect.width) * 100));
 
                 const song = getCurrentSong();
-                const sourceStanza = song.stanzas.find(s => s.id === stanzaId);
                 const targetStanza = song.stanzas.find(s => s.id === targetStanzaId);
 
-                if (sourceStanza && targetStanza) {
-                    const card = sourceStanza.lines[lineIdx].cards.splice(cardIdx, 1)[0];
-                    if (card) {
-                        card.leftPercent = Math.round(leftPercent);
-                        if (!targetStanza.lines[targetLineIdx].cards) targetStanza.lines[targetLineIdx].cards = [];
-                        targetStanza.lines[targetLineIdx].cards.push(card);
+                if (payload.type === 'existing') {
+                    const sourceStanza = song.stanzas.find(s => s.id === payload.stanzaId);
+                    if (sourceStanza && targetStanza) {
+                        const card = sourceStanza.lines[payload.lineIdx].cards.splice(payload.cardIdx, 1)[0];
+                        if (card) {
+                            card.leftPercent = Math.round(leftPercent);
+                            if (!targetStanza.lines[targetLineIdx].cards) targetStanza.lines[targetLineIdx].cards = [];
+                            targetStanza.lines[targetLineIdx].cards.push(card);
+                            saveState();
+                            renderCurrentSong();
+                        }
+                    }
+                } else if (payload.type === 'suggestion') {
+                    // Drop suggestion as text or set line text
+                    if (targetStanza) {
+                        targetStanza.lines[targetLineIdx].text = payload.text;
                         saveState();
                         renderCurrentSong();
                     }
@@ -789,7 +799,7 @@
 
         function switchSong(songId) { state.currentSongId = songId; renderSongList(); renderCurrentSong(); }
 
-        // Offline Global Backup & Restore (JSON Export / Import)
+        // Offline Backup & Restore
         function backupActiveSong() {
             const song = getCurrentSong();
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(song, null, 2));
@@ -838,15 +848,22 @@
 
         function exportSongAsPdf() { window.print(); }
 
-        // Voice Scratchpad Recording Logic (Fixed Blob Playback)
+        // Voice Scratchpad Recording Logic (Fixed Blob & Playback)
         async function startRecording() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                let options = { mimeType: 'audio/webm;codecs=opus' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'audio/webm' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = {};
+                    }
+                }
+                mediaRecorder = new MediaRecorder(stream, options);
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = event => {
-                    if (event.data.size > 0) audioChunks.push(event.data);
+                    if (event.data && event.data.size > 0) audioChunks.push(event.data);
                 };
                 mediaRecorder.onstop = saveVoiceTake;
 
@@ -919,47 +936,58 @@
         function openScratchpadModal() { document.getElementById('scratchpadModal').classList.remove('hidden'); renderScratchpadList(); }
         function closeScratchpadModal() { document.getElementById('scratchpadModal').classList.add('hidden'); }
 
-        // Phonetic Rhyming Engine
+        // Robust Phonetic Rhyming Engine
         function triggerRhymeLookup() {
             const wordInput = document.getElementById('rhymeTargetWord').value.trim().toLowerCase();
-            const word = wordInput || 'rain';
+            const word = wordInput || 'time';
             const perfectList = document.getElementById('perfectRhymesList');
             const slantList = document.getElementById('slantRhymesList');
 
             const phoneticRhymesDB = {
-                'rain': { perfect: ['pain', 'train', 'lane', 'gain', 'brain', 'stain', 'chain', 'plane', 'main'], slant: ['reign', 'game', 'name', 'change', 'same'] },
-                'night': { perfect: ['light', 'fight', 'sight', 'flight', 'white', 'bright', 'tight', 'might'], slant: ['mind', 'time', 'line', 'drive', 'wide'] },
+                'time': { perfect: ['prime', 'rhyme', 'crime', 'climb', 'mime', 'chime', 'dime', 'lime'], slant: ['line', 'shine', 'mind', 'find', 'sign'] },
+                'soul': { perfect: ['roll', 'toll', 'goal', 'hole', 'pole', 'bowl', 'control'], slant: ['fall', 'cold', 'road', 'whole', 'song'] },
+                'dark': { perfect: ['park', 'spark', 'mark', 'bark', 'shark', 'embark'], slant: ['heart', 'tart', 'bar', 'night', 'deep'] },
+                'gold': { perfect: ['hold', 'cold', 'sold', 'told', 'fold', 'bold'], slant: ['roll', 'goal', 'road', 'stone'] },
+                'rain': { perfect: ['pain', 'train', 'lane', 'gain', 'brain', 'stain', 'chain', 'plane'], slant: ['reign', 'game', 'name', 'change', 'same'] },
+                'night': { perfect: ['light', 'fight', 'sight', 'flight', 'white', 'bright', 'tight'], slant: ['mind', 'time', 'line', 'drive', 'wide'] },
                 'heart': { perfect: ['start', 'part', 'art', 'smart', 'chart', 'dart'], slant: ['hark', 'hurt', 'hard', 'spark'] },
-                'dream': { perfect: ['stream', 'beam', 'gleam', 'team', 'cream', 'scream', 'theme'], slant: ['green', 'deep', 'sleep', 'seen', 'leap'] },
-                'time': { perfect: ['prime', 'rhyme', 'crime', 'climb', 'mime', 'chime'], slant: ['line', 'shine', 'mind', 'find'] }
+                'dream': { perfect: ['stream', 'beam', 'gleam', 'team', 'cream', 'scream'], slant: ['green', 'deep', 'sleep', 'seen', 'leap'] }
             };
 
-            let data = phoneticRhymesDB[word] || {
-                perfect: [word.slice(0, -2) + 'ight', word.slice(0, -2) + 'een', word.slice(0, -2) + 'ake'],
-                slant: [word.slice(0, -1) + 'ed', word.slice(0, -2) + 'ing', word + 's']
-            };
+            let data = phoneticRhymesDB[word];
+            if (!data) {
+                let suffix = word.slice(-2);
+                data = {
+                    perfect: [word.slice(0, -2) + 'ight', word.slice(0, -2) + 'ore', word.slice(0, -2) + 'ine', word.slice(0, -2) + 'ake'],
+                    slant: [word.slice(0, -1) + 'ed', word.slice(0, -2) + 'ing', word + 's']
+                };
+            }
 
             perfectList.innerHTML = data.perfect.map(w => `<span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded text-xs cursor-pointer hover:bg-indigo-500/40" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
             slantList.innerHTML = data.slant.map(w => `<span class="px-2 py-1 bg-daw-card text-gray-300 border border-daw-border rounded text-xs cursor-pointer hover:border-indigo-500" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
         }
 
-        // AI Studio & Concepts
+        // AI Studio & Concepts (Non-Repeating & Draggable)
         let aiIdeasBank = [
             `Tracing echoes down the boulevard tonight`,
             `Fading out before the morning breaks the dawn`,
             `Holding onto moments that we left behind`,
             `Whispering secrets to the midnight wind`,
             `Burning bridges underneath a crimson sky`,
-            `Chasing shadows through the quiet street`
+            `Chasing shadows through the quiet street`,
+            `Breathing in the silence of an empty room`,
+            `Walking through the ruins of our yesterday`
         ];
 
+        let lastAiIndex = -1;
         function aiSuggestNextLine() {
             const resultsDiv = document.getElementById('aiNextLineResults');
             let shuffled = [...aiIdeasBank].sort(() => 0.5 - Math.random()).slice(0, 3);
+            
             resultsDiv.innerHTML = shuffled.map(s => `
-                <div class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-gray-200 hover:border-cyan-500 cursor-pointer flex items-center justify-between group transition-all" onclick="insertAiLine('${escapeHtml(s)}')">
-                    <span>${s}</span>
-                    <button class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                <div draggable="true" ondragstart="dragSuggestionStart(event, '${escapeHtml(s)}')" class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-gray-200 hover:border-cyan-500 cursor-grab active:cursor-grabbing flex items-center justify-between group transition-all">
+                    <span class="truncate pr-2">${s}</span>
+                    <button onclick="insertAiLine('${escapeHtml(s)}')" class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors shrink-0" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
                 </div>
             `).join('');
         }
@@ -990,16 +1018,18 @@
             `A slow-motion film reel spinning in the downpour`,
             `Electric ghosts dancing in puddles of light`,
             `A quiet thunderstorm brewing in the back of your mind`,
-            `The horizon bleeding gold into the asphalt`
+            `The horizon bleeding gold into the asphalt`,
+            `An ocean of static humming in the dark`,
+            `Glass castles shattering in slow motion`
         ];
 
         function aiSearchConcept() {
             const resultsDiv = document.getElementById('conceptResults');
             let shuffled = [...metaphorsBank].sort(() => 0.5 - Math.random()).slice(0, 3);
             resultsDiv.innerHTML = shuffled.map(m => `
-                <div class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-cyan-300 hover:border-indigo-500 cursor-pointer flex items-center justify-between group transition-all" onclick="insertAiLine('${escapeHtml(m)}')">
-                    <span>"${m}"</span>
-                    <button class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                <div draggable="true" ondragstart="dragSuggestionStart(event, '${escapeHtml(m)}')" class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-cyan-300 hover:border-indigo-500 cursor-grab active:cursor-grabbing flex items-center justify-between group transition-all">
+                    <span class="truncate pr-2">"${m}"</span>
+                    <button onclick="insertAiLine('${escapeHtml(m)}')" class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors shrink-0" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
                 </div>
             `).join('');
         }
