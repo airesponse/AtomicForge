@@ -44,34 +44,33 @@
         ::-webkit-scrollbar-track { background: #0c0d10; }
         ::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .pulse-glow { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
-        @keyframes beatFlash {
-            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 12px #06b6d4; }
-            50% { transform: scale(1.15); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 0.3; }
-        }
-        .beat-active { animation: beatFlash 0.18s ease-out; background-color: #06b6d4 !important; }
-
-        /* Draggable Image Objects */
-        .draggable-chord-img, .draggable-tab-img {
-            cursor: grab;
-            display: inline-block;
-            user-select: none;
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
-            vertical-align: bottom;
-            margin: 0 4px;
-        }
-        .draggable-chord-img:active, .draggable-tab-img:active {
-            cursor: grabbing;
-        }
+        
         .drop-zone {
-            min-height: 48px;
-            border: 2px dashed transparent;
-            transition: all 0.2s ease;
+            position: relative;
+            min-height: 70px;
+            width: 100%;
+            background: rgba(19, 21, 27, 0.6);
+            border: 1px dashed #2a2e3d;
+            border-radius: 8px;
+            overflow-x: hidden;
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
         .drop-zone.drag-over {
             border-color: #6366f1;
-            background: rgba(99, 102, 241, 0.05);
+            background: rgba(99, 102, 241, 0.08);
+        }
+        .draggable-card-wrapper {
+            position: absolute;
+            top: 4px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: box-shadow 0.15s ease;
+            z-index: 10;
+        }
+        .draggable-card-wrapper:active {
+            cursor: grabbing;
+            z-index: 20;
         }
     </style>
 </head>
@@ -85,11 +84,12 @@
             </div>
             <div>
                 <span class="font-bold tracking-tight text-white text-lg flex items-center gap-2">
-                    LyricAlly <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">DAW v2.9 (Draggable Visual Studio)</span>
+                    LyricAlly <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">DAW v3.0 (Sticky Free-Drag Engine)</span>
                 </span>
             </div>
         </div>
 
+        <!-- Metadata & Controls -->
         <div class="hidden md:flex items-center gap-6 text-sm">
             <div class="flex items-center gap-2 bg-daw-bg/80 border border-daw-border px-3 py-1 rounded-md">
                 <i class="fa-solid fa-music text-indigo-400 text-xs"></i>
@@ -118,7 +118,7 @@
         <div class="flex items-center gap-2">
             <button onclick="openVisualTabModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition-all shadow">
                 <i class="fa-solid fa-guitar text-indigo-400"></i>
-                <span class="hidden sm:inline">Visual Chord & Tab Builder</span>
+                <span class="hidden sm:inline">Chord & Tab Studio</span>
             </button>
             <button onclick="openApiKeyModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-daw-card border border-daw-border hover:border-indigo-500/50 text-gray-300 hover:text-white transition-all">
                 <i class="fa-solid fa-key text-amber-400"></i>
@@ -162,7 +162,7 @@
                     <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">+ Outro</button>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <span><i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i> Drag image cards directly above any lyric line to pair them up</span>
+                    <span><i class="fa-solid fa-arrows-left-right text-indigo-400"></i> Slide images horizontally along the line to align with specific words</span>
                 </div>
             </div>
 
@@ -209,31 +209,80 @@
         </aside>
     </div>
 
-    <!-- Visual Chord & Tab Studio Modal -->
+    <!-- Advanced Chord & Tab Studio Modal -->
     <div id="visualTabModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-daw-panel border border-daw-border rounded-2xl p-6 w-full max-w-3xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-daw-border pb-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-guitar text-indigo-400"></i> Visual Chord & Tab Studio
+                    <i class="fa-solid fa-guitar text-indigo-400"></i> Chord & Tablature Image Studio
                 </h3>
                 <button onclick="closeVisualTabModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- Mode Switcher Tabs -->
+            <!-- Studio Mode Tabs -->
             <div class="flex gap-2 bg-daw-bg p-1 rounded-lg border border-daw-border">
-                <button onclick="switchStudioMode('chord')" id="studioBtn-chord" class="flex-1 py-1.5 text-xs font-semibold rounded bg-indigo-600 text-white transition-all">Chord Diagram Generator</button>
-                <button onclick="switchStudioMode('tab')" id="studioBtn-tab" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">Advanced Tablature Riff Creator</button>
+                <button onclick="switchStudioMode('auto')" id="studioBtn-auto" class="flex-1 py-1.5 text-xs font-semibold rounded bg-indigo-600 text-white transition-all">1. Auto Chord Generator</button>
+                <button onclick="switchStudioMode('custom')" id="studioBtn-custom" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">2. Custom Fretboard Studio</button>
+                <button onclick="switchStudioMode('tab')" id="studioBtn-tab" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">3. Tablature Riff Builder</button>
             </div>
 
-            <!-- Mode 1: Chord Diagram Creator -->
-            <div id="studioMode-chord" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+            <!-- Tab 1: Auto Chord Library Generator -->
+            <div id="studioMode-auto" class="space-y-4">
+                <div class="grid grid-cols-3 gap-3">
                     <div>
-                        <label class="text-xs font-semibold text-gray-400 block mb-1">Chord Name:</label>
-                        <input type="text" id="builderChordName" value="Am7" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono font-bold">
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Root Note:</label>
+                        <select id="autoChordRoot" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono font-bold" onchange="updateAutoChordPreview()">
+                            <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option><option value="D#">D# / Eb</option>
+                            <option value="E">E</option><option value="F">F</option><option value="F#">F# / Gb</option><option value="G">G</option>
+                            <option value="G#">G# / Ab</option><option value="A" selected>A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-gray-400 block mb-1">Starting Fret:</label>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Type / Quality:</label>
+                        <select id="autoChordType" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-indigo-300 font-mono font-bold" onchange="updateAutoChordPreview()">
+                            <option value="maj">Major</option>
+                            <option value="m" selected>Minor (m)</option>
+                            <option value="7">Dominant 7th</option>
+                            <option value="maj7">Major 7th (maj7)</option>
+                            <option value="m7">Minor 7th (m7)</option>
+                            <option value="sus2">Sus2</option>
+                            <option value="sus4">Sus4</option>
+                            <option value="dim">Diminished (dim)</option>
+                            <option value="aug">Augmented (aug)</option>
+                            <option value="5">Power Chord (5)</option>
+                            <option value="9">9th</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Voicing Position:</label>
+                        <select id="autoChordPosition" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-cyan-400 font-mono" onchange="updateAutoChordPreview()">
+                            <option value="open">Open / Standard</option>
+                            <option value="pos3">Position 3</option>
+                            <option value="pos5">Position 5</option>
+                            <option value="pos7">Position 7</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-daw-card border border-daw-border p-4 rounded-xl flex flex-col items-center justify-center space-y-2">
+                    <span class="text-xs text-gray-400 font-mono">Auto-Rendered Vector Diagram:</span>
+                    <div id="autoChordPreviewContainer"></div>
+                </div>
+
+                <button onclick="insertAutoChordCard()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
+                    Insert Auto-Generated Chord Image
+                </button>
+            </div>
+
+            <!-- Tab 2: Custom Interactive Fretboard Studio -->
+            <div id="studioMode-custom" class="space-y-4 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Custom Chord Name:</label>
+                        <input type="text" id="builderChordName" value="Am(add9)" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Starting Fret Marker:</label>
                         <select id="builderStartFret" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
                             <option value="1">Fret 1 (Default)</option>
                             <option value="2">Fret 2</option>
@@ -252,11 +301,11 @@
                 </div>
 
                 <button onclick="insertVisualChordCard()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
-                    Insert Chord Diagram Image into Active Lyric Line
+                    Insert Custom Fretboard Diagram Image
                 </button>
             </div>
 
-            <!-- Mode 2: Advanced Tablature Riff Creator -->
+            <!-- Tab 3: Advanced Tablature Riff Creator -->
             <div id="studioMode-tab" class="space-y-4 hidden">
                 <div class="grid grid-cols-3 gap-3">
                     <div>
@@ -291,7 +340,7 @@
                 </div>
 
                 <button onclick="insertAdvancedTabCard()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
-                    Insert Tablature Image Card into Lyrics
+                    Insert Tablature Riff Image Card
                 </button>
             </div>
         </div>
@@ -335,6 +384,46 @@
         const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
         let tabMatrix = Array(6).fill(0).map(() => Array(12).fill(''));
 
+        // Comprehensive Auto-Chord Dictionary database lookup generator
+        const AUTO_CHORD_DB = {
+            "C_maj": [ -1, 3, 2, 0, 1, 0 ],
+            "C_m": [ -1, 3, 5, 5, 4, 3 ],
+            "C_7": [ -1, 3, 2, 3, 1, 0 ],
+            "C_maj7": [ -1, 3, 2, 0, 0, 0 ],
+            "C_m7": [ -1, 3, 5, 3, 4, 3 ],
+            "C_sus2": [ -1, 3, 0, 0, 1, 0 ],
+            "C_sus4": [ -1, 3, 3, 0, 1, 1 ],
+            "C_5": [ -1, 3, 5, 5, -1, -1 ],
+
+            "G_maj": [ 3, 2, 0, 0, 0, 3 ],
+            "G_m": [ 3, 5, 5, 3, 3, 3 ],
+            "G_7": [ 3, 2, 0, 0, 0, 1 ],
+            "G_maj7": [ 3, 2, 0, 0, 0, 2 ],
+            "G_m7": [ 3, 5, 3, 3, 3, 3 ],
+
+            "A_maj": [ -1, 0, 2, 2, 2, 0 ],
+            "A_m": [ -1, 0, 2, 2, 1, 0 ],
+            "A_7": [ -1, 0, 2, 0, 2, 0 ],
+            "A_maj7": [ -1, 0, 2, 1, 2, 0 ],
+            "A_m7": [ -1, 0, 2, 0, 1, 0 ],
+            "A_sus2": [ -1, 0, 2, 2, 0, 0 ],
+            "A_sus4": [ -1, 0, 2, 2, 3, 0 ],
+
+            "D_maj": [ -1, -1, 0, 2, 3, 2 ],
+            "D_m": [ -1, -1, 0, 2, 3, 1 ],
+            "D_7": [ -1, -1, 0, 2, 1, 2 ],
+            "D_m7": [ -1, -1, 0, 2, 1, 1 ],
+
+            "E_maj": [ 0, 2, 2, 1, 0, 0 ],
+            "E_m": [ 0, 2, 2, 0, 0, 0 ],
+            "E_7": [ 0, 2, 0, 1, 0, 0 ],
+            "E_m7": [ 0, 2, 0, 0, 0, 0 ],
+
+            "F_maj": [ 1, 3, 3, 2, 1, 1 ],
+            "F_m": [ 1, 3, 3, 1, 1, 1 ],
+            "F_maj7": [ -1, -1, 3, 2, 1, 0 ]
+        };
+
         const SAMPLE_SONG = {
             id: 'song_' + Date.now(),
             title: 'Neon Skyline',
@@ -357,13 +446,13 @@
             renderCurrentSong();
             renderInteractiveFretboard();
             renderTabGrid();
+            updateAutoChordPreview();
         };
 
         function loadSavedSongs() {
             const saved = localStorage.getItem('lyrically_songs');
             try {
                 state.songs = saved ? JSON.parse(saved) : [SAMPLE_SONG];
-                // Migration check for older string-array song formats
                 state.songs.forEach(song => {
                     song.stanzas.forEach(stz => {
                         stz.lines = stz.lines.map(l => typeof l === 'string' ? { text: l, cards: [] } : l);
@@ -436,7 +525,7 @@
         }
 
         function generateMiniChordSvg(name, fingers) {
-            let svg = `<svg width="56" height="64" viewBox="0 0 56 64" class="inline-block bg-[#13151b] border border-[#2a2e3d] rounded p-1">`;
+            let svg = `<svg width="56" height="64" viewBox="0 0 56 64" class="inline-block bg-[#13151b] border border-[#2a2e3d] rounded p-1 shadow-md">`;
             svg += `<text x="28" y="10" font-size="9" font-family="monospace" fill="#818cf8" text-anchor="middle" font-weight="bold">${name}</text>`;
             svg += `<rect x="10" y="14" width="36" height="3" fill="#6366f1"/>`;
             for (let f = 0; f <= 4; f++) {
@@ -465,7 +554,7 @@
         function generateVectorTabSvg(title, tuning, matrix) {
             let width = 360;
             let height = 110;
-            let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="font-mono bg-[#13151b] border border-[#2a2e3d] rounded p-1">`;
+            let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="font-mono bg-[#13151b] border border-[#2a2e3d] rounded p-1 shadow-md">`;
             svg += `<text x="10" y="16" font-size="10" fill="#06b6d4" font-weight="bold">${title}</text>`;
             svg += `<text x="${width - 10}" y="16" font-size="9" fill="#94a3b8" text-anchor="end">${tuning}</text>`;
             svg += `<line x1="10" y1="22" x2="${width - 10}" y2="22" stroke="#2a2e3d" stroke-width="1"/>`;
@@ -491,19 +580,22 @@
         function renderLineRow(stanzaId, lineObj, lineIdx) {
             return `
                 <div class="flex flex-col gap-2 p-2 rounded-lg bg-daw-bg/40 border border-daw-border/50 group/line" id="lineRow-${stanzaId}-${lineIdx}">
-                    <!-- Drop Zone for Draggable Image Cards -->
-                    <div class="drop-zone flex items-center gap-2 px-2 py-1 rounded bg-daw-bg/60 border border-dashed border-daw-border min-h-[50px] overflow-x-auto"
+                    <!-- Drop Zone with Free-Form Absolute Horizontal Positioning -->
+                    <div class="drop-zone"
+                         id="dropZone-${stanzaId}-${lineIdx}"
                          ondragover="allowDrop(event)" 
                          ondragleave="removeDropStyle(event)"
                          ondrop="dropCard(event, '${stanzaId}', ${lineIdx})">
                         ${lineObj.cards && lineObj.cards.length > 0 ? lineObj.cards.map((card, cIdx) => `
                             <div draggable="true"
+                                 id="cardElem-${stanzaId}-${lineIdx}-${cIdx}"
                                  ondragstart="dragCardStart(event, '${stanzaId}', ${lineIdx},${cIdx})"
-                                 class="relative group/card shrink-0">
-                                <div class="cursor-grab active:cursor-grabbing">${card.svgHtml}</div>
+                                 style="left: ${card.leftPercent || 0}%;"
+                                 class="draggable-card-wrapper group/card">
+                                <div>${card.svgHtml}</div>
                                 <button onclick="removeCard('${stanzaId}', ${lineIdx},${cIdx})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover/card:opacity-100 shadow"><i class="fa-solid fa-xmark"></i></button>
                             </div>
-                        `).join('') : '<span class="text-[11px] text-gray-500 italic px-2">Drag chord or tab image cards here...</span>'}
+                        `).join('') : '<span class="text-[11px] text-gray-500 italic p-2 block pointer-events-none">Drag chord or tab images along this bar to pair with words...</span>'}
                     </div>
 
                     <!-- Lyric Input Row -->
@@ -522,7 +614,9 @@
 
         // Drag and Drop Card Handlers
         function dragCardStart(event, stanzaId, lineIdx, cardIdx) {
-            event.dataTransfer.setData('text/plain', JSON.stringify({ stanzaId, lineIdx, cardIdx }));
+            const rect = event.target.getBoundingClientRect();
+            const offsetX = event.clientX - rect.left;
+            event.dataTransfer.setData('text/plain', JSON.stringify({ stanzaId, lineIdx, cardIdx, offsetX }));
         }
 
         function allowDrop(event) {
@@ -536,12 +630,20 @@
 
         function dropCard(event, targetStanzaId, targetLineIdx) {
             event.preventDefault();
-            event.currentTarget.classList.remove('drag-over');
+            const zone = event.currentTarget;
+            zone.classList.remove('drag-over');
+
             const dataStr = event.dataTransfer.getData('text/plain');
             if (!dataStr) return;
 
             try {
-                const { stanzaId, lineIdx, cardIdx } = JSON.parse(dataStr);
+                const { stanzaId, lineIdx, cardIdx, offsetX } = JSON.parse(dataStr);
+                const zoneRect = zone.getBoundingClientRect();
+                
+                // Calculate sticky horizontal percentage position
+                let clickX = event.clientX - zoneRect.left - (offsetX || 0);
+                let leftPercent = Math.max(0, Math.min(92, (clickX / zoneRect.width) * 100));
+
                 const song = getCurrentSong();
                 const sourceStanza = song.stanzas.find(s => s.id === stanzaId);
                 const targetStanza = song.stanzas.find(s => s.id === targetStanzaId);
@@ -549,6 +651,7 @@
                 if (sourceStanza && targetStanza) {
                     const card = sourceStanza.lines[lineIdx].cards.splice(cardIdx, 1)[0];
                     if (card) {
+                        card.leftPercent = Math.round(leftPercent);
                         if (!targetStanza.lines[targetLineIdx].cards) targetStanza.lines[targetLineIdx].cards = [];
                         targetStanza.lines[targetLineIdx].cards.push(card);
                         saveState();
@@ -631,6 +734,31 @@
         }
 
         function switchSong(songId) { state.currentSongId = songId; renderSongList(); renderCurrentSong(); }
+
+        // Auto Chord Generator Logic
+        function updateAutoChordPreview() {
+            const root = document.getElementById('autoChordRoot').value;
+            const type = document.getElementById('autoChordType').value;
+            const pos = document.getElementById('autoChordPosition').value;
+            const name = `${root}${type === 'maj' ? '' : type}`;
+            const key = `${root}_${type}`;
+
+            let fingers = AUTO_CHORD_DB[key] || [0, 2, 2, 1, 0, 0];
+            const previewContainer = document.getElementById('autoChordPreviewContainer');
+            previewContainer.innerHTML = generateMiniChordSvg(name, fingers);
+        }
+
+        function insertAutoChordCard() {
+            const root = document.getElementById('autoChordRoot').value;
+            const type = document.getElementById('autoChordType').value;
+            const name = `${root}${type === 'maj' ? '' : type}`;
+            const key = `${root}_${type}`;
+            let fingers = AUTO_CHORD_DB[key] || [0, 2, 2, 1, 0, 0];
+
+            const svgHtml = generateMiniChordSvg(name, fingers);
+            insertCardIntoActiveLine({ type: 'chord', name: name, svgHtml, leftPercent: 0 });
+            closeVisualTabModal();
+        }
 
         // Interactive Fretboard SVG Renderer
         function renderInteractiveFretboard() {
@@ -723,11 +851,11 @@
             renderTabGrid();
         }
 
-        function openVisualTabModal() { document.getElementById('visualTabModal').classList.remove('hidden'); renderInteractiveFretboard(); renderTabGrid(); }
+        function openVisualTabModal() { document.getElementById('visualTabModal').classList.remove('hidden'); renderInteractiveFretboard(); renderTabGrid(); updateAutoChordPreview(); }
         function closeVisualTabModal() { document.getElementById('visualTabModal').classList.add('hidden'); }
 
         function switchStudioMode(mode) {
-            ['chord', 'tab'].forEach(m => {
+            ['auto', 'custom', 'tab'].forEach(m => {
                 const btn = document.getElementById(`studioBtn-${m}`);
                 const panel = document.getElementById(`studioMode-${m}`);
                 if (m === mode) {
@@ -743,7 +871,7 @@
         function insertVisualChordCard() {
             const chordName = document.getElementById('builderChordName').value.trim() || 'Chord';
             const svgHtml = generateMiniChordSvg(chordName, [...currentChordFingers]);
-            insertCardIntoActiveLine({ type: 'chord', name: chordName, svgHtml });
+            insertCardIntoActiveLine({ type: 'chord', name: chordName, svgHtml, leftPercent: 0 });
             closeVisualTabModal();
         }
 
@@ -751,7 +879,7 @@
             const title = document.getElementById('builderRiffTitle').value.trim() || 'Riff';
             const tuning = document.getElementById('builderTuning').value.trim() || 'Standard';
             const svgHtml = generateVectorTabSvg(title, tuning, tabMatrix.map(row => [...row]));
-            insertCardIntoActiveLine({ type: 'tab', title, svgHtml });
+            insertCardIntoActiveLine({ type: 'tab', title, svgHtml, leftPercent: 0 });
             closeVisualTabModal();
         }
 
@@ -812,3 +940,4 @@
     </script>
 </body>
 </html>
+
