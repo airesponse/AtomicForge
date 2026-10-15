@@ -44,11 +44,6 @@
         ::-webkit-scrollbar-track { background: #0c0d10; }
         ::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .daw-glass {
-            background: rgba(19, 21, 27, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
         .pulse-glow { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4); }
         @keyframes beatFlash {
             0% { transform: scale(1); opacity: 1; box-shadow: 0 0 12px #06b6d4; }
@@ -56,22 +51,6 @@
             100% { transform: scale(1); opacity: 0.3; }
         }
         .beat-active { animation: beatFlash 0.18s ease-out; background-color: #06b6d4 !important; }
-
-        /* Visual Chord & Tab Card Styling */
-        .visual-chord-chip {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            color: #818cf8;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 6px;
-            margin: 0 3px;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
         .visual-tab-card {
             background: #13151b;
             border: 1px solid #2a2e3d;
@@ -80,6 +59,8 @@
             margin: 6px 0;
             display: inline-block;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            overflow-x: auto;
+            max-width: 100%;
         }
     </style>
 </head>
@@ -93,7 +74,7 @@
             </div>
             <div>
                 <span class="font-bold tracking-tight text-white text-lg flex items-center gap-2">
-                    LyricAlly <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">DAW v2.7 (Visual Studio)</span>
+                    LyricAlly <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">DAW v2.8 (Pro Tab Studio)</span>
                 </span>
             </div>
         </div>
@@ -126,7 +107,7 @@
         <div class="flex items-center gap-2">
             <button onclick="openVisualTabModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition-all shadow">
                 <i class="fa-solid fa-guitar text-indigo-400"></i>
-                <span class="hidden sm:inline">Visual Chord & Tab Maker</span>
+                <span class="hidden sm:inline">Advanced Chord & Tab Builder</span>
             </button>
             <button onclick="openApiKeyModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-daw-card border border-daw-border hover:border-indigo-500/50 text-gray-300 hover:text-white transition-all">
                 <i class="fa-solid fa-key text-amber-400"></i>
@@ -170,7 +151,7 @@
                     <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">+ Outro</button>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <span><i class="fa-solid fa-guitar text-indigo-400"></i> Insert visual chord diagrams & custom riff tabs directly</span>
+                    <span><i class="fa-solid fa-guitar text-indigo-400"></i> Insert vector chord diagrams & custom riff tab images</span>
                 </div>
             </div>
 
@@ -217,12 +198,12 @@
         </aside>
     </div>
 
-    <!-- Visual Chord & Tab Maker Modal -->
+    <!-- Advanced Chord & Tab Studio Modal -->
     <div id="visualTabModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-daw-panel border border-daw-border rounded-2xl p-6 w-full max-w-2xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div class="bg-daw-panel border border-daw-border rounded-2xl p-6 w-full max-w-3xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-daw-border pb-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-guitar text-indigo-400"></i> Visual Chord & Tab Studio
+                    <i class="fa-solid fa-guitar text-indigo-400"></i> Advanced Chord & Tablature Studio
                 </h3>
                 <button onclick="closeVisualTabModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
@@ -230,7 +211,7 @@
             <!-- Mode Switcher Tabs -->
             <div class="flex gap-2 bg-daw-bg p-1 rounded-lg border border-daw-border">
                 <button onclick="switchStudioMode('chord')" id="studioBtn-chord" class="flex-1 py-1.5 text-xs font-semibold rounded bg-indigo-600 text-white transition-all">Chord Diagram Generator</button>
-                <button onclick="switchStudioMode('tab')" id="studioBtn-tab" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">Custom Tab Riff Maker</button>
+                <button onclick="switchStudioMode('tab')" id="studioBtn-tab" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">Advanced Tablature Riff Creator</button>
             </div>
 
             <!-- Mode 1: Chord Diagram Creator -->
@@ -265,31 +246,43 @@
                 </button>
             </div>
 
-            <!-- Mode 2: Custom Tab Riff Maker -->
+            <!-- Mode 2: Advanced Tablature Riff Creator -->
             <div id="studioMode-tab" class="space-y-4 hidden">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="text-xs font-semibold text-gray-400 block mb-1">Riff / Section Title:</label>
                         <input type="text" id="builderRiffTitle" value="Intro Fingerstyle Riff" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-gray-400 block mb-1">Tuning:</label>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Tuning / Key:</label>
                         <input type="text" id="builderTuning" value="C# Standard" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Active Articulation Tool:</label>
+                        <select id="tabToolSelect" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-cyan-400 font-mono">
+                            <option value="number">Fret Number (0-16)</option>
+                            <option value="h">Hammer-on (h)</option>
+                            <option value="p">Pull-off (p)</option>
+                            <option value="/">Slide Up (/)</option>
+                            <option value="b">Bend (b)</option>
+                            <option value="x">Mute (x)</option>
+                        </select>
                     </div>
                 </div>
 
-                <div>
-                    <label class="text-xs font-semibold text-gray-400 block mb-1">Tablature Notes (Edit directly):</label>
-                    <textarea id="builderTabNotes" rows="5" class="w-full bg-daw-bg border border-daw-border rounded-md p-3 text-xs text-cyan-400 font-mono resize-none focus:outline-none focus:border-cyan-500" placeholder="e:---0---2---3---2---0---|
-B:-----------------------|
-G:-----------------------|
-D:-----------------------|
-A:-----------------------|
-E:-----------------------|"></textarea>
+                <!-- Interactive Tab Matrix Grid -->
+                <div class="bg-daw-card border border-daw-border p-3 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <span>Click string & beat position to place notes/articulations (12 Beats):</span>
+                        <button onclick="clearTabGrid()" class="px-2 py-0.5 bg-daw-bg border border-daw-border hover:border-rose-500 text-rose-400 rounded text-[10px]">Clear Grid</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <div id="tabGridContainer" class="inline-block min-w-full"></div>
+                    </div>
                 </div>
 
-                <button onclick="insertVisualTabCard()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
-                    Insert Graphical Tab Card into Lyrics
+                <button onclick="insertAdvancedTabCard()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
+                    Insert Advanced Vector Tablature Card into Lyrics
                 </button>
             </div>
         </div>
@@ -329,9 +322,12 @@ E:-----------------------|"></textarea>
             apiKey: localStorage.getItem('lyrically_gemini_key') || ''
         };
 
-        // Fretboard builder interactive state
-        // 6 strings, 5 frets. Values: -1 = X (mute), 0 = O (open), 1-5 = fret number
+        // Fretboard builder interactive state (6 strings, 5 frets)
         let currentChordFingers = [0, 2, 2, 1, 0, 0]; // Default Am
+
+        // Tab matrix state: 6 strings (E, A, D, G, B, e), 12 beat steps
+        const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
+        let tabMatrix = Array(6).fill(0).map(() => Array(12).fill(''));
 
         const SAMPLE_SONG = {
             id: 'song_' + Date.now(),
@@ -354,6 +350,7 @@ E:-----------------------|"></textarea>
             renderSongList();
             renderCurrentSong();
             renderInteractiveFretboard();
+            renderTabGrid();
         };
 
         function loadSavedSongs() {
@@ -389,8 +386,6 @@ E:-----------------------|"></textarea>
             document.getElementById('songTitleInput').value = song.title;
             const container = document.getElementById('stanzasContainer');
             container.innerHTML = '';
-            const mapContainer = document.getElementById('stanzaMapContainer');
-            mapContainer.innerHTML = '';
 
             song.stanzas.forEach((stanza, stzIdx) => {
                 const stanzaCard = document.createElement('div');
@@ -420,61 +415,78 @@ E:-----------------------|"></textarea>
             updateTotalStats();
         }
 
-        // Parse custom graphical tags: [chord:Name|fingers] or [tab:Title|tuning|data]
+        // Parse custom graphical tags: [chord:Name|fingers] or [tab:Title|tuning|matrixData]
         function parseVisualTags(text) {
-            // Parse [chord:Name|0,2,2,1,0,0]
             text = text.replace(/\[chord:(.*?)\Vert{}(.*?)\]/g, (match, name, fingersStr) => {
                 const fingers = fingersStr.split(',').map(Number);
                 return generateMiniChordSvgHtml(name, fingers);
             });
 
-            // Parse [tab:Title|Tuning|Line1\nLine2...]
-            text = text.replace(/\[tab:(.*?)\Vert{}(.*?)\Vert{}(.*?)\]/g, (match, title, tuning, notes) => {
-                const cleanNotes = notes.replace(/\\n/g, '\n');
-                return `<div class="visual-tab-card">
-                    <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono border-b border-daw-border pb-1 mb-1">
-                        <span class="text-cyan-400 font-bold">${escapeHtml(title)}</span>
-                        <span>${escapeHtml(tuning)}</span>
-                    </div>
-                    <pre class="text-cyan-300 font-mono text-[11px] leading-tight">${escapeHtml(cleanNotes)}</pre>
-                </div>`;
+            text = text.replace(/\[tab:(.*?)\Vert{}(.*?)\Vert{}(.*?)\]/g, (match, title, tuning, matrixDataStr) => {
+                const matrix = matrixDataStr.split(';').map(row => row.split(','));
+                return generateVectorTabCardHtml(title, tuning, matrix);
             });
 
             return text;
         }
 
         function generateMiniChordSvgHtml(name, fingers) {
-            let svgContent = `<svg width="56" height="64" viewBox="0 0 56 64" class="inline-block mx-1 align-middle">`;
-            svgContent += `<text x="28" y="10" font-size="10" font-family="monospace" fill="#818cf8" text-anchor="middle" font-weight="bold">${name}</text>`;
-            
-            // Nut
-            svgContent += `<rect x="10" y="14" width="36" height="3" fill="#6366f1"/>`;
-
-            // 4 Frets, 6 Strings
+            let svg = `<svg width="56" height="64" viewBox="0 0 56 64" class="inline-block mx-1 align-middle">`;
+            svg += `<text x="28" y="10" font-size="10" font-family="monospace" fill="#818cf8" text-anchor="middle" font-weight="bold">${name}</text>`;
+            svg += `<rect x="10" y="14" width="36" height="3" fill="#6366f1"/>`;
             for (let f = 0; f <= 4; f++) {
                 let y = 17 + f * 9;
-                svgContent += `<line x1="10" y1="${y}" x2="46" y2="${y}" stroke="#2a2e3d" stroke-width="1"/>`;
+                svg += `<line x1="10" y1="${y}" x2="46" y2="${y}" stroke="#2a2e3d" stroke-width="1"/>`;
             }
             for (let s = 0; s < 6; s++) {
                 let x = 10 + s * 7.2;
-                svgContent += `<line x1="${x}" y1="14" x2="${x}" y2="53" stroke="#475569" stroke-width="1"/>`;
+                svg += `<line x1="${x}" y1="14" x2="${x}" y2="53" stroke="#475569" stroke-width="1"/>`;
             }
-
-            // Finger dots & open/mute markers
             fingers.forEach((fret, stringIdx) => {
                 let x = 10 + stringIdx * 7.2;
                 if (fret === -1) {
-                    svgContent += `<text x="${x}" y="12" font-size="7" fill="#f43f5e" text-anchor="middle" font-family="monospace">x</text>`;
+                    svg += `<text x="${x}" y="12" font-size="7" fill="#f43f5e" text-anchor="middle" font-family="monospace">x</text>`;
                 } else if (fret === 0) {
-                    svgContent += `<circle cx="${x}" cy="11" r="2" stroke="#06b6d4" stroke-width="1" fill="none"/>`;
+                    svg += `<circle cx="${x}" cy="11" r="2" stroke="#06b6d4" stroke-width="1" fill="none"/>`;
                 } else {
                     let y = 14 + (fret - 0.5) * 9;
-                    svgContent += `<circle cx="${x}" cy="${y}" r="2.5" fill="#6366f1"/>`;
+                    svg += `<circle cx="${x}" cy="${y}" r="2.5" fill="#6366f1"/>`;
+                }
+            });
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function generateVectorTabCardHtml(title, tuning, matrix) {
+            let width = 420;
+            let height = 130;
+            let svg = `<div class="visual-tab-card"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="font-mono select-none">`;
+            
+            // Background & Header
+            svg += `<rect width="${width}" height="${height}" fill="#0c0d10" rx="6"/>`;
+            svg += `<text x="12" y="18" font-size="11" fill="#06b6d4" font-weight="bold">${title}</text>`;
+            svg += `<text x="${width - 12}" y="18" font-size="10" fill="#94a3b8" text-anchor="end">${tuning}</text>`;
+            svg += `<line x1="12" y1="26" x2="${width - 12}" y2="26" stroke="#2a2e3d" stroke-width="1"/>`;
+
+            // 6 Strings (High e at top to Low E at bottom)
+            stringNames.forEach((sName, sIdx) => {
+                let y = 42 + sIdx * 14;
+                svg += `<text x="16" y="${y + 4}" font-size="10" fill="#818cf8" font-weight="bold">${sName}</text>`;
+                svg += `<line x1="32" y1="${y}" x2="${width - 16}" y2="${y}" stroke="#475569" stroke-width="1.2"/>`;
+
+                // Render notes across 12 beat steps
+                for (let b = 0; b < 12; b++) {
+                    let noteVal = matrix[sIdx]?.[b] || '';
+                    if (noteVal !== '') {
+                        let x = 52 + b * 30;
+                        svg += `<rect x="${x - 8}" y="${y - 8}" width="16" height="16" fill="#1e1b4b" rx="3" stroke="#6366f1" stroke-width="0.8"/>`;
+                        svg += `<text x="${x}" y="${y + 4}" font-size="10" fill="#38bdf8" text-anchor="middle" font-weight="bold">${noteVal}</text>`;
+                    }
                 }
             });
 
-            svgContent += `</svg>`;
-            return svgContent;
+            svg += `</svg></div>`;
+            return svg;
         }
 
         function renderLineRow(stanzaId, lineText, lineIdx) {
@@ -563,11 +575,9 @@ E:-----------------------|"></textarea>
             let html = '';
             const startFret = parseInt(document.getElementById('builderStartFret').value) || 1;
 
-            // Background & Nut
             html += `<rect x="30" y="20" width="220" height="130" fill="#13151b" rx="8"/>`;
-            html += `<rect x="50" y="25" width="180" height="6" fill="#6366f1"/>`; // Nut
+            html += `<rect x="50" y="25" width="180" height="6" fill="#6366f1"/>`;
 
-            // 5 Frets
             for (let f = 0; f <= 5; f++) {
                 let y = 31 + f * 22;
                 html += `<line x1="50" y1="${y}" x2="230" y2="${y}" stroke="#2a2e3d" stroke-width="2"/>`;
@@ -576,29 +586,23 @@ E:-----------------------|"></textarea>
                 }
             }
 
-            // 6 Strings
             for (let s = 0; s < 6; s++) {
                 let x = 50 + s * 36;
                 html += `<line x1="${x}" y1="25" x2="${x}" y2="141" stroke="#475569" stroke-width="${1.5 + s * 0.3}"/>`;
-                
-                // Top header for Mute / Open toggle
                 let stateVal = currentChordFingers[s];
                 let label = stateVal === -1 ? 'X' : (stateVal === 0 ? 'O' : stateVal);
                 let color = stateVal === -1 ? '#f43f5e' : (stateVal === 0 ? '#06b6d4' : '#818cf8');
-                
                 html += `<g onclick="handleStringHeaderClick(${s})" class="cursor-pointer">`;
                 html += `<circle cx="${x}" cy="13" r="8" fill="#1a1d26" stroke="${color}" stroke-width="1.5"/>`;
                 html += `<text x="${x}" y="16" font-size="9" font-family="monospace" fill="${color}" text-anchor="middle" font-weight="bold">${label}</text>`;
                 html += `</g>`;
             }
 
-            // Fret intersections (clickable dots)
             for (let s = 0; s < 6; s++) {
                 for (let f = 1; f <= 5; f++) {
                     let x = 50 + s * 36;
                     let y = 25 + (f - 0.5) * 22;
                     let isPressed = currentChordFingers[s] === f;
-
                     html += `<circle cx="${x}" cy="${y}" r="8" fill="transparent" onclick="handleFretClick(${s}, ${f})" class="cursor-pointer hover:fill-indigo-500/20"/>`;
                     if (isPressed) {
                         html += `<circle cx="${x}" cy="${y}" r="7" fill="#6366f1" pointer-events="none"/>`;
@@ -606,32 +610,57 @@ E:-----------------------|"></textarea>
                     }
                 }
             }
-
             svg.innerHTML = html;
         }
 
         function handleStringHeaderClick(stringIdx) {
-            // Cycle: 0 (Open) -> -1 (Mute X) -> 0
-            if (currentChordFingers[stringIdx] >= 0) {
-                currentChordFingers[stringIdx] = -1;
-            } else {
-                currentChordFingers[stringIdx] = 0;
-            }
+            currentChordFingers[stringIdx] = currentChordFingers[stringIdx] >= 0 ? -1 : 0;
             renderInteractiveFretboard();
         }
 
         function handleFretClick(stringIdx, fretNum) {
-            if (currentChordFingers[stringIdx] === fretNum) {
-                currentChordFingers[stringIdx] = 0; // Reset to open if clicked again
-            } else {
-                currentChordFingers[stringIdx] = fretNum;
-            }
+            currentChordFingers[stringIdx] = currentChordFingers[stringIdx] === fretNum ? 0 : fretNum;
             renderInteractiveFretboard();
         }
 
         document.getElementById('builderStartFret').addEventListener('change', renderInteractiveFretboard);
 
-        function openVisualTabModal() { document.getElementById('visualTabModal').classList.remove('hidden'); renderInteractiveFretboard(); }
+        // Advanced Tab Matrix Grid Generator
+        function renderTabGrid() {
+            const container = document.getElementById('tabGridContainer');
+            let html = `<table class="border-collapse text-center font-mono text-xs">`;
+
+            stringNames.forEach((sName, sIdx) => {
+                html += `<tr>`;
+                html += `<td class="p-1 font-bold text-indigo-400 bg-daw-bg border border-daw-border w-8">${sName}</td>`;
+                for (let b = 0; b < 12; b++) {
+                    let val = tabMatrix[sIdx][b];
+                    html += `<td class="border border-daw-border p-1 w-9 h-8 cursor-pointer hover:bg-cyan-500/10 text-cyan-300 font-bold" onclick="handleTabGridClick(${sIdx}, ${b})">${val}</td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</table>`;
+            container.innerHTML = html;
+        }
+
+        function handleTabGridClick(stringIdx, beatIdx) {
+            const tool = document.getElementById('tabToolSelect').value;
+            if (tool === 'number') {
+                let current = tabMatrix[stringIdx][beatIdx];
+                let nextVal = current === '' ? '0' : (parseInt(current) < 12 ? String(parseInt(current) + 1) : '');
+                tabMatrix[stringIdx][beatIdx] = nextVal;
+            } else {
+                tabMatrix[stringIdx][beatIdx] = tool;
+            }
+            renderTabGrid();
+        }
+
+        function clearTabGrid() {
+            tabMatrix = Array(6).fill(0).map(() => Array(12).fill(''));
+            renderTabGrid();
+        }
+
+        function openVisualTabModal() { document.getElementById('visualTabModal').classList.remove('hidden'); renderInteractiveFretboard(); renderTabGrid(); }
         function closeVisualTabModal() { document.getElementById('visualTabModal').classList.add('hidden'); }
 
         function switchStudioMode(mode) {
@@ -655,11 +684,11 @@ E:-----------------------|"></textarea>
             closeVisualTabModal();
         }
 
-        function insertVisualTabCard() {
+        function insertAdvancedTabCard() {
             const title = document.getElementById('builderRiffTitle').value.trim() || 'Riff';
             const tuning = document.getElementById('builderTuning').value.trim() || 'Standard';
-            const notes = document.getElementById('builderTabNotes').value.trim().replace(/\n/g, '\\n');
-            const tag = `[tab:${title}|${tuning}|${notes}]`;
+            const matrixData = tabMatrix.map(row => row.join(',')).join(';');
+            const tag = `[tab:${title}|${tuning}|${matrixData}]`;
             insertTagIntoActiveLine(tag);
             closeVisualTabModal();
         }
@@ -688,7 +717,7 @@ E:-----------------------|"></textarea>
                     if (!l.includes('[tab:') && !l.includes('[chord:')) {
                         const words = l.trim().split(/\s+/).filter(w => w.length > 0);
                         totalWords += words.length;
-                        totalSyllables += words.length * 2; // rough estimate
+                        totalSyllables += words.length * 2;
                     }
                 });
             });
