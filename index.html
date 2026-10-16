@@ -210,11 +210,12 @@
       border: 1px solid rgba(244,166,42,.42);
     }
 
-    /* Custom neon slide icon styling */
-    .app-icon.neon-slide-icon {
-      background: rgba(16, 255, 128, 0.08);
-      border: 1px solid rgba(57, 255, 20, 0.45);
-      box-shadow: 0 0 12px rgba(57, 255, 20, 0.18);
+    /* Neon Green Glow Effect for Triad Machine v1 */
+    .app-icon.neon-green-glow {
+      background: rgba(16, 255, 128, 0.1);
+      border: 1px solid rgba(57, 255, 20, 0.5);
+      box-shadow: 0 0 14px rgba(57, 255, 20, 0.25);
+      text-shadow: 0 0 8px rgba(57, 255, 20, 0.8);
     }
 
     .app-title {
@@ -403,7 +404,7 @@
         <a href="TriadMachineOriginal.html" class="app-card">
           <div>
             <div class="card-header">
-              <div class="app-icon" aria-hidden="true">🧪</div>
+              <div class="app-icon neon-green-glow" aria-hidden="true">🧪</div>
               <div class="app-title">Triad Machine v1</div>
             </div>
             <p class="app-desc">
@@ -419,12 +420,19 @@
         <a href="ChordPlayground.html" class="app-card">
           <div>
             <div class="card-header">
-              <div class="app-icon neon-slide-icon" aria-hidden="true">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 19H20" stroke="#39ff14" stroke-width="2" stroke-linecap="round" filter="drop-shadow(0 0 4px #39ff14)"/>
-                  <path d="M7 5C7 5 17 5 19 19" stroke="#39ff14" stroke-width="2.5" stroke-linecap="round" filter="drop-shadow(0 0 6px #39ff14)"/>
-                  <path d="M11 5V19" stroke="#10b981" stroke-width="1.5" stroke-dasharray="2 2"/>
-                  <circle cx="15" cy="11" r="1.5" fill="#ffffff" filter="drop-shadow(0 0 4px #39ff14)"/>
+              <div class="app-icon" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <!-- Swing frame legs -->
+                  <path d="M3 20L7 4L11 20" />
+                  <!-- Top bar -->
+                  <path d="M6 4H20" />
+                  <!-- Swing ropes & seat -->
+                  <path d="M9 4V13" />
+                  <path d="M13 4V13" />
+                  <rect x="8" y="13" width="6" height="2" rx="1" fill="currentColor" />
+                  <!-- Slide attachment from top bar down -->
+                  <path d="M17 4L17 10L22 18" />
+                  <path d="M22 20H3" />
                 </svg>
               </div>
               <div class="app-title">Chord Playground</div>
