@@ -106,6 +106,80 @@
       text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
 
+    .header-right-tools {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Archived Versions Dropdown */
+    .archive-dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .archive-dropdown-btn {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text-muted);
+      border: 1px solid var(--panel-border);
+      font-weight: 700;
+      font-size: 0.85srem;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .archive-dropdown-btn:hover {
+      color: var(--text-main);
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .archive-dropdown-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      background: #0f172a;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      min-width: 210px;
+      z-index: 100;
+      overflow: hidden;
+      flex-direction: column;
+    }
+
+    .archive-dropdown-menu.show {
+      display: flex;
+    }
+
+    .archive-dropdown-menu a {
+      color: var(--text-main);
+      padding: 10px 16px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .archive-dropdown-menu a:last-child {
+      border-bottom: none;
+    }
+
+    .archive-dropdown-menu a:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+    }
+
     /* Tab Switcher Navigation */
     .tab-nav {
       display: flex;
@@ -932,10 +1006,24 @@
       </div>
     </div>
 
-    <!-- Tab Switcher Navigation -->
-    <div class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab('chords')"><i data-lucide="layers"></i> Chord Playground</button>
-      <button class="tab-btn" onclick="switchTab('scales')"><i data-lucide="compass"></i> Scale Explorer</button>
+    <!-- Header Right Tools: Archived Versions Dropdown & Tabs -->
+    <div class="header-right-tools">
+      <!-- Archived Versions Dropdown Menu -->
+      <div class="archive-dropdown-container">
+        <button class="archive-dropdown-btn" onclick="toggleArchiveDropdown(event)">
+          <i data-lucide="archive"></i> Archived Versions <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
+        </button>
+        <div class="archive-dropdown-menu" id="archive-dropdown-menu">
+          <a href="chord-craft.html"><i data-lucide="music" style="width:14px; height:14px;"></i> Chord Craft</a>
+          <a href="progression-studio.html"><i data-lucide="layers" style="width:14px; height:14px;"></i> Progression Studio</a>
+        </div>
+      </div>
+
+      <!-- Tab Switcher Navigation -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('chords')"><i data-lucide="layers"></i> Chord Playground</button>
+        <button class="tab-btn" onclick="switchTab('scales')"><i data-lucide="compass"></i> Scale Explorer</button>
+      </div>
     </div>
 
     <!-- Persistent User Profile Selection -->
@@ -1136,8 +1224,7 @@
           <select id="scale-root-select" style="width: 100%;" onchange="updateScaleVisualizer()">
             <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
             <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
-            <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option>
-            <option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+            <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option><option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
           </select>
         </div>
 
@@ -1276,6 +1363,20 @@
         }
       }
     };
+
+    function toggleArchiveDropdown(event) {
+      event.stopPropagation();
+      const menu = document.getElementById("archive-dropdown-menu");
+      menu.classList.toggle("show");
+    }
+
+    // Close dropdown when clicking outside
+    window.addEventListener("click", () => {
+      const menu = document.getElementById("archive-dropdown-menu");
+      if (menu && menu.classList.contains("show")) {
+        menu.classList.remove("show");
+      }
+    });
 
     function switchTab(tabName) {
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -1671,13 +1772,11 @@
       });
     }
 
-    /* CORRECTED DIATONIC RUN ALGORITHM: Low E (Physical Top / String Index 5) -> High E (Physical Bottom / String Index 0) */
     function renderDiatonicGuitarRun(rootChroma, scaleChromes) {
       const runFretboardContainer = document.getElementById("guitar-fretboard-run");
       runFretboardContainer.innerHTML = "";
 
-      // Build 2D matrix of fretboard notes
-      const fretMatrix = []; // [stringIndex][fretIndex]
+      const fretMatrix = [];
       guitarStrings.forEach((str, sIdx) => {
         const strNotes = [];
         for (let fret = 0; fret <= 16; fret++) {
@@ -1689,7 +1788,6 @@
         fretMatrix.push(strNotes);
       });
 
-      // Find starting point: Lowest fret root note on Low E string (String index 5 - Physical top string)
       let startPoint = null;
       for (let fret = 0; fret <= 7; fret++) {
         if (scaleChromes.includes(fretMatrix[5][fret].chroma) && fretMatrix[5][fret].chroma === rootChroma) {
@@ -1707,9 +1805,8 @@
       }
       if (!startPoint) startPoint = fretMatrix[5][0];
 
-      // Trace run ascending from Low E (index 5) up to High E (index 0), moving right across frets
       const runSteps = [];
-      let currentString = 5; // Start at Low E
+      let currentString = 5;
       let minFret = startPoint.fret;
 
       while (currentString >= 0) {
@@ -1718,7 +1815,6 @@
           stringScaleNotes = fretMatrix[currentString].filter(n => scaleChromes.includes(n.chroma) && n.fret >= minFret);
         }
         
-        // Take 2 to 3 notes per string for a fluid melodic run pattern
         const takeCount = Math.min(stringScaleNotes.length, 3);
         const selectedForString = stringScaleNotes.slice(0, takeCount);
         
@@ -1727,12 +1823,11 @@
         if (selectedForString.length > 0) {
           minFret = selectedForString[selectedForString.length - 1].fret;
         }
-        currentString--; // Move up towards High E (index 0)
+        currentString--;
       }
 
       currentDiatonicRunNotes = runSteps.map(s => s.noteName);
 
-      // Render the run fretboard with step order badges
       guitarStrings.forEach((str, sIdx) => {
         const stringRow = document.createElement("div");
         stringRow.className = "fret-string";
@@ -1755,7 +1850,7 @@
 
           if (stepIdx !== -1) {
             dot.classList.add("in-run", "run-step");
-            dot.textContent = stepIdx + 1; // 1-based order badge
+            dot.textContent = stepIdx + 1;
             dot.title = `Step ${stepIdx + 1}: ${Tonal.Note.pitchClass(runSteps[stepIdx].noteName)}`;
           } else {
             dot.style.background = "transparent";
@@ -1777,7 +1872,7 @@
       if (!soundfontPlayer || currentDiatonicRunNotes.length === 0) return;
 
       isPlaying = true;
-      const stepTime = 0.22; // Fast fluid run tempo
+      const stepTime = 0.22;
 
       function step(index) {
         if (!isPlaying) return;
