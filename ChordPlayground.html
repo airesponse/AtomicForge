@@ -615,14 +615,14 @@
     /* SCALE TAB STYLING */
     .scale-controls-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr auto;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
       gap: 16px;
       align-items: end;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 900px) {
       .scale-controls-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -697,7 +697,7 @@
       border-radius: 50%;
       background: #334155;
       color: #94a3b8;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       display: flex;
       align-items: center;
@@ -719,7 +719,7 @@
       transform: scale(1.1);
     }
 
-    /* Authentic Piano Keyboard View */
+    /* Authentic 4-Octave Piano Keyboard View */
     .piano-keyboard-view {
       display: flex;
       position: relative;
@@ -728,7 +728,7 @@
       border-radius: 8px;
       border: 2px solid #334155;
       padding: 12px;
-      min-width: 780px;
+      min-width: 1050px;
       overflow-x: auto;
     }
 
@@ -739,7 +739,7 @@
     }
 
     .piano-white-key {
-      width: 44px;
+      width: 36px;
       height: 120px;
       background: #f8fafc;
       border: 1px solid #cbd5e1;
@@ -747,9 +747,9 @@
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
       color: #334155;
-      font-size: 0.8rem;
+      font-size: 0.72rem;
       font-weight: 800;
       box-shadow: inset 0 -4px 6px rgba(0,0,0,0.15);
       user-select: none;
@@ -780,15 +780,15 @@
     }
 
     .piano-black-key-slot {
-      width: 44px;
+      width: 36px;
       position: relative;
       pointer-events: none;
     }
 
     .piano-black-key {
       position: absolute;
-      right: -14px;
-      width: 28px;
+      right: -12px;
+      width: 24px;
       height: 72px;
       background: #0f172a;
       border: 1px solid #334155;
@@ -798,7 +798,7 @@
       justify-content: center;
       padding-bottom: 6px;
       color: #94a3b8;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       font-weight: 700;
       box-shadow: 0 4px 8px rgba(0,0,0,0.6);
       pointer-events: auto;
@@ -1097,8 +1097,9 @@
     <div class="section-card">
       <div class="section-header">
         <div class="section-title"><i data-lucide="compass"></i> Scale Explorer & Visualizer</div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-amber" onclick="playScaleAudio()"><i data-lucide="play"></i> Play Scale (Up & Down)</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-amber" onclick="saveCurrentScaleToFavourites()"><i data-lucide="star"></i> Save Scale</button>
+          <button class="btn btn-amber" onclick="playScaleAudio()"><i data-lucide="play"></i> Play Scale</button>
           <button id="scale-loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleScaleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
           <button class="btn btn-secondary" onclick="updateScaleVisualizer()" title="Refresh Visualizer"><i data-lucide="refresh-cw"></i> Refresh</button>
           <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
@@ -1123,10 +1124,18 @@
         </div>
 
         <div class="builder-field">
+          <label>Display Labels</label>
+          <select id="scale-label-mode" style="width: 100%;" onchange="updateScaleVisualizer()">
+            <option value="notes">Notes (C, D, E...)</option>
+            <option value="intervals">Intervals (1, b3, 5...)</option>
+          </select>
+        </div>
+
+        <div class="builder-field">
           <label>Visualizer View</label>
           <select id="scale-view-mode" style="width: 100%;" onchange="toggleScaleViewMode()">
             <option value="fretboard">16-Fret Guitar Fretboard</option>
-            <option value="piano">Piano Keyboard View</option>
+            <option value="piano">4-Octave Piano View</option>
           </select>
         </div>
       </div>
@@ -1150,15 +1159,22 @@
           <div class="fretboard" id="guitar-fretboard"></div>
         </div>
 
-        <!-- Realistic Piano Keyboard View -->
+        <!-- Realistic 4-Octave Piano Keyboard View -->
         <div id="piano-scale-wrapper" style="overflow-x: auto; display: none;">
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight:700;">
-            PIANO KEYBOARD VIEW (2 Octaves) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
+            PIANO KEYBOARD VIEW (4 Octaves: C2 - C6) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
           </div>
           <div class="piano-keyboard-view" id="piano-keyboard-container"></div>
         </div>
 
       </div>
+
+      <!-- Favourite Scales Section -->
+      <div>
+        <label>Favourite Scales (Click to load):</label>
+        <div class="favourites-bar" id="scale-favourites-list"></div>
+      </div>
+
     </div>
   </div>
 
@@ -1214,6 +1230,7 @@
         "Default User": {
           songName: "My Masterpiece Progression",
           favourites: ["Cmaj7", "Am7", "Dm7", "G7"],
+          favouriteScales: ["C major", "A minor pentatonic"],
           customProgression: [
             { name: "Cmaj7", notes: ["C4", "E4", "G4", "B4"] },
             { name: "Am7", notes: ["A3", "C4", "E4", "G4"] },
@@ -1340,6 +1357,7 @@
       populateUserDropdown();
       loadUserDataToUI();
       renderFavourites();
+      renderScaleFavourites();
       renderProgressionCanvas();
       updateSavedCountBadge();
     }
@@ -1351,7 +1369,10 @@
 
     function getUserData() {
       if (!appData.users[appData.currentUser]) {
-        appData.users[appData.currentUser] = { songName: "My Song", favourites: [], customProgression: [], savedProgressions: [] };
+        appData.users[appData.currentUser] = { songName: "My Song", favourites: [], favouriteScales: [], customProgression: [], savedProgressions: [] };
+      }
+      if (!appData.users[appData.currentUser].favouriteScales) {
+        appData.users[appData.currentUser].favouriteScales = [];
       }
       return appData.users[appData.currentUser];
     }
@@ -1384,6 +1405,7 @@
       saveStorage();
       loadUserDataToUI();
       renderFavourites();
+      renderScaleFavourites();
       renderProgressionCanvas();
       updateSavedCountBadge();
     }
@@ -1393,13 +1415,14 @@
       if (name && name.trim() !== "") {
         const cleanName = name.trim();
         if (!appData.users[cleanName]) {
-          appData.users[cleanName] = { songName: "My Masterpiece Progression", favourites: [], customProgression: [], savedProgressions: [] };
+          appData.users[cleanName] = { songName: "My Masterpiece Progression", favourites: [], favouriteScales: [], customProgression: [], savedProgressions: [] };
         }
         appData.currentUser = cleanName;
         saveStorage();
         populateUserDropdown();
         loadUserDataToUI();
         renderFavourites();
+        renderScaleFavourites();
         renderProgressionCanvas();
         updateSavedCountBadge();
       }
@@ -1518,21 +1541,29 @@
     function updateScaleVisualizer() {
       const root = document.getElementById("scale-root-select").value;
       const scaleType = document.getElementById("scale-type-select").value;
+      const labelMode = document.getElementById("scale-label-mode").value;
 
       const scaleObj = Tonal.Scale.get(`${root} ${scaleType}`);
       const scaleNotes = scaleObj.notes;
+      const scaleIntervals = scaleObj.intervals;
       
       const scaleChromes = scaleNotes.map(n => Tonal.Note.chroma(n));
       const rootChroma = Tonal.Note.chroma(root);
 
-      document.getElementById("scale-title-lbl").textContent = `${root} ${scaleType.charAt(0).toUpperCase() + scaleType.slice(1)}`;
-      document.getElementById("scale-notes-lbl").textContent = "Notes: " + scaleNotes.join(" - ");
+      // Create mapping from Chroma -> Interval Label for interval mode
+      const intervalMap = {};
+      scaleChromes.forEach((chroma, idx) => {
+        intervalMap[chroma] = scaleIntervals[idx] || "";
+      });
 
-      render16FretGuitarFretboard(rootChroma, scaleChromes);
-      renderAuthenticPianoKeyboard(rootChroma, scaleChromes);
+      document.getElementById("scale-title-lbl").textContent = `${root} ${scaleType.charAt(0).toUpperCase() + scaleType.slice(1)}`;
+      document.getElementById("scale-notes-lbl").textContent = "Notes: " + scaleNotes.join(" - ") + "  |  Intervals: " + scaleIntervals.join(" - ");
+
+      render16FretGuitarFretboard(rootChroma, scaleChromes, labelMode, intervalMap);
+      render4OctavePianoKeyboard(rootChroma, scaleChromes, labelMode, intervalMap);
     }
 
-    function render16FretGuitarFretboard(rootChroma, scaleChromes) {
+    function render16FretGuitarFretboard(rootChroma, scaleChromes, labelMode, intervalMap) {
       const fretboardContainer = document.getElementById("guitar-fretboard");
       fretboardContainer.innerHTML = "";
 
@@ -1560,6 +1591,7 @@
           dot.className = "fret-note-dot";
 
           if (scaleChromes.includes(noteChroma)) {
+            const displayLabel = labelMode === 'intervals' ? (intervalMap[noteChroma] || pcLabel) : pcLabel;
             if (noteChroma === rootChroma) {
               dot.classList.add("root-note");
               dot.title = `${pcLabel} (Root Note)`;
@@ -1567,7 +1599,7 @@
               dot.classList.add("in-scale");
               dot.title = `${pcLabel} (Scale Note)`;
             }
-            dot.textContent = pcLabel;
+            dot.textContent = displayLabel;
           } else {
             dot.style.background = "transparent";
             dot.style.color = "transparent";
@@ -1582,33 +1614,40 @@
       });
     }
 
-    function renderAuthenticPianoKeyboard(rootChroma, scaleChromes) {
+    function render4OctavePianoKeyboard(rootChroma, scaleChromes, labelMode, intervalMap) {
       const container = document.getElementById("piano-keyboard-container");
       container.innerHTML = "";
 
-      const whiteNotes = [
-        "C3", "D3", "E3", "F3", "G3", "A3", "B3",
-        "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"
-      ];
+      // 4 Full Octaves of Natural White Keys (C2 through C6 = 29 white keys)
+      const whiteNotes = [];
+      const octaves = [2, 3, 4, 5];
+      const bases = ["C", "D", "E", "F", "G", "A", "B"];
 
-      const blackNoteMap = [
-        { afterIdx: 0, note: "C#3" },
-        { afterIdx: 1, note: "D#3" },
-        { afterIdx: 3, note: "F#3" },
-        { afterIdx: 4, note: "G#3" },
-        { afterIdx: 5, note: "A#3" },
-        { afterIdx: 7, note: "C#4" },
-        { afterIdx: 8, note: "D#4" },
-        { afterIdx: 10, note: "F#4" },
-        { afterIdx: 11, note: "G#4" },
-        { afterIdx: 12, note: "A#4" }
-      ];
+      octaves.forEach(oct => {
+        bases.forEach(b => whiteNotes.push(`${b}${oct}`));
+      });
+      whiteNotes.push("C6");
+
+      // Build black key slots mapping across 4 octaves
+      const blackNoteMap = [];
+      let wIndex = 0;
+      octaves.forEach(oct => {
+        blackNoteMap.push({ afterIdx: wIndex + 0, note: `C#${oct}` });
+        blackNoteMap.push({ afterIdx: wIndex + 1, note: `D#${oct}` });
+        blackNoteMap.push({ afterIdx: wIndex + 3, note: `F#${oct}` });
+        blackNoteMap.push({ afterIdx: wIndex + 4, note: `G#${oct}` });
+        blackNoteMap.push({ afterIdx: wIndex + 5, note: `A#${oct}` });
+        wIndex += 7;
+      });
 
       const whiteLayer = document.createElement("div");
       whiteLayer.className = "white-keys-layer";
 
       whiteNotes.forEach(wNote => {
         const wChroma = Tonal.Note.chroma(wNote);
+        const pcLabel = Tonal.Note.pitchClass(wNote);
+        const displayLabel = labelMode === 'intervals' ? (intervalMap[wChroma] || pcLabel) : pcLabel;
+
         const key = document.createElement("div");
         key.className = "piano-white-key";
 
@@ -1616,7 +1655,7 @@
           if (wChroma === rootChroma) key.classList.add("root-note");
           else key.classList.add("in-scale");
         }
-        key.textContent = Tonal.Note.pitchClass(wNote);
+        key.textContent = displayLabel;
         whiteLayer.appendChild(key);
       });
 
@@ -1631,6 +1670,9 @@
         if (hasBlack) {
           const bNote = hasBlack.note;
           const bChroma = Tonal.Note.chroma(bNote);
+          const pcLabel = Tonal.Note.pitchClass(bNote);
+          const displayLabel = labelMode === 'intervals' ? (intervalMap[bChroma] || pcLabel) : pcLabel;
+
           const bKey = document.createElement("div");
           bKey.className = "piano-black-key";
 
@@ -1638,7 +1680,7 @@
             if (bChroma === rootChroma) bKey.classList.add("root-note");
             else bKey.classList.add("in-scale");
           }
-          bKey.textContent = Tonal.Note.pitchClass(bNote);
+          bKey.textContent = displayLabel;
           slot.appendChild(bKey);
         }
 
@@ -1650,7 +1692,7 @@
     }
 
     /* ==========================================================================
-       6. SCALE PLAYBACK SEQUENCER
+       6. SCALE PLAYBACK & SCALE FAVOURITES
        ========================================================================== */
     function toggleScaleLoop() {
       isScaleLooping = !isScaleLooping;
@@ -1704,6 +1746,53 @@
       }
 
       step(0);
+    }
+
+    function saveCurrentScaleToFavourites() {
+      const root = document.getElementById("scale-root-select").value;
+      const scaleType = document.getElementById("scale-type-select").value;
+      const scaleName = `${root} ${scaleType}`;
+
+      const userData = getUserData();
+      if (!userData.favouriteScales.includes(scaleName)) {
+        userData.favouriteScales.push(scaleName);
+        saveStorage();
+        renderScaleFavourites();
+      }
+    }
+
+    function removeScaleFavourite(scaleName, event) {
+      event.stopPropagation();
+      const userData = getUserData();
+      userData.favouriteScales = userData.favouriteScales.filter(s => s !== scaleName);
+      saveStorage();
+      renderScaleFavourites();
+    }
+
+    function renderScaleFavourites() {
+      const container = document.getElementById("scale-favourites-list");
+      container.innerHTML = "";
+      const userData = getUserData();
+
+      (userData.favouriteScales || []).forEach(fav => {
+        const chip = document.createElement("div");
+        chip.className = "fav-chip";
+        chip.innerHTML = `<span>${fav}</span> <i data-lucide="x" style="width:12px; height:12px;"></i>`;
+        chip.onclick = () => {
+          const parts = fav.split(' ');
+          const root = parts[0];
+          const type = parts.slice(1).join(' ');
+
+          document.getElementById("scale-root-select").value = root;
+          document.getElementById("scale-type-select").value = type;
+          updateScaleVisualizer();
+          playScaleAudio();
+        };
+
+        chip.querySelector("i").onclick = (e) => removeScaleFavourite(fav, e);
+        container.appendChild(chip);
+      });
+      lucide.createIcons();
     }
 
     /* ==========================================================================
