@@ -1161,7 +1161,7 @@
           <label>Diatonic Run Toggle</label>
           <select id="scale-run-toggle" style="width: 100%; font-weight: 700; color: var(--accent-purple);" onchange="toggleDiatonicRunView()">
             <option value="off">Run: OFF</option>
-            <option value="on">Run: ON (Diagonal Descending)</option>
+            <option value="on">Run: ON (Low E -> High E)</option>
           </select>
         </div>
       </div>
@@ -1188,7 +1188,7 @@
         <!-- Secondary Guitar Fretboard View (Diatonic Run Pattern) -->
         <div id="fretboard-run-wrapper" style="overflow-x: auto; display: none; margin-top: 14px;">
           <div style="font-size: 0.8rem; color: var(--accent-purple); margin-bottom: 8px; font-weight:700;">
-            SUGGESTED DIATONIC GUITAR RUN (Top-Left to Bottom-Right) | <span style="color:var(--accent-purple)">■ Play Sequence Step (1, 2, 3...)</span>
+            SUGGESTED DIATONIC GUITAR RUN (Low E -> High E) | <span style="color:var(--accent-purple)">■ Play Sequence Step (1, 2, 3...)</span>
           </div>
           <div class="fretboard run-fretboard" id="guitar-fretboard-run"></div>
         </div>
@@ -1554,12 +1554,12 @@
        5. SCALE VISUALIZER & ENHARMONIC-SAFE PIANO & FRETBOARD RENDERING
        ========================================================================== */
     const guitarStrings = [
-      { note: "E", octave: 4, strIdx: 0 }, // High E
+      { note: "E", octave: 4, strIdx: 0 }, // High E (Physical Bottom)
       { note: "B", octave: 3, strIdx: 1 },
       { note: "G", octave: 3, strIdx: 2 },
       { note: "D", octave: 3, strIdx: 3 },
       { note: "A", octave: 2, strIdx: 4 },
-      { note: "E", octave: 2, strIdx: 5 }  // Low E
+      { note: "E", octave: 2, strIdx: 5 }  // Low E (Physical Top / Index 5)
     ];
 
     function toggleScaleViewMode() {
@@ -1671,7 +1671,7 @@
       });
     }
 
-    /* DIATONIC RUN GENERATION ALGORITHM (Top-Left to Bottom-Right) */
+    /* CORRECTED DIATONIC RUN ALGORITHM: Low E (Physical Top / String Index 5) -> High E (Physical Bottom / String Index 0) */
     function renderDiatonicGuitarRun(rootChroma, scaleChromes) {
       const runFretboardContainer = document.getElementById("guitar-fretboard-run");
       runFretboardContainer.innerHTML = "";
@@ -1689,36 +1689,36 @@
         fretMatrix.push(strNotes);
       });
 
-      // Find top-left starting root (lowest fret root on top high E or B string)
+      // Find starting point: Lowest fret root note on Low E string (String index 5 - Physical top string)
       let startPoint = null;
       for (let fret = 0; fret <= 7; fret++) {
-        if (scaleChromes.includes(fretMatrix[0][fret].chroma) && fretMatrix[0][fret].chroma === rootChroma) {
-          startPoint = fretMatrix[0][fret];
+        if (scaleChromes.includes(fretMatrix[5][fret].chroma) && fretMatrix[5][fret].chroma === rootChroma) {
+          startPoint = fretMatrix[5][fret];
           break;
         }
       }
       if (!startPoint) {
         for (let fret = 0; fret <= 12; fret++) {
-          if (scaleChromes.includes(fretMatrix[0][fret].chroma)) {
-            startPoint = fretMatrix[0][fret];
+          if (scaleChromes.includes(fretMatrix[5][fret].chroma)) {
+            startPoint = fretMatrix[5][fret];
             break;
           }
         }
       }
-      if (!startPoint) startPoint = fretMatrix[0][0];
+      if (!startPoint) startPoint = fretMatrix[5][0];
 
-      // Trace diatonic descending run path moving down strings (0 -> 5) and diagonally right
+      // Trace run ascending from Low E (index 5) up to High E (index 0), moving right across frets
       const runSteps = [];
-      let currentString = startPoint.string;
+      let currentString = 5; // Start at Low E
       let minFret = startPoint.fret;
 
-      while (currentString < 6) {
+      while (currentString >= 0) {
         let stringScaleNotes = fretMatrix[currentString].filter(n => scaleChromes.includes(n.chroma) && n.fret >= minFret && n.fret <= minFret + 4);
         if (stringScaleNotes.length === 0) {
           stringScaleNotes = fretMatrix[currentString].filter(n => scaleChromes.includes(n.chroma) && n.fret >= minFret);
         }
         
-        // Take 2 to 3 notes per string for a natural guitar run pattern
+        // Take 2 to 3 notes per string for a fluid melodic run pattern
         const takeCount = Math.min(stringScaleNotes.length, 3);
         const selectedForString = stringScaleNotes.slice(0, takeCount);
         
@@ -1727,7 +1727,7 @@
         if (selectedForString.length > 0) {
           minFret = selectedForString[selectedForString.length - 1].fret;
         }
-        currentString++;
+        currentString--; // Move up towards High E (index 0)
       }
 
       currentDiatonicRunNotes = runSteps.map(s => s.noteName);
@@ -1777,7 +1777,7 @@
       if (!soundfontPlayer || currentDiatonicRunNotes.length === 0) return;
 
       isPlaying = true;
-      const stepTime = 0.22; // Quick fluid run tempo
+      const stepTime = 0.22; // Fast fluid run tempo
 
       function step(index) {
         if (!isPlaying) return;
