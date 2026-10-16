@@ -285,7 +285,7 @@
       letter-spacing: -0.3px;
     }
 
-    /* SECTION 1: Compact Chord Builder Layout */
+    /* SECTION 1 Layout */
     .chord-builder-layout {
       display: grid;
       grid-template-columns: 380px 1fr;
@@ -366,7 +366,6 @@
       box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
     }
 
-    /* Right side preview & testing area */
     .builder-output-panel {
       display: flex;
       flex-direction: column;
@@ -401,7 +400,6 @@
       font-weight: 600;
     }
 
-    /* Piano Roll Graphic Display */
     .piano-roll-preview {
       display: flex;
       gap: 3px;
@@ -436,7 +434,6 @@
       box-shadow: 0 0 10px var(--accent-amber);
     }
 
-    /* Favourites Bar */
     .favourites-bar {
       display: flex;
       gap: 10px;
@@ -576,6 +573,64 @@
       display: block;
     }
 
+    /* Modal Overlays */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(10, 15, 29, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 550px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .saved-list-container {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .saved-item-row {
+      background: rgba(10, 15, 29, 0.6);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     /* Status Indicator */
     #status-indicator {
       font-size: 0.85rem;
@@ -663,9 +718,7 @@
       <button class="btn btn-amber" onclick="saveCurrentChordToFavourites()"><i data-lucide="star"></i> Save to Favourites</button>
     </div>
 
-    <!-- Main Chord Builder Layout -->
     <div class="chord-builder-layout">
-      
       <!-- Left Compact Box for Controls -->
       <div class="builder-panel-box">
         <div class="builder-selectors-row">
@@ -710,8 +763,6 @@
 
       <!-- Right Output & Testing Panel -->
       <div class="builder-output-panel">
-        
-        <!-- Main Chord Display & Play Button -->
         <div class="chord-display-container">
           <div>
             <div class="chord-name-large" id="builder-chord-name">C</div>
@@ -720,15 +771,11 @@
           <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
         </div>
 
-        <!-- Piano Keyboard Note Visualizer Bar -->
         <div>
           <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
-          <div class="piano-roll-preview" id="piano-roll">
-            <!-- Rendered dynamically -->
-          </div>
+          <div class="piano-roll-preview" id="piano-roll"></div>
         </div>
 
-        <!-- Draggable Chord Card -->
         <div>
           <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
           <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
@@ -736,17 +783,12 @@
             <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
           </div>
         </div>
-
       </div>
-
     </div>
 
-    <!-- User Favourites Bar -->
     <div>
       <label>User Favourites (Click to load):</label>
-      <div class="favourites-bar" id="favourites-list">
-        <!-- Rendered dynamically -->
-      </div>
+      <div class="favourites-bar" id="favourites-list"></div>
     </div>
   </div>
 
@@ -754,9 +796,9 @@
   <div class="section-card">
     <div class="section-header">
       <div class="section-title"><i data-lucide="layers"></i> SECTION 2: Custom Progression Builder</div>
+      <button class="btn btn-secondary" onclick="openSavedManagerModal()"><i data-lucide="folder-open"></i> Saved Library (<span id="saved-count-badge">0</span>)</button>
     </div>
 
-    <!-- Progression Toolbar with Song Name & Loop Button -->
     <div class="progression-toolbar">
       <div class="progression-left-tools">
         <label for="song-name-input"><i data-lucide="file-text"></i> Song Name:</label>
@@ -769,7 +811,7 @@
         <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
         <button class="btn btn-secondary" onclick="clearCustomProgression()"><i data-lucide="trash-2"></i> Clear</button>
         <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> JSON</button>
-        <button class="btn btn-pdf" onclick="downloadProgressionPDF()"><i data-lucide="file-down"></i> Download PDF</button>
+        <button class="btn btn-pdf" onclick="downloadProgressionPDF()"><i data-lucide="file-down"></i> PDF</button>
       </div>
     </div>
 
@@ -777,9 +819,7 @@
       Drag chords from Section 1 into the progression line below. Reorder chords by dragging them inside the timeline.
     </p>
 
-    <div class="progression-canvas" id="progression-canvas">
-      <!-- Dropped cards populate here -->
-    </div>
+    <div class="progression-canvas" id="progression-canvas"></div>
   </div>
 
   <!-- SECTION 3: 200 Essential Chord Progressions -->
@@ -787,19 +827,49 @@
     <div class="section-header">
       <div class="section-title"><i data-lucide="book-open"></i> SECTION 3: 200 Essential Genre Progressions</div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn" onclick="playPresetProgression()"><i data-lucide="play"></i> Play Selected Preset</button>
+        <button class="btn btn-amber" onclick="promptImportPreset()"><i data-lucide="arrow-down-to-line"></i> Load to Progression (Sec 2)</button>
+        <button class="btn" onclick="playPresetProgression()"><i data-lucide="play"></i> Play Preset</button>
         <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
       </div>
     </div>
 
     <div class="control-group" style="width: 100%;">
-      <select id="preset-select" style="width: 100%; font-weight:600; color:var(--accent);" onchange="loadPresetProgression(this.value)">
-        <!-- Populated via JS -->
-      </select>
+      <select id="preset-select" style="width: 100%; font-weight:600; color:var(--accent);" onchange="loadPresetProgression(this.value)"></select>
     </div>
 
-    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent-purple); font-size: 0.95rem; min-height: 24px; font-weight: 600;">
-      <!-- Selected Preset preview -->
+    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent-purple); font-size: 0.95rem; min-height: 24px; font-weight: 600;"></div>
+  </div>
+
+  <!-- MODAL: Import Choice (Overwrite vs Add) -->
+  <div class="modal-overlay" id="import-choice-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Load Preset into Section 2</div>
+        <button class="btn btn-secondary" style="padding: 4px 8px;" onclick="closeModal('import-choice-modal')">&times;</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        How would you like to apply the selected preset progression into your Custom Progression Builder?
+      </p>
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button class="btn btn-secondary" style="flex: 1;" onclick="handleImportAction('add')"><i data-lucide="plus-circle"></i> Add to End</button>
+        <button class="btn btn-amber" style="flex: 1;" onclick="handleImportAction('overwrite')"><i data-lucide="save"></i> Overwrite & Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Saved Progressions Manager Viewer -->
+  <div class="modal-overlay" id="saved-manager-modal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <div class="modal-title"><i data-lucide="folder-open"></i> Saved Progressions Library</div>
+        <button class="btn btn-secondary" style="padding: 4px 8px;" onclick="closeModal('saved-manager-modal')">&times;</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Manage, load, or delete your saved progression library for profile: <strong id="modal-current-user-lbl" style="color:var(--accent);">Default</strong>
+      </p>
+      <div class="saved-list-container" id="saved-progressions-list">
+        <!-- Rendered dynamically -->
+      </div>
     </div>
   </div>
 
@@ -828,12 +898,12 @@
             { name: "Am7", notes: ["A3", "C4", "E4", "G4"] },
             { name: "Dm7", notes: ["D4", "F4", "A4", "C5"] },
             { name: "G7", notes: ["G3", "B3", "D4", "F4"] }
-          ]
+          ],
+          savedProgressions: []
         }
       }
     };
 
-    // Available modifier toggles for exhaustive chord construction
     const chordModifiers = [
       { label: "m", symbol: "m", name: "Minor" },
       { label: "7", symbol: "7", name: "Dominant 7th" },
@@ -874,11 +944,8 @@
         chip.textContent = mod.label;
         chip.title = mod.name;
         chip.onclick = () => {
-          if (activeModifiers.has(mod.symbol)) {
-            activeModifiers.delete(mod.symbol);
-          } else {
-            activeModifiers.add(mod.symbol);
-          }
+          if (activeModifiers.has(mod.symbol)) activeModifiers.delete(mod.symbol);
+          else activeModifiers.add(mod.symbol);
           initModifierToggles();
           updateChordBuilder();
         };
@@ -895,15 +962,17 @@
       loadUserDataToUI();
       renderFavourites();
       renderProgressionCanvas();
+      updateSavedCountBadge();
     }
 
     function saveStorage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      updateSavedCountBadge();
     }
 
     function getUserData() {
       if (!appData.users[appData.currentUser]) {
-        appData.users[appData.currentUser] = { songName: "My Song", favourites: [], customProgression: [] };
+        appData.users[appData.currentUser] = { songName: "My Song", favourites: [], customProgression: [], savedProgressions: [] };
       }
       return appData.users[appData.currentUser];
     }
@@ -937,6 +1006,7 @@
       loadUserDataToUI();
       renderFavourites();
       renderProgressionCanvas();
+      updateSavedCountBadge();
     }
 
     function createNewUserPrompt() {
@@ -944,7 +1014,7 @@
       if (name && name.trim() !== "") {
         const cleanName = name.trim();
         if (!appData.users[cleanName]) {
-          appData.users[cleanName] = { songName: "My Masterpiece Progression", favourites: [], customProgression: [] };
+          appData.users[cleanName] = { songName: "My Masterpiece Progression", favourites: [], customProgression: [], savedProgressions: [] };
         }
         appData.currentUser = cleanName;
         saveStorage();
@@ -952,7 +1022,14 @@
         loadUserDataToUI();
         renderFavourites();
         renderProgressionCanvas();
+        updateSavedCountBadge();
       }
+    }
+
+    function updateSavedCountBadge() {
+      const userData = getUserData();
+      const count = (userData.savedProgressions || []).length;
+      document.getElementById("saved-count-badge").textContent = count;
     }
 
     /* ==========================================================================
@@ -1000,20 +1077,14 @@
       if (wavePulse > 0) wavePulse *= 0.92;
     }
 
-    function triggerVisualizerPulse() {
-      wavePulse = 1.0;
-    }
+    function triggerVisualizerPulse() { wavePulse = 1.0; }
 
     /* ==========================================================================
-       3. AUDIO & SOUNDFONT PLAYER SETUP
+       3. AUDIO & SOUNDFONT PLAYER
        ========================================================================== */
     function initAudioContext() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
     function updateStatus(text, ready = false) {
@@ -1028,9 +1099,7 @@
       updateStatus(`Loading soundfont (${instName.replace(/_/g, ' ')})...`, false);
       
       let targetSoundfont = instName;
-      if (instName === "acoustic_guitar_nylon_strum") {
-        targetSoundfont = "acoustic_guitar_nylon";
-      }
+      if (instName === "acoustic_guitar_nylon_strum") targetSoundfont = "acoustic_guitar_nylon";
 
       try {
         soundfontPlayer = await Soundfont.instrument(audioCtx, targetSoundfont, {
@@ -1039,7 +1108,6 @@
         });
         updateStatus("Audio Engine Ready", true);
       } catch(err) {
-        console.error("Error loading Soundfont:", err);
         updateStatus("Audio Load Error", false);
       }
     }
@@ -1050,7 +1118,7 @@
     }
 
     /* ==========================================================================
-       4. CHORD CALCULATOR & VISUAL KEYBOARD
+       4. CHORD BUILDER & PREVIEW
        ========================================================================== */
     function updateChordBuilder() {
       const root = document.getElementById("build-root").value;
@@ -1062,16 +1130,12 @@
       
       let chordData = Tonal.Chord.get(chordSymbol);
       let notes = chordData.notes.length ? chordData.notes : [root];
-
       let octaveNotes = notes.map(n => Tonal.Note.simplify(n) + octave);
 
-      if (bass && !notes.includes(bass)) {
-        octaveNotes.unshift(bass + (parseInt(octave) - 1));
-      }
+      if (bass && !notes.includes(bass)) octaveNotes.unshift(bass + (parseInt(octave) - 1));
 
       document.getElementById("builder-chord-name").textContent = chordSymbol || root;
       document.getElementById("builder-chord-notes").textContent = "Notes: " + octaveNotes.join(" - ");
-
       document.getElementById("drag-card-title").textContent = chordSymbol || root;
       document.getElementById("drag-card-notes").textContent = octaveNotes.join(", ");
       
@@ -1091,9 +1155,7 @@
         const key = document.createElement("div");
         const isBlack = noteName.includes("#");
         const isActive = activeNotes.some(n => Tonal.Note.pitchClass(n) === noteName);
-
         key.className = `piano-key ${isBlack ? 'black' : ''} ${isActive ? 'active' : ''}`;
-        key.title = noteName;
         container.appendChild(key);
       });
     }
@@ -1101,7 +1163,6 @@
     function playNotes(notesArray, duration = 1.5, isStrummed = false) {
       initAudioContext();
       if (!soundfontPlayer) return;
-
       triggerVisualizerPulse();
       const now = audioCtx.currentTime;
       notesArray.forEach((note, index) => {
@@ -1112,8 +1173,7 @@
 
     function playBuilderChord() {
       const dragCard = document.getElementById("builder-draggable-card");
-      const notes = JSON.parse(dragCard.dataset.chordNotes);
-      playNotes(notes, 1.5);
+      playNotes(JSON.parse(dragCard.dataset.chordNotes), 1.5);
     }
 
     /* ==========================================================================
@@ -1150,7 +1210,6 @@
           const parts = fav.split('/');
           const main = parts[0];
           const bass = parts[1] || "";
-          
           let root = main.match(/^[A-G][#b]?/)?.[0] || "C";
           let remainder = main.substring(root.length);
 
@@ -1191,15 +1250,8 @@
         }));
       });
 
-      canvas.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        canvas.classList.add("drag-over");
-      });
-
-      canvas.addEventListener("dragleave", () => {
-        canvas.classList.remove("drag-over");
-      });
-
+      canvas.addEventListener("dragover", (e) => { e.preventDefault(); canvas.classList.add("drag-over"); });
+      canvas.addEventListener("dragleave", () => { canvas.classList.remove("drag-over"); });
       canvas.addEventListener("drop", (e) => {
         e.preventDefault();
         canvas.classList.remove("drag-over");
@@ -1207,7 +1259,6 @@
         if (rawData) {
           const chordData = JSON.parse(rawData);
           const userData = getUserData();
-          
           if (draggedIndex !== null) {
             const item = userData.customProgression.splice(draggedIndex, 1)[0];
             userData.customProgression.push(item);
@@ -1279,7 +1330,113 @@
     }
 
     /* ==========================================================================
-       6. PDF EXPORT GENERATOR (jsPDF)
+       6. SECTION 3 IMPORT & SAVED LIBRARY WORKFLOW
+       ========================================================================== */
+    function promptImportPreset() {
+      document.getElementById("import-choice-modal").style.display = "flex";
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = "none";
+    }
+
+    function handleImportAction(action) {
+      closeModal('import-choice-modal');
+      const userData = getUserData();
+
+      if (action === 'add') {
+        // Append current preset chords to custom progression
+        userData.customProgression = userData.customProgression.concat(currentPresetChords);
+        saveStorage();
+        renderProgressionCanvas();
+        alert("Preset successfully added to the end of your progression!");
+      } else if (action === 'overwrite') {
+        // Prompt user to save this progression to app library
+        const defaultName = document.getElementById("preset-select").selectedOptions[0]?.textContent || "Preset Import";
+        const saveName = prompt("Enter a title to save this progression to your library:", defaultName);
+        
+        if (saveName !== null) {
+          const cleanName = saveName.trim() || "Saved Preset Progression";
+          
+          // Save to user's saved library
+          if (!userData.savedProgressions) userData.savedProgressions = [];
+          userData.savedProgressions.push({
+            id: 'prog_' + Date.now(),
+            name: cleanName,
+            chords: JSON.parse(JSON.stringify(currentPresetChords)),
+            date: new Date().toLocaleDateString()
+          });
+
+          // Overwrite Section 2 progression and song name
+          userData.customProgression = JSON.parse(JSON.stringify(currentPresetChords));
+          userData.songName = cleanName;
+          document.getElementById("song-name-input").value = cleanName;
+
+          saveStorage();
+          renderProgressionCanvas();
+          updateSavedCountBadge();
+          alert(`Progression overwritten, titled "${cleanName}", and saved to your library!`);
+        }
+      }
+    }
+
+    function openSavedManagerModal() {
+      document.getElementById("modal-current-user-lbl").textContent = appData.currentUser;
+      renderSavedProgressionsList();
+      document.getElementById("saved-manager-modal").style.display = "flex";
+    }
+
+    function renderSavedProgressionsList() {
+      const container = document.getElementById("saved-progressions-list");
+      container.innerHTML = "";
+      const userData = getUserData();
+
+      if (!userData.savedProgressions || userData.savedProgressions.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); text-align: center; padding: 20px;">No saved progressions in library yet.</div>`;
+        return;
+      }
+
+      userData.savedProgressions.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "saved-item-row";
+        row.innerHTML = `
+          <div>
+            <div style="font-weight: 700; color: #fff; font-size: 1rem;">${item.name}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${item.chords.length} chords | Saved on ${item.date || 'Recent'}</div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn" style="padding: 6px 12px; font-size: 0.8rem;" onclick="loadSavedProgressionItem('${item.id}')"><i data-lucide="upload"></i> Load</button>
+            <button class="btn btn-secondary" style="padding: 6px 10px; color: var(--danger); border-color: var(--danger);" onclick="deleteSavedProgressionItem('${item.id}')"><i data-lucide="trash-2"></i></button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+      lucide.createIcons();
+    }
+
+    function loadSavedProgressionItem(itemId) {
+      const userData = getUserData();
+      const item = userData.savedProgressions.find(p => p.id === itemId);
+      if (item) {
+        userData.customProgression = JSON.parse(JSON.stringify(item.chords));
+        userData.songName = item.name;
+        document.getElementById("song-name-input").value = item.name;
+        saveStorage();
+        renderProgressionCanvas();
+        closeModal('saved-manager-modal');
+      }
+    }
+
+    function deleteSavedProgressionItem(itemId) {
+      const userData = getUserData();
+      userData.savedProgressions = userData.savedProgressions.filter(p => p.id !== itemId);
+      saveStorage();
+      updateSavedCountBadge();
+      renderSavedProgressionsList();
+    }
+
+    /* ==========================================================================
+       7. PDF EXPORT GENERATOR (jsPDF)
        ========================================================================== */
     function downloadProgressionPDF() {
       const { jsPDF } = window.jspdf;
@@ -1287,14 +1444,13 @@
       const userData = getUserData();
       const songTitle = document.getElementById("song-name-input").value || "Untitled Progression";
 
-      // Header styling
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
       doc.setTextColor(15, 23, 42);
       doc.text(songTitle, 20, 25);
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(11, "normal");
+      doc.setFontSize(11);
       doc.setTextColor(100, 116, 139);
       doc.text(`Atomic Forge - Chord Playground`, 20, 32);
       doc.text(`User Profile: ${appData.currentUser} | BPM: ${bpm}`, 20, 38);
@@ -1303,7 +1459,6 @@
       doc.setStrokeColor(203, 213, 225);
       doc.line(20, 44, 190, 44);
 
-      // Progression list
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(15, 23, 42);
@@ -1317,10 +1472,7 @@
         doc.text("No chords in this progression yet.", 20, startY);
       } else {
         userData.customProgression.forEach((chord, index) => {
-          if (startY > 270) {
-            doc.addPage();
-            startY = 25;
-          }
+          if (startY > 270) { doc.addPage(); startY = 25; }
 
           doc.setFillColor(241, 245, 249);
           doc.roundedRect(20, startY, 170, 18, 3, 3, "F");
@@ -1342,18 +1494,16 @@
         });
       }
 
-      // Footer
       doc.setFont("helvetica", "italic");
       doc.setFontSize(9);
       doc.setTextColor(148, 163, 184);
       doc.text("Generated with Atomic Forge Chord Playground", 20, 285);
 
-      const safeFilename = songTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".pdf";
-      doc.save(safeFilename);
+      doc.save(songTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".pdf");
     }
 
     /* ==========================================================================
-       7. SEQUENCER & PRESETS
+       8. SEQUENCER & PRESETS
        ========================================================================== */
     function updateBPM(val) { bpm = parseInt(val); }
 
@@ -1492,7 +1642,7 @@
     }
 
     /* ==========================================================================
-       8. INITIALIZATION
+       9. INITIALIZATION
        ========================================================================== */
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
