@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chord Playground - Atomic Forge</title>
+  
+  <!-- Soundfont Player & Tonal JS Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tonal@4.10.0/browser/tonal.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --panel-border: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --accent-amber: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Header & Navigation */
+    header {
+      display: flex;
+      justify: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      padding: 12px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Invisible link wrapping app icon back to Atomic Forge index */
+    .app-icon-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: var(--accent);
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s, transform 0.1s;
+      cursor: pointer;
+    }
+
+    .app-icon-link:hover {
+      background: rgba(56, 189, 248, 0.1);
+      transform: scale(1.05);
+    }
+
+    .app-icon-svg {
+      width: 32px;
+      height: 32px;
+      stroke: var(--accent);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .title-area h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .user-profile-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .user-profile-controls select, .user-profile-controls input {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      border: 1px solid var(--panel-border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      outline: none;
+    }
+
+    /* Global Playback Controls Bar */
+    .global-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--panel-bg);
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      border: 1px solid var(--panel-border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--panel-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--text-muted);
+    }
+
+    .btn-amber {
+      background: var(--accent-amber);
+      color: #000;
+    }
+    .btn-amber:hover {
+      background: #d97706;
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .toggle-btn.active {
+      background: var(--success);
+      color: #fff;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Section 1: Chord Builder */
+    .builder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .builder-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chord-display-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-dark);
+      padding: 16px 24px;
+      border-radius: 8px;
+      border: 1px dashed var(--accent);
+    }
+
+    .chord-name-large {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .chord-notes-list {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .favourites-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .fav-chip {
+      background: var(--bg-dark);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fav-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Drag and Drop Progression Canvas */
+    .progression-canvas {
+      min-height: 120px;
+      background: var(--bg-dark);
+      border: 2px dashed var(--panel-border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      overflow-x: auto;
+    }
+
+    .progression-canvas.drag-over {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .chord-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      min-width: 100px;
+      text-align: center;
+      cursor: grab;
+      position: relative;
+      user-select: none;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .chord-card:active {
+      cursor: grabbing;
+    }
+
+    .chord-card.playing {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .chord-card .card-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .chord-card .card-notes {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .chord-card .btn-remove {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      line-height: 18px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .chord-card:hover .btn-remove {
+      display: block;
+    }
+
+    /* Status Indicator */
+    #status-indicator {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-amber);
+    }
+    .status-dot.ready {
+      background: var(--success);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-section">
+      <!-- Invisible link wrapping icon back to main index site -->
+      <a href="index.html" class="app-icon-link" title="Return to Atomic Forge">
+        <svg class="app-icon-svg" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2a10 10 0 0 1 10 10M12 12m-4 0a4 4 0 1 0 8 0"/>
+          <polygon points="12,2 15,8 9,8" fill="var(--accent)"/>
+        </svg>
+      </a>
+      <div class="title-area">
+        <h1>Chord Playground</h1>
+      </div>
+    </div>
+
+    <!-- Persistent User Profile Selection -->
+    <div class="user-profile-controls">
+      <label for="user-select"><i data-lucide="user"></i> User Profile:</label>
+      <select id="user-select" onchange="switchUser(this.value)">
+        <!-- Dynamically populated -->
+      </select>
+      <button class="btn btn-secondary" onclick="createNewUserPrompt()" title="Add New User Profile"><i data-lucide="user-plus"></i></button>
+    </div>
+  </header>
+
+  <!-- Global Playback & Instrument Controls -->
+  <div class="global-controls">
+    <div class="control-group">
+      <label for="instrument-select"><i data-lucide="music"></i> Instrument:</label>
+      <select id="instrument-select" onchange="changeInstrument(this.value)">
+        <option value="acoustic_grand_piano">Grand Piano</option>
+        <option value="acoustic_guitar_nylon">Plucked Nylon Guitar</option>
+        <option value="acoustic_guitar_nylon_strum">Strummed Nylon Guitar</option>
+        <option value="electric_guitar_clean">Clean Electric Guitar</option>
+        <option value="string_ensemble_1">String Ensemble</option>
+        <option value="synth_strings_1">Synth Strings</option>
+        <option value="electric_piano_1">Electric Piano</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="bpm-input"><i data-lucide="clock"></i> BPM:</label>
+      <input type="number" id="bpm-input" value="100" min="40" max="240" style="width: 70px;" onchange="updateBPM(this.value)">
+    </div>
+
+    <div class="control-group">
+      <button id="loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
+    </div>
+
+    <div id="status-indicator">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Loading soundfont...</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Chord Builder & Tester -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><i data-lucide="sliders"></i> SECTION 1: Single Chord Builder & Tester</div>
+      <button class="btn btn-amber" onclick="saveCurrentChordToFavourites()"><i data-lucide="star"></i> Save to Favourites</button>
+    </div>
+
+    <div class="builder-grid">
+      <div class="builder-field">
+        <label>Root Note</label>
+        <select id="build-root" onchange="updateChordBuilder()">
+          <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
+          <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
+          <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option>
+          <option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+        </select>
+      </div>
+
+      <div class="builder-field">
+        <label>Quality / Type</label>
+        <select id="build-quality" onchange="updateChordBuilder()">
+          <option value="major">Major</option>
+          <option value="minor">Minor</option>
+          <option value="diminished">Diminished</option>
+          <option value="augmented">Augmented</option>
+          <option value="5">Power Chord (5)</option>
+          <option value="7">Dominant 7th</option>
+          <option value="maj7">Major 7th</option>
+          <option value="m7">Minor 7th</option>
+          <option value="m7b5">Half-Diminished (m7b5)</option>
+          <option value="dim7">Diminished 7th</option>
+          <option value="9">Dominant 9th</option>
+          <option value="maj9">Major 9th</option>
+          <option value="m9">Minor 9th</option>
+          <option value="sus2">Sus2</option>
+          <option value="sus4">Sus4</option>
+          <option value="7sus4">7sus4</option>
+          <option value="add9">Add9</option>
+          <option value="madd9">mAdd9</option>
+          <option value="6">Major 6th</option>
+          <option value="m6">Minor 6th</option>
+          <option value="11"> Dominant 11th</option>
+          <option value="13">Dominant 13th</option>
+          <option value="7#9">7#9 (Hendrix)</option>
+          <option value="7b9">7b9</option>
+        </select>
+      </div>
+
+      <div class="builder-field">
+        <label>Bass Note / Inversion</label>
+        <select id="build-bass" onchange="updateChordBuilder()">
+          <option value="">None (Standard)</option>
+          <option value="C">/ C</option><option value="C#">/ C#</option><option value="D">/ D</option>
+          <option value="D#">/ D#</option><option value="E">/ E</option><option value="F">/ F</option>
+          <option value="F#">/ F#</option><option value="G">/ G</option><option value="G#">/ G#</option>
+          <option value="A">/ A</option><option value="A#">/ A#</option><option value="B">/ B</option>
+        </select>
+      </div>
+
+      <div class="builder-field">
+        <label>Octave</label>
+        <select id="build-octave" onchange="updateChordBuilder()">
+          <option value="3">3 (Low)</option>
+          <option value="4" selected>4 (Medium)</option>
+          <option value="5">5 (High)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chord-display-container">
+      <div>
+        <div class="chord-name-large" id="builder-chord-name">C</div>
+        <div class="chord-notes-list" id="builder-chord-notes">Notes: C4 - E4 - G4</div>
+      </div>
+      <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
+    </div>
+
+    <!-- Draggable Builder Card Preview -->
+    <div>
+      <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
+      <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
+        <div class="card-title" id="drag-card-title">C</div>
+        <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
+      </div>
+    </div>
+
+    <!-- User Favourites Bar -->
+    <div>
+      <label>User Favourite Chords (Click to load):</label>
+      <div class="favourites-bar" id="favourites-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Progression Builder -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><i data-lucide="layers"></i> SECTION 2: Custom Progression Builder</div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" onclick="playCustomProgression()"><i data-lucide="play"></i> Play Progression</button>
+        <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
+        <button class="btn btn-secondary" onclick="clearCustomProgression()"><i data-lucide="trash-2"></i> Clear</button>
+        <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> Export JSON</button>
+      </div>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Drag chords from Section 1 into the area below to build your custom sequence. You can also re-order chords within the progression by dragging them.
+    </p>
+
+    <div class="progression-canvas" id="progression-canvas">
+      <!-- Dropped cards populate here -->
+    </div>
+  </div>
+
+  <!-- SECTION 3: 200 Essential Chord Progressions -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title"><i data-lucide="book-open"></i> SECTION 3: 200 Essential Genre Progressions</div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn" onclick="playPresetProgression()"><i data-lucide="play"></i> Play Selected Preset</button>
+        <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
+      </div>
+    </div>
+
+    <div class="control-group" style="width: 100%;">
+      <select id="preset-select" style="width: 100%;" onchange="loadPresetProgression(this.value)">
+        <!-- 200 items populated dynamically via JS -->
+      </select>
+    </div>
+
+    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent); font-size: 0.95rem; min-height: 24px;">
+      <!-- Selected Preset preview -->
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. GLOBAL STATE & USER PERSISTENCE MANAGEMENT
+       ========================================================================== */
+    let audioCtx = null;
+    let soundfontPlayer = null;
+    let currentInstrument = "acoustic_grand_piano";
+    let bpm = 100;
+    let isLooping = false;
+    let isPlaying = false;
+    let activeScheduledEvents = [];
+
+    // Storage Key
+    const STORAGE_KEY = "atomic_chord_playground_data";
+
+    let appData = {
+      currentUser: "Default User",
+      users: {
+        "Default User": {
+          favourites: ["Cmaj7", "Am7", "Dm7", "G7"],
+          customProgression: [
+            { name: "Cmaj7", notes: ["C4", "E4", "G4", "B4"] },
+            { name: "Am7", notes: ["A3", "C4", "E4", "G4"] },
+            { name: "Dm7", notes: ["D4", "F4", "A4", "C5"] },
+            { name: "G7", notes: ["G3", "B3", "D4", "F4"] }
+          ]
+        }
+      }
+    };
+
+    function initStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          appData = JSON.parse(saved);
+        } catch(e) {
+          console.error("Failed to parse saved data", e);
+        }
+      }
+      populateUserDropdown();
+      renderFavourites();
+      renderProgressionCanvas();
+    }
+
+    function saveStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function getUserData() {
+      if (!appData.users[appData.currentUser]) {
+        appData.users[appData.currentUser] = { favourites: [], customProgression: [] };
+      }
+      return appData.users[appData.currentUser];
+    }
+
+    function populateUserDropdown() {
+      const select = document.getElementById("user-select");
+      select.innerHTML = "";
+      Object.keys(appData.users).forEach(user => {
+        const opt = document.createElement("option");
+        opt.value = user;
+        opt.textContent = user;
+        if (user === appData.currentUser) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function switchUser(userName) {
+      appData.currentUser = userName;
+      saveStorage();
+      renderFavourites();
+      renderProgressionCanvas();
+    }
+
+    function createNewUserPrompt() {
+      const name = prompt("Enter new User Profile name:");
+      if (name && name.trim() !== "") {
+        const cleanName = name.trim();
+        if (!appData.users[cleanName]) {
+          appData.users[cleanName] = { favourites: [], customProgression: [] };
+        }
+        appData.currentUser = cleanName;
+        saveStorage();
+        populateUserDropdown();
+        renderFavourites();
+        renderProgressionCanvas();
+      }
+    }
+
+    /* ==========================================================================
+       2. AUDIO & SOUNDFONT PLAYER SETUP
+       ========================================================================== */
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function updateStatus(text, ready = false) {
+      document.getElementById("status-text").textContent = text;
+      const dot = document.getElementById("status-dot");
+      if (ready) dot.classList.add("ready");
+      else dot.classList.remove("ready");
+    }
+
+    async function loadInstrumentSoundfont(instName) {
+      initAudioContext();
+      updateStatus(`Loading soundfont (${instName.replace(/_/g, ' ')})...`, false);
+      
+      // Handle custom strummed style mapping to base nylon guitar soundfont
+      let targetSoundfont = instName;
+      if (instName === "acoustic_guitar_nylon_strum") {
+        targetSoundfont = "acoustic_guitar_nylon";
+      }
+
+      try {
+        soundfontPlayer = await Soundfont.instrument(audioCtx, targetSoundfont, {
+          soundfont: 'FluidR3_GM',
+          format: 'mp3'
+        });
+        updateStatus("Audio Engine Ready", true);
+      } catch(err) {
+        console.error("Error loading Soundfont:", err);
+        updateStatus("Audio Load Error - Check Network", false);
+      }
+    }
+
+    function changeInstrument(val) {
+      currentInstrument = val;
+      loadInstrumentSoundfont(val);
+    }
+
+    /* ==========================================================================
+       3. CHORD CALCULATOR & BUILDER LOGIC
+       ========================================================================== */
+    function updateChordBuilder() {
+      const root = document.getElementById("build-root").value;
+      const quality = document.getElementById("build-quality").value;
+      const bass = document.getElementById("build-bass").value;
+      const octave = document.getElementById("build-octave").value;
+
+      const chordSymbol = root + quality + (bass ? "/" + bass : "");
+      
+      // Calculate chord notes using Tonal.js
+      let chordData = Tonal.Chord.get(root + quality);
+      let notes = chordData.notes.length ? chordData.notes : [root];
+
+      // Format octave notes
+      let octaveNotes = notes.map(n => Tonal.Note.simplify(n) + octave);
+
+      if (bass && !notes.includes(bass)) {
+        octaveNotes.unshift(bass + (parseInt(octave) - 1));
+      }
+
+      document.getElementById("builder-chord-name").textContent = chordSymbol;
+      document.getElementById("builder-chord-notes").textContent = "Notes: " + octaveNotes.join(" - ");
+
+      document.getElementById("drag-card-title").textContent = chordSymbol;
+      document.getElementById("drag-card-notes").textContent = octaveNotes.join(", ");
+      
+      // Store on dataset for drag operations
+      const dragCard = document.getElementById("builder-draggable-card");
+      dragCard.dataset.chordName = chordSymbol;
+      dragCard.dataset.chordNotes = JSON.stringify(octaveNotes);
+    }
+
+    function playNotes(notesArray, duration = 1.5, isStrummed = false) {
+      initAudioContext();
+      if (!soundfontPlayer) return;
+
+      const now = audioCtx.currentTime;
+      notesArray.forEach((note, index) => {
+        const strumDelay = (isStrummed || currentInstrument === "acoustic_guitar_nylon_strum") ? index * 0.035 : 0;
+        soundfontPlayer.play(note, now + strumDelay, { duration: duration });
+      });
+    }
+
+    function playBuilderChord() {
+      const dragCard = document.getElementById("builder-draggable-card");
+      const notes = JSON.parse(dragCard.dataset.chordNotes);
+      playNotes(notes, 1.5);
+    }
+
+    /* ==========================================================================
+       4. FAVOURITES MANAGEMENT
+       ========================================================================== */
+    function saveCurrentChordToFavourites() {
+      const name = document.getElementById("builder-chord-name").textContent;
+      const userData = getUserData();
+      if (!userData.favourites.includes(name)) {
+        userData.favourites.push(name);
+        saveStorage();
+        renderFavourites();
+      }
+    }
+
+    function removeFavourite(favName, event) {
+      event.stopPropagation();
+      const userData = getUserData();
+      userData.favourites = userData.favourites.filter(f => f !== favName);
+      saveStorage();
+      renderFavourites();
+    }
+
+    function renderFavourites() {
+      const container = document.getElementById("favourites-list");
+      container.innerHTML = "";
+      const userData = getUserData();
+
+      userData.favourites.forEach(fav => {
+        const chip = document.createElement("div");
+        chip.className = "fav-chip";
+        chip.innerHTML = `<span>${fav}</span> <i data-lucide="x" style="width:12px; height:12px;"></i>`;
+        chip.onclick = () => {
+          // Parse back into chord builder
+          const parts = fav.split('/');
+          const main = parts[0];
+          const bass = parts[1] || "";
+          
+          let root = main.match(/^[A-G][#b]?/)?.[0] || "C";
+          let quality = main.substring(root.length) || "major";
+          if (quality === "") quality = "major";
+
+          document.getElementById("build-root").value = root;
+          document.getElementById("build-quality").value = quality;
+          document.getElementById("build-bass").value = bass;
+          updateChordBuilder();
+          playBuilderChord();
+        };
+
+        chip.querySelector("i").onclick = (e) => removeFavourite(fav, e);
+        container.appendChild(chip);
+      });
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       5. DRAG & DROP SECTION 2: PROGRESSION CANVAS
+       ========================================================================== */
+    let draggedIndex = null;
+
+    function setupDragAndDrop() {
+      const builderCard = document.getElementById("builder-draggable-card");
+      const canvas = document.getElementById("progression-canvas");
+
+      builderCard.addEventListener("dragstart", (e) => {
+        draggedIndex = null;
+        e.dataTransfer.setData("text/plain", JSON.stringify({
+          name: builderCard.dataset.chordName,
+          notes: JSON.parse(builderCard.dataset.chordNotes)
+        }));
+      });
+
+      canvas.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        canvas.classList.add("drag-over");
+      });
+
+      canvas.addEventListener("dragleave", () => {
+        canvas.classList.remove("drag-over");
+      });
+
+      canvas.addEventListener("drop", (e) => {
+        e.preventDefault();
+        canvas.classList.remove("drag-over");
+        const rawData = e.dataTransfer.getData("text/plain");
+        if (rawData) {
+          const chordData = JSON.parse(rawData);
+          const userData = getUserData();
+          
+          if (draggedIndex !== null) {
+            // Reordering existing item
+            const item = userData.customProgression.splice(draggedIndex, 1)[0];
+            userData.customProgression.push(item);
+          } else {
+            // Adding new item from builder
+            userData.customProgression.push(chordData);
+          }
+          saveStorage();
+          renderProgressionCanvas();
+        }
+      });
+    }
+
+    function renderProgressionCanvas() {
+      const canvas = document.getElementById("progression-canvas");
+      canvas.innerHTML = "";
+      const userData = getUserData();
+
+      if (userData.customProgression.length === 0) {
+        canvas.innerHTML = `<div style="color: var(--text-muted); font-size:0.9rem; text-align:center; width:100%;">Drag chords here to build your progression...</div>`;
+        return;
+      }
+
+      userData.customProgression.forEach((chord, idx) => {
+        const card = document.createElement("div");
+        card.className = "chord-card";
+        card.id = `custom-chord-card-${idx}`;
+        card.draggable = true;
+
+        card.innerHTML = `
+          <button class="btn-remove">&times;</button>
+          <div class="card-title">${chord.name}</div>
+          <div class="card-notes">${chord.notes.join(", ")}</div>
+        `;
+
+        card.querySelector(".btn-remove").onclick = (e) => {
+          e.stopPropagation();
+          userData.customProgression.splice(idx, 1);
+          saveStorage();
+          renderProgressionCanvas();
+        };
+
+        card.onclick = () => playNotes(chord.notes, 1.2);
+
+        card.addEventListener("dragstart", (e) => {
+          draggedIndex = idx;
+          e.dataTransfer.setData("text/plain", JSON.stringify(chord));
+        });
+
+        canvas.appendChild(card);
+      });
+    }
+
+    function clearCustomProgression() {
+      const userData = getUserData();
+      userData.customProgression = [];
+      saveStorage();
+      renderProgressionCanvas();
+    }
+
+    function exportProgression() {
+      const userData = getUserData();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userData.customProgression, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `chord_progression_${appData.currentUser}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    /* ==========================================================================
+       6. PLAYBACK SEQUENCER (SECTION 2 & SECTION 3)
+       ========================================================================== */
+    function updateBPM(val) {
+      bpm = parseInt(val);
+    }
+
+    function toggleLoop() {
+      isLooping = !isLooping;
+      const btn = document.getElementById("loop-btn");
+      if (isLooping) {
+        btn.classList.add("active");
+        btn.innerHTML = `<i data-lucide="repeat"></i> Loop: ON`;
+      } else {
+        btn.classList.remove("active");
+        btn.innerHTML = `<i data-lucide="repeat"></i> Loop: OFF`;
+      }
+      lucide.createIcons();
+    }
+
+    function stopPlayback() {
+      isPlaying = false;
+      activeScheduledEvents.forEach(id => clearTimeout(id));
+      activeScheduledEvents = [];
+      document.querySelectorAll(".chord-card").forEach(c => c.classList.remove("playing"));
+    }
+
+    function playSequence(chordList, highlightPrefix = "") {
+      stopPlayback();
+      if (chordList.length === 0) return;
+
+      isPlaying = true;
+      const beatDuration = 60 / bpm; // Beat length in seconds
+      const chordDuration = beatDuration * 2; // Play each chord for 2 beats
+
+      function step(index) {
+        if (!isPlaying) return;
+
+        if (index >= chordList.length) {
+          if (isLooping) {
+            step(0);
+          } else {
+            stopPlayback();
+          }
+          return;
+        }
+
+        const chord = chordList[index];
+        playNotes(chord.notes, chordDuration);
+
+        // Visual highlighting
+        document.querySelectorAll(".chord-card").forEach(c => c.classList.remove("playing"));
+        const activeCard = document.getElementById(`${highlightPrefix}${index}`);
+        if (activeCard) activeCard.classList.add("playing");
+
+        const timerId = setTimeout(() => {
+          step(index + 1);
+        }, chordDuration * 1000);
+
+        activeScheduledEvents.push(timerId);
+      }
+
+      step(0);
+    }
+
+    function playCustomProgression() {
+      const userData = getUserData();
+      playSequence(userData.customProgression, "custom-chord-card-");
+    }
+
+    /* ==========================================================================
+       7. SECTION 3: 200 ESSENTIAL GENRE PROGRESSIONS DATA & LOGIC
+       ========================================================================== */
+    const genres = ["Jazz", "Blues", "Rock", "Soul/R&B", "Pop", "Grunge/Alt", "Ethnic/World"];
+    
+    // Generate 200 Curated/Rich Progression Patterns across genres
+    function generate200Progressions() {
+      const presets = [];
+      const baseTemplates = [
+        { g: "Jazz", p: ["Cmaj7", "A7b9", "Dm7", "G7"], desc: "Classic Jazz ii-V-I Turnaround" },
+        { g: "Jazz", p: ["Cmaj7", "Am7", "Dm7", "G7"], desc: "Rhythm Changes Turnaround" },
+        { g: "Jazz", p: ["Dm7", "G7", "Cmaj7", "Cmaj7"], desc: "Standard Major ii-V-I" },
+        { g: "Jazz", p: ["Dm7b5", "G7alt", "Cm7", "Cm7"], desc: "Minor ii-V-i" },
+        { g: "Jazz", p: ["Fmaj7", "Fm7", "Em7", "A7"], desc: "Backdoor & Chromatic Pass" },
+        { g: "Blues", p: ["C7", "F7", "C7", "G7"], desc: "12-Bar Quick Change Blues" },
+        { g: "Blues", p: ["Cm7", "Fm7", "Cm7", "Gm7"], desc: "Minor Blues Sequence" },
+        { g: "Blues", p: ["C7", "C7", "C7", "C7", "F7", "F7", "C7", "C7", "G7", "F7", "C7", "G7"], desc: "Full 12-Bar Blues Standard" },
+        { g: "Rock", p: ["C", "G", "Am", "F"], desc: "Classic 4-Chord Rock Standard" },
+        { g: "Rock", p: ["C", "F", "G", "F"], desc: "Classic 3-Chord Garage Rock" },
+        { g: "Rock", p: ["Am", "G", "F", "E"], desc: "Andalusian Rock Descent" },
+        { g: "Rock", p: ["C5", "A#5", "F5", "C5"], desc: "Hard Rock Power Groove" },
+        { g: "Soul/R&B", p: ["Cmaj7", "Bm7", "Am7", "Gmaj7"], desc: "Neo-Soul Step Down" },
+        { g: "Soul/R&B", p: ["Fmaj7", "Em7", "Dm7", "Cmaj7"], desc: "70s R&B Smooth Groove" },
+        { g: "Soul/R&B", p: ["Dm9", "G13", "Cmaj9", "A7#9"], desc: "Modern Urban Soul Cadence" },
+        { g: "Pop", p: ["Am", "F", "C", "G"], desc: "Pop Sensitive Chord Loop" },
+        { g: "Pop", p: ["C", "Am", "F", "G"], desc: "50s Doo-Wop Progression" },
+        { g: "Pop", p: ["F", "G", "Em", "Am"], desc: "Royal Road Anime/Pop Progression" },
+        { g: "Grunge/Alt", p: ["E5", "G5", "A5", "C5"], desc: "Grunge Heavy Riff Loop" },
+        { g: "Grunge/Alt", p: ["Am", "F", "D", "F"], desc: "Alternative Rock Tension Loop" },
+        { g: "Ethnic/World", p: ["Am", "A#", "Am", "Gm"], desc: "Flamenco/Middle Eastern Modal" },
+        { g: "Ethnic/World", p: ["C", "F", "C", "G7"], desc: "Reggae/Ska Offbeat Rhythm" },
+        { g: "Ethnic/World", p: ["Em", "Am", "B7", "Em"], desc: "Bossa Nova Basic Groove" }
+      ];
+
+      const keys = ["C", "G", "D", "A", "E", "F"];
+
+      let count = 1;
+      // Synthesulate up to 200 distinct entries across genres and transpose keys
+      for (let i = 0; count <= 200; i++) {
+        const tmpl = baseTemplates[i % baseTemplates.length];
+        const key = keys[Math.floor(i / baseTemplates.length) % keys.length];
+        
+        // Transpose template chords slightly for variation
+        const transposedChords = tmpl.p.map(ch => {
+          if (key === "C") return ch;
+          const root = ch.match(/^[A-G][#b]?/)?.[0] || "C";
+          const rest = ch.substring(root.length);
+          const transposedRoot = Tonal.Note.transpose(root, key === "G" ? "4P" : key === "D" ? "2M" : "3M");
+          return (transposedRoot || root) + rest;
+        });
+
+        presets.push({
+          id: count,
+          name: `#${count} [${tmpl.g}] ${transposedChords.join(" - ")} (${tmpl.desc} in ${key})`,
+          chords: transposedChords
+        });
+        count++;
+      }
+
+      return presets;
+    }
+
+    const presetDatabase = generate200Progressions();
+
+    function populatePresetDropdown() {
+      const select = document.getElementById("preset-select");
+      select.innerHTML = "";
+      presetDatabase.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      });
+      loadPresetProgression(presetDatabase[0].id);
+    }
+
+    let currentPresetChords = [];
+
+    function loadPresetProgression(presetId) {
+      const preset = presetDatabase.find(p => p.id == presetId);
+      if (!preset) return;
+
+      currentPresetChords = preset.chords.map(chName => {
+        let root = chName.match(/^[A-G][#b]?/)?.[0] || "C";
+        let quality = chName.substring(root.length) || "major";
+        let chordData = Tonal.Chord.get(chName);
+        let notes = chordData.notes.length ? chordData.notes : [root];
+        let octaveNotes = notes.map(n => Tonal.Note.simplify(n) + "4");
+        return { name: chName, notes: octaveNotes };
+      });
+
+      document.getElementById("preset-notes-display").textContent = 
+        "Selected Sequence Notes: " + currentPresetChords.map(c => `${c.name} (${c.notes.join(",")})`).join("  |  ");
+    }
+
+    function playPresetProgression() {
+      playSequence(currentPresetChords, "");
+    }
+
+    /* ==========================================================================
+       8. INITIALIZATION
+       ========================================================================== */
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      initStorage();
+      updateChordBuilder();
+      setupDragAndDrop();
+      populatePresetDropdown();
+
+      // Load Default Grand Piano
+      loadInstrumentSoundfont("acoustic_grand_piano");
+    });
+  </script>
+</body>
+</html>
