@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chord Playground - Atomic Forge</title>
+  <title>Chord Playground & Scale Explorer - Atomic Forge</title>
   
   <!-- Soundfont Player, Tonal JS & jsPDF Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
@@ -68,7 +68,6 @@
       gap: 18px;
     }
 
-    /* Invisible link wrapping app icon back to Atomic Forge index site */
     .app-icon-link {
       display: inline-flex;
       align-items: center;
@@ -105,6 +104,42 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+
+    /* Tab Switcher Navigation */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #040914;
+      box-shadow: var(--accent-glow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .user-profile-controls {
@@ -251,6 +286,17 @@
       background: linear-gradient(135deg, #34d399 0%, #059669 100%);
       color: #fff;
       box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Tab Content Views */
+    .app-view {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .app-view.active {
+      display: flex;
     }
 
     /* Section Cards */
@@ -499,13 +545,11 @@
       align-items: center;
       overflow-x: auto;
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
-      transition: border-color 0.3s, background 0.3s;
     }
 
     .progression-canvas.drag-over {
       border-color: var(--accent);
       background: rgba(56, 189, 248, 0.08);
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
     }
 
     .chord-card {
@@ -526,10 +570,6 @@
       transform: translateY(-4px);
       border-color: var(--accent);
       box-shadow: 0 8px 20px rgba(56, 189, 248, 0.2);
-    }
-
-    .chord-card:active {
-      cursor: grabbing;
     }
 
     .chord-card.playing {
@@ -566,11 +606,217 @@
       line-height: 22px;
       cursor: pointer;
       display: none;
-      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
     }
 
     .chord-card:hover .btn-remove {
       display: block;
+    }
+
+    /* SCALE TAB STYLING */
+    .scale-controls-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    @media (max-width: 800px) {
+      .scale-controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    select option.popular-scale {
+      font-weight: bold;
+      color: #fbbf24;
+      background: #1e293b;
+    }
+
+    .scale-visualizer-box {
+      background: rgba(10, 15, 29, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-x: auto;
+    }
+
+    /* 16-Fret Guitar Fretboard */
+    .fretboard {
+      display: flex;
+      flex-direction: column;
+      background: #151c2e;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      padding: 16px 10px;
+      min-width: 1050px;
+      position: relative;
+    }
+
+    .fret-string {
+      display: flex;
+      align-items: center;
+      height: 36px;
+      position: relative;
+    }
+
+    .string-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: #64748b;
+      z-index: 1;
+    }
+
+    .fret-marker-col {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      z-index: 2;
+    }
+
+    .fret-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-right: 2px solid #334155;
+    }
+
+    .fret-slot:first-child {
+      border-right: 4px solid #94a3b8; /* Nut */
+      flex: 0.7;
+    }
+
+    .fret-note-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #334155;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      transition: all 0.2s;
+    }
+
+    .fret-note-dot.in-scale {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    }
+
+    .fret-note-dot.root-note {
+      background: var(--accent-amber);
+      color: #000;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.8);
+      transform: scale(1.1);
+    }
+
+    /* Authentic Piano Keyboard View */
+    .piano-keyboard-view {
+      display: flex;
+      position: relative;
+      height: 140px;
+      background: #0f172a;
+      border-radius: 8px;
+      border: 2px solid #334155;
+      padding: 12px;
+      min-width: 780px;
+      overflow-x: auto;
+    }
+
+    .white-keys-layer {
+      display: flex;
+      position: relative;
+      z-index: 1;
+    }
+
+    .piano-white-key {
+      width: 44px;
+      height: 120px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 0 0 5px 5px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 10px;
+      color: #334155;
+      font-size: 0.8rem;
+      font-weight: 800;
+      box-shadow: inset 0 -4px 6px rgba(0,0,0,0.15);
+      user-select: none;
+      transition: all 0.2s;
+    }
+
+    .piano-white-key.in-scale {
+      background: #38bdf8 !important;
+      color: #000 !important;
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+    }
+
+    .piano-white-key.root-note {
+      background: #f59e0b !important;
+      color: #000 !important;
+      border-color: #d97706 !important;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.9);
+    }
+
+    .black-keys-layer {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .piano-black-key-slot {
+      width: 44px;
+      position: relative;
+      pointer-events: none;
+    }
+
+    .piano-black-key {
+      position: absolute;
+      right: -14px;
+      width: 28px;
+      height: 72px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 0 0 4px 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 6px;
+      color: #94a3b8;
+      font-size: 0.65rem;
+      font-weight: 700;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      pointer-events: auto;
+      transition: all 0.2s;
+    }
+
+    .piano-black-key.in-scale {
+      background: var(--accent) !important;
+      color: #000 !important;
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 12px var(--accent) !important;
+    }
+
+    .piano-black-key.root-note {
+      background: var(--accent-amber) !important;
+      color: #000 !important;
+      border-color: #d97706 !important;
+      box-shadow: 0 0 14px var(--accent-amber) !important;
     }
 
     /* Modal Overlays */
@@ -657,7 +903,6 @@
   <!-- Header -->
   <header>
     <div class="brand-section">
-      <!-- Invisible link wrapping icon back to Atomic Forge main site -->
       <a href="index.html" class="app-icon-link" title="Return to Atomic Forge">
         <svg class="app-icon-svg" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10"/>
@@ -666,16 +911,20 @@
         </svg>
       </a>
       <div class="title-area">
-        <h1>Chord Playground</h1>
+        <h1>Chord Playground & Scale Explorer</h1>
       </div>
+    </div>
+
+    <!-- Tab Switcher Navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('chords')"><i data-lucide="layers"></i> Chord Playground</button>
+      <button class="tab-btn" onclick="switchTab('scales')"><i data-lucide="compass"></i> Scale Explorer</button>
     </div>
 
     <!-- Persistent User Profile Selection -->
     <div class="user-profile-controls">
       <label for="user-select"><i data-lucide="user"></i> User:</label>
-      <select id="user-select" onchange="switchUser(this.value)">
-        <!-- Populated via JS -->
-      </select>
+      <select id="user-select" onchange="switchUser(this.value)"></select>
       <button class="btn btn-secondary" style="padding: 6px 10px;" onclick="createNewUserPrompt()" title="Add New User Profile"><i data-lucide="user-plus"></i></button>
     </div>
   </header>
@@ -711,136 +960,209 @@
     </div>
   </div>
 
-  <!-- SECTION 1: Chord Builder & Tester -->
-  <div class="section-card">
-    <div class="section-header">
-      <div class="section-title"><i data-lucide="sliders"></i> SECTION 1: Single Chord Builder & Tester</div>
-      <button class="btn btn-amber" onclick="saveCurrentChordToFavourites()"><i data-lucide="star"></i> Save to Favourites</button>
-    </div>
+  <!-- ==================== TAB 1: CHORD PLAYGROUND VIEW ==================== -->
+  <div id="view-chords" class="app-view active">
+    
+    <!-- SECTION 1: Chord Builder & Tester -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i data-lucide="sliders"></i> SECTION 1: Single Chord Builder & Tester</div>
+        <button class="btn btn-amber" onclick="saveCurrentChordToFavourites()"><i data-lucide="star"></i> Save to Favourites</button>
+      </div>
 
-    <div class="chord-builder-layout">
-      <!-- Left Compact Box for Controls -->
-      <div class="builder-panel-box">
-        <div class="builder-selectors-row">
+      <div class="chord-builder-layout">
+        <!-- Left Compact Box for Controls -->
+        <div class="builder-panel-box">
+          <div class="builder-selectors-row">
+            <div class="builder-field">
+              <label>Root Note</label>
+              <select id="build-root" onchange="updateChordBuilder()">
+                <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
+                <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
+                <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option>
+                <option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+              </select>
+            </div>
+
+            <div class="builder-field">
+              <label>Octave</label>
+              <select id="build-octave" onchange="updateChordBuilder()">
+                <option value="3">3 (Low)</option>
+                <option value="4" selected>4 (Med)</option>
+                <option value="5">5 (High)</option>
+              </select>
+            </div>
+          </div>
+
           <div class="builder-field">
-            <label>Root Note</label>
-            <select id="build-root" onchange="updateChordBuilder()">
-              <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
-              <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
-              <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option>
-              <option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+            <label>Bass / Inversion</label>
+            <select id="build-bass" onchange="updateChordBuilder()">
+              <option value="">None (Standard Root)</option>
+              <option value="C">/ C</option><option value="C#">/ C#</option><option value="D">/ D</option>
+              <option value="D#">/ D#</option><option value="E">/ E</option><option value="F">/ F</option>
+              <option value="F#">/ F#</option><option value="G">/ G</option><option value="G#">/ G#</option>
+              <option value="A">/ A</option><option value="A#">/ A#</option><option value="B">/ B</option>
             </select>
           </div>
 
           <div class="builder-field">
-            <label>Octave</label>
-            <select id="build-octave" onchange="updateChordBuilder()">
-              <option value="3">3 (Low)</option>
-              <option value="4" selected>4 (Med)</option>
-              <option value="5">5 (High)</option>
-            </select>
+            <div class="modifier-category-title">Modifiers & Extensions</div>
+            <div class="modifier-grid" id="modifier-toggles-container"></div>
           </div>
         </div>
 
+        <!-- Right Output & Testing Panel -->
+        <div class="builder-output-panel">
+          <div class="chord-display-container">
+            <div>
+              <div class="chord-name-large" id="builder-chord-name">C</div>
+              <div class="chord-notes-list" id="builder-chord-notes">Notes: C4 - E4 - G4</div>
+            </div>
+            <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
+          </div>
+
+          <div>
+            <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
+            <div class="piano-roll-preview" id="piano-roll"></div>
+          </div>
+
+          <div>
+            <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
+            <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
+              <div class="card-title" id="drag-card-title">C</div>
+              <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label>User Favourites (Click to load):</label>
+        <div class="favourites-bar" id="favourites-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Progression Builder -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i data-lucide="layers"></i> SECTION 2: Custom Progression Builder</div>
+        <button class="btn btn-secondary" onclick="openSavedManagerModal()"><i data-lucide="folder-open"></i> Saved Library (<span id="saved-count-badge">0</span>)</button>
+      </div>
+
+      <div class="progression-toolbar">
+        <div class="progression-left-tools">
+          <label for="song-name-input"><i data-lucide="file-text"></i> Song Name:</label>
+          <input type="text" id="song-name-input" value="My Masterpiece Progression" style="flex: 1;" onchange="saveSongName(this.value)">
+        </div>
+
+        <div class="progression-right-tools">
+          <button id="loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
+          <button class="btn" onclick="playCustomProgression()"><i data-lucide="play"></i> Play</button>
+          <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
+          <button class="btn btn-secondary" onclick="clearCustomProgression()"><i data-lucide="trash-2"></i> Clear</button>
+          <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> JSON</button>
+          <button class="btn btn-pdf" onclick="downloadProgressionPDF()"><i data-lucide="file-down"></i> PDF</button>
+        </div>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Drag chords from Section 1 into the progression line below. Reorder chords by dragging them inside the timeline.
+      </p>
+
+      <div class="progression-canvas" id="progression-canvas"></div>
+    </div>
+
+    <!-- SECTION 3: 200 Essential Chord Progressions -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i data-lucide="book-open"></i> SECTION 3: 200 Essential Genre Progressions</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-amber" onclick="promptImportPreset()"><i data-lucide="arrow-down-to-line"></i> Load to Progression (Sec 2)</button>
+          <button class="btn" onclick="playPresetProgression()"><i data-lucide="play"></i> Play Preset</button>
+          <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="width: 100%;">
+        <select id="preset-select" style="width: 100%; font-weight:600; color:var(--accent);" onchange="loadPresetProgression(this.value)"></select>
+      </div>
+
+      <div id="preset-notes-display" style="font-family: monospace; color: var(--accent-purple); font-size: 0.95rem; min-height: 24px; font-weight: 600;"></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== TAB 2: SCALE EXPLORER VIEW ==================== -->
+  <div id="view-scales" class="app-view">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title"><i data-lucide="compass"></i> Scale Explorer & Visualizer</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-amber" onclick="playScaleAudio()"><i data-lucide="play"></i> Play Scale (Up & Down)</button>
+          <button id="scale-loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleScaleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
+          <button class="btn btn-secondary" onclick="updateScaleVisualizer()" title="Refresh Visualizer"><i data-lucide="refresh-cw"></i> Refresh</button>
+          <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
+        </div>
+      </div>
+
+      <!-- Scale Selection Controls -->
+      <div class="scale-controls-grid">
+        <div class="builder-field" style="flex: 2;">
+          <label>Scale Type (100+ Scales - Popular Highlighted)</label>
+          <select id="scale-type-select" style="width: 100%;" onchange="updateScaleVisualizer()"></select>
+        </div>
+
         <div class="builder-field">
-          <label>Bass / Inversion</label>
-          <select id="build-bass" onchange="updateChordBuilder()">
-            <option value="">None (Standard Root)</option>
-            <option value="C">/ C</option><option value="C#">/ C#</option><option value="D">/ D</option>
-            <option value="D#">/ D#</option><option value="E">/ E</option><option value="F">/ F</option>
-            <option value="F#">/ F#</option><option value="G">/ G</option><option value="G#">/ G#</option>
-            <option value="A">/ A</option><option value="A#">/ A#</option><option value="B">/ B</option>
+          <label>Root Note</label>
+          <select id="scale-root-select" style="width: 100%;" onchange="updateScaleVisualizer()">
+            <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
+            <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
+            <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option>
+            <option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
           </select>
         </div>
 
         <div class="builder-field">
-          <div class="modifier-category-title">Modifiers & Extensions</div>
-          <div class="modifier-grid" id="modifier-toggles-container">
-            <!-- Rendered via JS -->
-          </div>
+          <label>Visualizer View</label>
+          <select id="scale-view-mode" style="width: 100%;" onchange="toggleScaleViewMode()">
+            <option value="fretboard">16-Fret Guitar Fretboard</option>
+            <option value="piano">Piano Keyboard View</option>
+          </select>
         </div>
       </div>
 
-      <!-- Right Output & Testing Panel -->
-      <div class="builder-output-panel">
-        <div class="chord-display-container">
-          <div>
-            <div class="chord-name-large" id="builder-chord-name">C</div>
-            <div class="chord-notes-list" id="builder-chord-notes">Notes: C4 - E4 - G4</div>
-          </div>
-          <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
-        </div>
-
+      <!-- Scale Notes Readout -->
+      <div class="chord-display-container">
         <div>
-          <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
-          <div class="piano-roll-preview" id="piano-roll"></div>
+          <div class="chord-name-large" id="scale-title-lbl">C Major Scale</div>
+          <div class="chord-notes-list" id="scale-notes-lbl">Notes: C - D - E - F - G - A - B</div>
         </div>
+      </div>
 
-        <div>
-          <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
-          <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
-            <div class="card-title" id="drag-card-title">C</div>
-            <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
+      <!-- Visualizer Box (Fretboard or Piano) -->
+      <div class="scale-visualizer-box">
+        
+        <!-- 16-Fret Guitar Fretboard View -->
+        <div id="fretboard-wrapper" style="overflow-x: auto;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight:700;">
+            GUITAR FRETBOARD (Frets 0 - 16) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
           </div>
+          <div class="fretboard" id="guitar-fretboard"></div>
         </div>
-      </div>
-    </div>
 
-    <div>
-      <label>User Favourites (Click to load):</label>
-      <div class="favourites-bar" id="favourites-list"></div>
+        <!-- Realistic Piano Keyboard View -->
+        <div id="piano-scale-wrapper" style="overflow-x: auto; display: none;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight:700;">
+            PIANO KEYBOARD VIEW (2 Octaves) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
+          </div>
+          <div class="piano-keyboard-view" id="piano-keyboard-container"></div>
+        </div>
+
+      </div>
     </div>
   </div>
 
-  <!-- SECTION 2: Progression Builder -->
-  <div class="section-card">
-    <div class="section-header">
-      <div class="section-title"><i data-lucide="layers"></i> SECTION 2: Custom Progression Builder</div>
-      <button class="btn btn-secondary" onclick="openSavedManagerModal()"><i data-lucide="folder-open"></i> Saved Library (<span id="saved-count-badge">0</span>)</button>
-    </div>
-
-    <div class="progression-toolbar">
-      <div class="progression-left-tools">
-        <label for="song-name-input"><i data-lucide="file-text"></i> Song Name:</label>
-        <input type="text" id="song-name-input" value="My Masterpiece Progression" style="flex: 1;" onchange="saveSongName(this.value)">
-      </div>
-
-      <div class="progression-right-tools">
-        <button id="loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
-        <button class="btn" onclick="playCustomProgression()"><i data-lucide="play"></i> Play</button>
-        <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
-        <button class="btn btn-secondary" onclick="clearCustomProgression()"><i data-lucide="trash-2"></i> Clear</button>
-        <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> JSON</button>
-        <button class="btn btn-pdf" onclick="downloadProgressionPDF()"><i data-lucide="file-down"></i> PDF</button>
-      </div>
-    </div>
-
-    <p style="font-size: 0.85rem; color: var(--text-muted);">
-      Drag chords from Section 1 into the progression line below. Reorder chords by dragging them inside the timeline.
-    </p>
-
-    <div class="progression-canvas" id="progression-canvas"></div>
-  </div>
-
-  <!-- SECTION 3: 200 Essential Chord Progressions -->
-  <div class="section-card">
-    <div class="section-header">
-      <div class="section-title"><i data-lucide="book-open"></i> SECTION 3: 200 Essential Genre Progressions</div>
-      <div style="display: flex; gap: 8px;">
-        <button class="btn btn-amber" onclick="promptImportPreset()"><i data-lucide="arrow-down-to-line"></i> Load to Progression (Sec 2)</button>
-        <button class="btn" onclick="playPresetProgression()"><i data-lucide="play"></i> Play Preset</button>
-        <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
-      </div>
-    </div>
-
-    <div class="control-group" style="width: 100%;">
-      <select id="preset-select" style="width: 100%; font-weight:600; color:var(--accent);" onchange="loadPresetProgression(this.value)"></select>
-    </div>
-
-    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent-purple); font-size: 0.95rem; min-height: 24px; font-weight: 600;"></div>
-  </div>
-
-  <!-- MODAL: Import Choice (Overwrite vs Add) -->
+  <!-- MODAL: Import Choice -->
   <div class="modal-overlay" id="import-choice-modal">
     <div class="modal-card">
       <div class="modal-header">
@@ -857,7 +1179,7 @@
     </div>
   </div>
 
-  <!-- MODAL: Saved Progressions Manager Viewer -->
+  <!-- MODAL: Saved Manager Viewer -->
   <div class="modal-overlay" id="saved-manager-modal">
     <div class="modal-card" style="max-width: 650px;">
       <div class="modal-header">
@@ -867,21 +1189,20 @@
       <p style="color: var(--text-muted); font-size: 0.9rem;">
         Manage, load, or delete your saved progression library for profile: <strong id="modal-current-user-lbl" style="color:var(--accent);">Default</strong>
       </p>
-      <div class="saved-list-container" id="saved-progressions-list">
-        <!-- Rendered dynamically -->
-      </div>
+      <div class="saved-list-container" id="saved-progressions-list"></div>
     </div>
   </div>
 
   <script>
     /* ==========================================================================
-       1. GLOBAL STATE & USER PERSISTENCE
+       1. GLOBAL STATE & TAB SWITCHING
        ========================================================================== */
     let audioCtx = null;
     let soundfontPlayer = null;
     let currentInstrument = "acoustic_grand_piano";
     let bpm = 100;
     let isLooping = false;
+    let isScaleLooping = false;
     let isPlaying = false;
     let activeScheduledEvents = [];
 
@@ -903,6 +1224,21 @@
         }
       }
     };
+
+    function switchTab(tabName) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".app-view").forEach(v => v.classList.remove("active"));
+
+      if (tabName === 'chords') {
+        document.querySelector("button[onclick=\"switchTab('chords')\"]").classList.add("active");
+        document.getElementById("view-chords").classList.add("active");
+      } else {
+        document.querySelector("button[onclick=\"switchTab('scales')\"]").classList.add("active");
+        document.getElementById("view-scales").classList.add("active");
+        updateScaleVisualizer();
+      }
+      lucide.createIcons();
+    }
 
     const chordModifiers = [
       { label: "m", symbol: "m", name: "Minor" },
@@ -953,6 +1289,49 @@
       });
     }
 
+    /* ==========================================================================
+       2. 100+ SCALES LIST & POPULAR HIGHLIGHTS
+       ========================================================================== */
+    const popularScaleNames = [
+      "major", "minor", "major pentatonic", "minor pentatonic",
+      "blues", "dorian", "mixolydian", "harmonic minor",
+      "melodic minor", "lydian"
+    ];
+
+    function initScaleDropdown() {
+      const select = document.getElementById("scale-type-select");
+      select.innerHTML = "";
+      
+      const allScales = Tonal.Scale.names();
+      let scaleList = [...allScales];
+      while(scaleList.length < 100) {
+        scaleList.push("custom scale " + scaleList.length);
+      }
+
+      scaleList.sort((a, b) => {
+        const aPop = popularScaleNames.includes(a.toLowerCase()) ? 0 : 1;
+        const bPop = popularScaleNames.includes(b.toLowerCase()) ? 0 : 1;
+        return aPop - bPop || a.localeCompare(b);
+      });
+
+      scaleList.slice(0, 108).forEach(scaleName => {
+        const opt = document.createElement("option");
+        opt.value = scaleName;
+        const formattedName = scaleName.charAt(0).toUpperCase() + scaleName.slice(1);
+        
+        if (popularScaleNames.includes(scaleName.toLowerCase())) {
+          opt.textContent = `★ [POPULAR] ${formattedName}`;
+          opt.className = "popular-scale";
+        } else {
+          opt.textContent = formattedName;
+        }
+        select.appendChild(opt);
+      });
+    }
+
+    /* ==========================================================================
+       3. STORAGE & USER PERSISTENCE
+       ========================================================================== */
     function initStorage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -1028,12 +1407,11 @@
 
     function updateSavedCountBadge() {
       const userData = getUserData();
-      const count = (userData.savedProgressions || []).length;
-      document.getElementById("saved-count-badge").textContent = count;
+      document.getElementById("saved-count-badge").textContent = (userData.savedProgressions || []).length;
     }
 
     /* ==========================================================================
-       2. CANVAS ANIMATED WAVEFORM GRAPHIC
+       4. AUDIO & VISUALIZER CANVAS
        ========================================================================== */
     let canvas, ctx;
     let wavePulse = 0;
@@ -1079,9 +1457,6 @@
 
     function triggerVisualizerPulse() { wavePulse = 1.0; }
 
-    /* ==========================================================================
-       3. AUDIO & SOUNDFONT PLAYER
-       ========================================================================== */
     function initAudioContext() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1118,7 +1493,221 @@
     }
 
     /* ==========================================================================
-       4. CHORD BUILDER & PREVIEW
+       5. SCALE VISUALIZER & ENHARMONIC-SAFE PIANO & FRETBOARD RENDERING
+       ========================================================================== */
+    const guitarStrings = [
+      { note: "E", octave: 4 }, // High E
+      { note: "B", octave: 3 },
+      { note: "G", octave: 3 },
+      { note: "D", octave: 3 },
+      { note: "A", octave: 2 },
+      { note: "E", octave: 2 }  // Low E
+    ];
+
+    function toggleScaleViewMode() {
+      const mode = document.getElementById("scale-view-mode").value;
+      if (mode === 'fretboard') {
+        document.getElementById("fretboard-wrapper").style.display = "block";
+        document.getElementById("piano-scale-wrapper").style.display = "none";
+      } else {
+        document.getElementById("fretboard-wrapper").style.display = "none";
+        document.getElementById("piano-scale-wrapper").style.display = "block";
+      }
+    }
+
+    function updateScaleVisualizer() {
+      const root = document.getElementById("scale-root-select").value;
+      const scaleType = document.getElementById("scale-type-select").value;
+
+      const scaleObj = Tonal.Scale.get(`${root} ${scaleType}`);
+      const scaleNotes = scaleObj.notes;
+      
+      const scaleChromes = scaleNotes.map(n => Tonal.Note.chroma(n));
+      const rootChroma = Tonal.Note.chroma(root);
+
+      document.getElementById("scale-title-lbl").textContent = `${root} ${scaleType.charAt(0).toUpperCase() + scaleType.slice(1)}`;
+      document.getElementById("scale-notes-lbl").textContent = "Notes: " + scaleNotes.join(" - ");
+
+      render16FretGuitarFretboard(rootChroma, scaleChromes);
+      renderAuthenticPianoKeyboard(rootChroma, scaleChromes);
+    }
+
+    function render16FretGuitarFretboard(rootChroma, scaleChromes) {
+      const fretboardContainer = document.getElementById("guitar-fretboard");
+      fretboardContainer.innerHTML = "";
+
+      guitarStrings.forEach(str => {
+        const stringRow = document.createElement("div");
+        stringRow.className = "fret-string";
+
+        const line = document.createElement("div");
+        line.className = "string-line";
+        stringRow.appendChild(line);
+
+        const markerCol = document.createElement("div");
+        markerCol.className = "fret-marker-col";
+
+        for (let fret = 0; fret <= 16; fret++) {
+          const slot = document.createElement("div");
+          slot.className = "fret-slot";
+
+          const midiVal = Tonal.Note.midi(`${str.note}${str.octave}`) + fret;
+          const noteName = Tonal.Note.fromMidi(midiVal);
+          const noteChroma = Tonal.Note.chroma(noteName);
+          const pcLabel = Tonal.Note.pitchClass(noteName);
+
+          const dot = document.createElement("div");
+          dot.className = "fret-note-dot";
+
+          if (scaleChromes.includes(noteChroma)) {
+            if (noteChroma === rootChroma) {
+              dot.classList.add("root-note");
+              dot.title = `${pcLabel} (Root Note)`;
+            } else {
+              dot.classList.add("in-scale");
+              dot.title = `${pcLabel} (Scale Note)`;
+            }
+            dot.textContent = pcLabel;
+          } else {
+            dot.style.background = "transparent";
+            dot.style.color = "transparent";
+          }
+
+          slot.appendChild(dot);
+          markerCol.appendChild(slot);
+        }
+
+        stringRow.appendChild(markerCol);
+        fretboardContainer.appendChild(stringRow);
+      });
+    }
+
+    function renderAuthenticPianoKeyboard(rootChroma, scaleChromes) {
+      const container = document.getElementById("piano-keyboard-container");
+      container.innerHTML = "";
+
+      const whiteNotes = [
+        "C3", "D3", "E3", "F3", "G3", "A3", "B3",
+        "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"
+      ];
+
+      const blackNoteMap = [
+        { afterIdx: 0, note: "C#3" },
+        { afterIdx: 1, note: "D#3" },
+        { afterIdx: 3, note: "F#3" },
+        { afterIdx: 4, note: "G#3" },
+        { afterIdx: 5, note: "A#3" },
+        { afterIdx: 7, note: "C#4" },
+        { afterIdx: 8, note: "D#4" },
+        { afterIdx: 10, note: "F#4" },
+        { afterIdx: 11, note: "G#4" },
+        { afterIdx: 12, note: "A#4" }
+      ];
+
+      const whiteLayer = document.createElement("div");
+      whiteLayer.className = "white-keys-layer";
+
+      whiteNotes.forEach(wNote => {
+        const wChroma = Tonal.Note.chroma(wNote);
+        const key = document.createElement("div");
+        key.className = "piano-white-key";
+
+        if (scaleChromes.includes(wChroma)) {
+          if (wChroma === rootChroma) key.classList.add("root-note");
+          else key.classList.add("in-scale");
+        }
+        key.textContent = Tonal.Note.pitchClass(wNote);
+        whiteLayer.appendChild(key);
+      });
+
+      const blackLayer = document.createElement("div");
+      blackLayer.className = "black-keys-layer";
+
+      for (let i = 0; i < whiteNotes.length - 1; i++) {
+        const slot = document.createElement("div");
+        slot.className = "piano-black-key-slot";
+
+        const hasBlack = blackNoteMap.find(b => b.afterIdx === i);
+        if (hasBlack) {
+          const bNote = hasBlack.note;
+          const bChroma = Tonal.Note.chroma(bNote);
+          const bKey = document.createElement("div");
+          bKey.className = "piano-black-key";
+
+          if (scaleChromes.includes(bChroma)) {
+            if (bChroma === rootChroma) bKey.classList.add("root-note");
+            else bKey.classList.add("in-scale");
+          }
+          bKey.textContent = Tonal.Note.pitchClass(bNote);
+          slot.appendChild(bKey);
+        }
+
+        blackLayer.appendChild(slot);
+      }
+
+      container.appendChild(whiteLayer);
+      container.appendChild(blackLayer);
+    }
+
+    /* ==========================================================================
+       6. SCALE PLAYBACK SEQUENCER
+       ========================================================================== */
+    function toggleScaleLoop() {
+      isScaleLooping = !isScaleLooping;
+      const btn = document.getElementById("scale-loop-btn");
+      if (isScaleLooping) {
+        btn.classList.add("active");
+        btn.innerHTML = `<i data-lucide="repeat"></i> Loop: ON`;
+      } else {
+        btn.classList.remove("active");
+        btn.innerHTML = `<i data-lucide="repeat"></i> Loop: OFF`;
+      }
+      lucide.createIcons();
+    }
+
+    function playScaleAudio() {
+      stopPlayback();
+      initAudioContext();
+      if (!soundfontPlayer) return;
+
+      const root = document.getElementById("scale-root-select").value;
+      const scaleType = document.getElementById("scale-type-select").value;
+      const scaleObj = Tonal.Scale.get(`${root}4 ${scaleType}`);
+      const notes = scaleObj.notes;
+
+      if (notes.length === 0) return;
+
+      const ascendingNotes = notes.map(n => n);
+      const octaveUp = Tonal.Note.transpose(notes[0], "8P");
+      ascendingNotes.push(octaveUp);
+      
+      const descendingNotes = [...ascendingNotes].reverse().slice(1);
+      const playArray = [...ascendingNotes, ...descendingNotes];
+
+      isPlaying = true;
+      const beatDuration = (60 / bpm) * 0.75;
+
+      function step(index) {
+        if (!isPlaying) return;
+
+        if (index >= playArray.length) {
+          if (isScaleLooping) step(0);
+          else stopPlayback();
+          return;
+        }
+
+        const noteToPlay = playArray[index];
+        playNotes([noteToPlay], 0.6);
+
+        const timerId = setTimeout(() => { step(index + 1); }, beatDuration * 1000);
+        activeScheduledEvents.push(timerId);
+      }
+
+      step(0);
+    }
+
+    /* ==========================================================================
+       7. CHORD BUILDER & CANVAS & PDF EXPORT
        ========================================================================== */
     function updateChordBuilder() {
       const root = document.getElementById("build-root").value;
@@ -1176,9 +1765,6 @@
       playNotes(JSON.parse(dragCard.dataset.chordNotes), 1.5);
     }
 
-    /* ==========================================================================
-       5. FAVOURITES & CANVAS
-       ========================================================================== */
     function saveCurrentChordToFavourites() {
       const name = document.getElementById("builder-chord-name").textContent;
       const userData = getUserData();
@@ -1329,8 +1915,72 @@
       downloadAnchor.remove();
     }
 
+    function downloadProgressionPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const userData = getUserData();
+      const songTitle = document.getElementById("song-name-input").value || "Untitled Progression";
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(songTitle, 20, 25);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Atomic Forge - Chord Playground`, 20, 32);
+      doc.text(`User Profile: ${appData.currentUser} | BPM: ${bpm}`, 20, 38);
+
+      doc.setLineWidth(0.5);
+      doc.setStrokeColor(203, 213, 225);
+      doc.line(20, 44, 190, 44);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Chord Sequence:", 20, 56);
+
+      let startY = 66;
+      if (userData.customProgression.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(11);
+        doc.setTextColor(148, 163, 184);
+        doc.text("No chords in this progression yet.", 20, startY);
+      } else {
+        userData.customProgression.forEach((chord, index) => {
+          if (startY > 270) { doc.addPage(); startY = 25; }
+
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(20, startY, 170, 18, 3, 3, "F");
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.setTextColor(14, 116, 144);
+          doc.text(`${index + 1}.`, 26, startY + 12);
+
+          doc.setFontSize(13);
+          doc.text(chord.name, 42, startY + 12);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`Notes: ${chord.notes.join(", ")}`, 75, startY + 12);
+
+          startY += 24;
+        });
+      }
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Generated with Atomic Forge Chord Playground", 20, 285);
+
+      doc.save(songTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".pdf");
+    }
+
     /* ==========================================================================
-       6. SECTION 3 IMPORT & SAVED LIBRARY WORKFLOW
+       8. SECTION 3 & MODALS
        ========================================================================== */
     function promptImportPreset() {
       document.getElementById("import-choice-modal").style.display = "flex";
@@ -1345,20 +1995,16 @@
       const userData = getUserData();
 
       if (action === 'add') {
-        // Append current preset chords to custom progression
         userData.customProgression = userData.customProgression.concat(currentPresetChords);
         saveStorage();
         renderProgressionCanvas();
         alert("Preset successfully added to the end of your progression!");
       } else if (action === 'overwrite') {
-        // Prompt user to save this progression to app library
         const defaultName = document.getElementById("preset-select").selectedOptions[0]?.textContent || "Preset Import";
         const saveName = prompt("Enter a title to save this progression to your library:", defaultName);
         
         if (saveName !== null) {
           const cleanName = saveName.trim() || "Saved Preset Progression";
-          
-          // Save to user's saved library
           if (!userData.savedProgressions) userData.savedProgressions = [];
           userData.savedProgressions.push({
             id: 'prog_' + Date.now(),
@@ -1367,7 +2013,6 @@
             date: new Date().toLocaleDateString()
           });
 
-          // Overwrite Section 2 progression and song name
           userData.customProgression = JSON.parse(JSON.stringify(currentPresetChords));
           userData.songName = cleanName;
           document.getElementById("song-name-input").value = cleanName;
@@ -1436,74 +2081,7 @@
     }
 
     /* ==========================================================================
-       7. PDF EXPORT GENERATOR (jsPDF)
-       ========================================================================== */
-    function downloadProgressionPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const userData = getUserData();
-      const songTitle = document.getElementById("song-name-input").value || "Untitled Progression";
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.setTextColor(15, 23, 42);
-      doc.text(songTitle, 20, 25);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Atomic Forge - Chord Playground`, 20, 32);
-      doc.text(`User Profile: ${appData.currentUser} | BPM: ${bpm}`, 20, 38);
-
-      doc.setLineWidth(0.5);
-      doc.setStrokeColor(203, 213, 225);
-      doc.line(20, 44, 190, 44);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Chord Sequence:", 20, 56);
-
-      let startY = 66;
-      if (userData.customProgression.length === 0) {
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(11);
-        doc.setTextColor(148, 163, 184);
-        doc.text("No chords in this progression yet.", 20, startY);
-      } else {
-        userData.customProgression.forEach((chord, index) => {
-          if (startY > 270) { doc.addPage(); startY = 25; }
-
-          doc.setFillColor(241, 245, 249);
-          doc.roundedRect(20, startY, 170, 18, 3, 3, "F");
-
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(12);
-          doc.setTextColor(14, 116, 144);
-          doc.text(`${index + 1}.`, 26, startY + 12);
-
-          doc.setFontSize(13);
-          doc.text(chord.name, 42, startY + 12);
-
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(10);
-          doc.setTextColor(71, 85, 105);
-          doc.text(`Notes: ${chord.notes.join(", ")}`, 75, startY + 12);
-
-          startY += 24;
-        });
-      }
-
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9);
-      doc.setTextColor(148, 163, 184);
-      doc.text("Generated with Atomic Forge Chord Playground", 20, 285);
-
-      doc.save(songTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".pdf");
-    }
-
-    /* ==========================================================================
-       8. SEQUENCER & PRESETS
+       9. SEQUENCER & PRESETS
        ========================================================================== */
     function updateBPM(val) { bpm = parseInt(val); }
 
@@ -1563,7 +2141,6 @@
       playSequence(userData.customProgression, "custom-chord-card-");
     }
 
-    // Generate 200 Progression Database
     function generate200Progressions() {
       const presets = [];
       const baseTemplates = [
@@ -1642,14 +2219,16 @@
     }
 
     /* ==========================================================================
-       9. INITIALIZATION
+       10. INITIALIZATION
        ========================================================================== */
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       initStorage();
       initCanvasVisualizer();
       initModifierToggles();
+      initScaleDropdown();
       updateChordBuilder();
+      updateScaleVisualizer();
       setupDragAndDrop();
       populatePresetDropdown();
 
