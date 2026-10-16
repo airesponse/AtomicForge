@@ -615,12 +615,12 @@
     /* SCALE TAB STYLING */
     .scale-controls-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
       gap: 16px;
       align-items: end;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1000px) {
       .scale-controls-grid {
         grid-template-columns: 1fr 1fr;
       }
@@ -653,6 +653,11 @@
       padding: 16px 10px;
       min-width: 1050px;
       position: relative;
+    }
+
+    .fretboard.run-fretboard {
+      background: #111827;
+      border-color: var(--accent-purple);
     }
 
     .fret-string {
@@ -717,6 +722,18 @@
       color: #000;
       box-shadow: 0 0 14px rgba(245, 158, 11, 0.8);
       transform: scale(1.1);
+    }
+
+    .fret-note-dot.in-run {
+      background: var(--accent-purple);
+      color: #000;
+      box-shadow: 0 0 14px rgba(192, 132, 252, 0.9);
+      font-weight: 800;
+      transform: scale(1.1);
+    }
+
+    .fret-note-dot.run-step {
+      border: 2px solid #fff;
     }
 
     /* Authentic 4-Octave Piano Keyboard View */
@@ -1100,6 +1117,7 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="btn btn-amber" onclick="saveCurrentScaleToFavourites()"><i data-lucide="star"></i> Save Scale</button>
           <button class="btn btn-amber" onclick="playScaleAudio()"><i data-lucide="play"></i> Play Scale</button>
+          <button id="btn-play-run" class="btn btn-amber" style="display:none;" onclick="playDiatonicRunAudio()"><i data-lucide="play-circle"></i> Play Diatonic Run</button>
           <button id="scale-loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleScaleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
           <button class="btn btn-secondary" onclick="updateScaleVisualizer()" title="Refresh Visualizer"><i data-lucide="refresh-cw"></i> Refresh</button>
           <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
@@ -1138,6 +1156,14 @@
             <option value="piano">4-Octave Piano View</option>
           </select>
         </div>
+
+        <div class="builder-field">
+          <label>Diatonic Run Toggle</label>
+          <select id="scale-run-toggle" style="width: 100%; font-weight: 700; color: var(--accent-purple);" onchange="toggleDiatonicRunView()">
+            <option value="off">Run: OFF</option>
+            <option value="on">Run: ON (Diagonal Descending)</option>
+          </select>
+        </div>
       </div>
 
       <!-- Scale Notes Readout -->
@@ -1151,12 +1177,20 @@
       <!-- Visualizer Box (Fretboard or Piano) -->
       <div class="scale-visualizer-box">
         
-        <!-- 16-Fret Guitar Fretboard View -->
+        <!-- Primary 16-Fret Guitar Fretboard View -->
         <div id="fretboard-wrapper" style="overflow-x: auto;">
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; font-weight:700;">
-            GUITAR FRETBOARD (Frets 0 - 16) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
+            MAIN GUITAR FRETBOARD (Frets 0 - 16) | <span style="color:var(--accent-amber)">■ Root Note</span> <span style="color:var(--accent)">■ Scale Note</span>
           </div>
           <div class="fretboard" id="guitar-fretboard"></div>
+        </div>
+
+        <!-- Secondary Guitar Fretboard View (Diatonic Run Pattern) -->
+        <div id="fretboard-run-wrapper" style="overflow-x: auto; display: none; margin-top: 14px;">
+          <div style="font-size: 0.8rem; color: var(--accent-purple); margin-bottom: 8px; font-weight:700;">
+            SUGGESTED DIATONIC GUITAR RUN (Top-Left to Bottom-Right) | <span style="color:var(--accent-purple)">■ Play Sequence Step (1, 2, 3...)</span>
+          </div>
+          <div class="fretboard run-fretboard" id="guitar-fretboard-run"></div>
         </div>
 
         <!-- Realistic 4-Octave Piano Keyboard View -->
@@ -1221,6 +1255,7 @@
     let isScaleLooping = false;
     let isPlaying = false;
     let activeScheduledEvents = [];
+    let currentDiatonicRunNotes = [];
 
     const STORAGE_KEY = "atomic_chord_playground_data";
 
@@ -1519,12 +1554,12 @@
        5. SCALE VISUALIZER & ENHARMONIC-SAFE PIANO & FRETBOARD RENDERING
        ========================================================================== */
     const guitarStrings = [
-      { note: "E", octave: 4 }, // High E
-      { note: "B", octave: 3 },
-      { note: "G", octave: 3 },
-      { note: "D", octave: 3 },
-      { note: "A", octave: 2 },
-      { note: "E", octave: 2 }  // Low E
+      { note: "E", octave: 4, strIdx: 0 }, // High E
+      { note: "B", octave: 3, strIdx: 1 },
+      { note: "G", octave: 3, strIdx: 2 },
+      { note: "D", octave: 3, strIdx: 3 },
+      { note: "A", octave: 2, strIdx: 4 },
+      { note: "E", octave: 2, strIdx: 5 }  // Low E
     ];
 
     function toggleScaleViewMode() {
@@ -1532,9 +1567,28 @@
       if (mode === 'fretboard') {
         document.getElementById("fretboard-wrapper").style.display = "block";
         document.getElementById("piano-scale-wrapper").style.display = "none";
+        toggleDiatonicRunView();
       } else {
         document.getElementById("fretboard-wrapper").style.display = "none";
+        document.getElementById("fretboard-run-wrapper").style.display = "none";
         document.getElementById("piano-scale-wrapper").style.display = "block";
+        document.getElementById("btn-play-run").style.display = "none";
+      }
+    }
+
+    function toggleDiatonicRunView() {
+      const runToggle = document.getElementById("scale-run-toggle").value;
+      const viewMode = document.getElementById("scale-view-mode").value;
+      const runWrapper = document.getElementById("fretboard-run-wrapper");
+      const playRunBtn = document.getElementById("btn-play-run");
+
+      if (runToggle === "on" && viewMode === "fretboard") {
+        runWrapper.style.display = "block";
+        playRunBtn.style.display = "inline-flex";
+        updateScaleVisualizer();
+      } else {
+        runWrapper.style.display = "none";
+        playRunBtn.style.display = "none";
       }
     }
 
@@ -1550,7 +1604,6 @@
       const scaleChromes = scaleNotes.map(n => Tonal.Note.chroma(n));
       const rootChroma = Tonal.Note.chroma(root);
 
-      // Create mapping from Chroma -> Interval Label for interval mode
       const intervalMap = {};
       scaleChromes.forEach((chroma, idx) => {
         intervalMap[chroma] = scaleIntervals[idx] || "";
@@ -1561,6 +1614,10 @@
 
       render16FretGuitarFretboard(rootChroma, scaleChromes, labelMode, intervalMap);
       render4OctavePianoKeyboard(rootChroma, scaleChromes, labelMode, intervalMap);
+
+      if (document.getElementById("scale-run-toggle").value === "on") {
+        renderDiatonicGuitarRun(rootChroma, scaleChromes);
+      }
     }
 
     function render16FretGuitarFretboard(rootChroma, scaleChromes, labelMode, intervalMap) {
@@ -1614,11 +1671,136 @@
       });
     }
 
+    /* DIATONIC RUN GENERATION ALGORITHM (Top-Left to Bottom-Right) */
+    function renderDiatonicGuitarRun(rootChroma, scaleChromes) {
+      const runFretboardContainer = document.getElementById("guitar-fretboard-run");
+      runFretboardContainer.innerHTML = "";
+
+      // Build 2D matrix of fretboard notes
+      const fretMatrix = []; // [stringIndex][fretIndex]
+      guitarStrings.forEach((str, sIdx) => {
+        const strNotes = [];
+        for (let fret = 0; fret <= 16; fret++) {
+          const midiVal = Tonal.Note.midi(`${str.note}${str.octave}`) + fret;
+          const noteName = Tonal.Note.fromMidi(midiVal);
+          const chroma = Tonal.Note.chroma(noteName);
+          strNotes.push({ string: sIdx, fret: fret, midi: midiVal, chroma: chroma, noteName: noteName });
+        }
+        fretMatrix.push(strNotes);
+      });
+
+      // Find top-left starting root (lowest fret root on top high E or B string)
+      let startPoint = null;
+      for (let fret = 0; fret <= 7; fret++) {
+        if (scaleChromes.includes(fretMatrix[0][fret].chroma) && fretMatrix[0][fret].chroma === rootChroma) {
+          startPoint = fretMatrix[0][fret];
+          break;
+        }
+      }
+      if (!startPoint) {
+        for (let fret = 0; fret <= 12; fret++) {
+          if (scaleChromes.includes(fretMatrix[0][fret].chroma)) {
+            startPoint = fretMatrix[0][fret];
+            break;
+          }
+        }
+      }
+      if (!startPoint) startPoint = fretMatrix[0][0];
+
+      // Trace diatonic descending run path moving down strings (0 -> 5) and diagonally right
+      const runSteps = [];
+      let currentString = startPoint.string;
+      let minFret = startPoint.fret;
+
+      while (currentString < 6) {
+        let stringScaleNotes = fretMatrix[currentString].filter(n => scaleChromes.includes(n.chroma) && n.fret >= minFret && n.fret <= minFret + 4);
+        if (stringScaleNotes.length === 0) {
+          stringScaleNotes = fretMatrix[currentString].filter(n => scaleChromes.includes(n.chroma) && n.fret >= minFret);
+        }
+        
+        // Take 2 to 3 notes per string for a natural guitar run pattern
+        const takeCount = Math.min(stringScaleNotes.length, 3);
+        const selectedForString = stringScaleNotes.slice(0, takeCount);
+        
+        selectedForString.forEach(n => runSteps.push(n));
+
+        if (selectedForString.length > 0) {
+          minFret = selectedForString[selectedForString.length - 1].fret;
+        }
+        currentString++;
+      }
+
+      currentDiatonicRunNotes = runSteps.map(s => s.noteName);
+
+      // Render the run fretboard with step order badges
+      guitarStrings.forEach((str, sIdx) => {
+        const stringRow = document.createElement("div");
+        stringRow.className = "fret-string";
+
+        const line = document.createElement("div");
+        line.className = "string-line";
+        stringRow.appendChild(line);
+
+        const markerCol = document.createElement("div");
+        markerCol.className = "fret-marker-col";
+
+        for (let fret = 0; fret <= 16; fret++) {
+          const slot = document.createElement("div");
+          slot.className = "fret-slot";
+
+          const stepIdx = runSteps.findIndex(s => s.string === sIdx && s.fret === fret);
+
+          const dot = document.createElement("div");
+          dot.className = "fret-note-dot";
+
+          if (stepIdx !== -1) {
+            dot.classList.add("in-run", "run-step");
+            dot.textContent = stepIdx + 1; // 1-based order badge
+            dot.title = `Step ${stepIdx + 1}: ${Tonal.Note.pitchClass(runSteps[stepIdx].noteName)}`;
+          } else {
+            dot.style.background = "transparent";
+            dot.style.color = "transparent";
+          }
+
+          slot.appendChild(dot);
+          markerCol.appendChild(slot);
+        }
+
+        stringRow.appendChild(markerCol);
+        runFretboardContainer.appendChild(stringRow);
+      });
+    }
+
+    function playDiatonicRunAudio() {
+      stopPlayback();
+      initAudioContext();
+      if (!soundfontPlayer || currentDiatonicRunNotes.length === 0) return;
+
+      isPlaying = true;
+      const stepTime = 0.22; // Quick fluid run tempo
+
+      function step(index) {
+        if (!isPlaying) return;
+
+        if (index >= currentDiatonicRunNotes.length) {
+          if (isScaleLooping) step(0);
+          else stopPlayback();
+          return;
+        }
+
+        playNotes([currentDiatonicRunNotes[index]], 0.4);
+
+        const timerId = setTimeout(() => { step(index + 1); }, stepTime * 1000);
+        activeScheduledEvents.push(timerId);
+      }
+
+      step(0);
+    }
+
     function render4OctavePianoKeyboard(rootChroma, scaleChromes, labelMode, intervalMap) {
       const container = document.getElementById("piano-keyboard-container");
       container.innerHTML = "";
 
-      // 4 Full Octaves of Natural White Keys (C2 through C6 = 29 white keys)
       const whiteNotes = [];
       const octaves = [2, 3, 4, 5];
       const bases = ["C", "D", "E", "F", "G", "A", "B"];
@@ -1628,7 +1810,6 @@
       });
       whiteNotes.push("C6");
 
-      // Build black key slots mapping across 4 octaves
       const blackNoteMap = [];
       let wIndex = 0;
       octaves.forEach(oct => {
