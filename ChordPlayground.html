@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chord Playground - Atomic Forge</title>
   
-  <!-- Soundfont Player & Tonal JS Libraries -->
+  <!-- Soundfont Player, Tonal JS & jsPDF Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tonal@4.10.0/browser/tonal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -174,7 +175,7 @@
       font-weight: 700;
     }
 
-    select, input[type="number"] {
+    select, input[type="number"], input[type="text"] {
       background: rgba(10, 15, 29, 0.9);
       color: var(--text-main);
       border: 1px solid var(--panel-border);
@@ -235,6 +236,17 @@
       color: #fff;
     }
 
+    .btn-pdf {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-pdf:hover {
+      box-shadow: 0 0 18px rgba(244, 63, 94, 0.6);
+      color: #fff;
+    }
+
     .toggle-btn.active {
       background: linear-gradient(135deg, #34d399 0%, #059669 100%);
       color: #fff;
@@ -273,7 +285,7 @@
       letter-spacing: -0.3px;
     }
 
-    /* SECTION 1: Compact Chord Builder Container */
+    /* SECTION 1: Compact Chord Builder Layout */
     .chord-builder-layout {
       display: grid;
       grid-template-columns: 380px 1fr;
@@ -454,6 +466,30 @@
       transform: translateY(-2px);
     }
 
+    /* Progression Controls Toolbar */
+    .progression-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progression-left-tools {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .progression-right-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
     /* Drag and Drop Progression Canvas */
     .progression-canvas {
       min-height: 130px;
@@ -614,10 +650,6 @@
       <input type="number" id="bpm-input" value="100" min="40" max="240" style="width: 75px;" onchange="updateBPM(this.value)">
     </div>
 
-    <div class="control-group">
-      <button id="loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
-    </div>
-
     <div id="status-indicator">
       <span class="status-dot" id="status-dot"></span>
       <span id="status-text">Loading soundfont...</span>
@@ -631,7 +663,7 @@
       <button class="btn btn-amber" onclick="saveCurrentChordToFavourites()"><i data-lucide="star"></i> Save to Favourites</button>
     </div>
 
-    <!-- Main Chord Builder Layout: Compact Left Box & Right Output/Testing Panel -->
+    <!-- Main Chord Builder Layout -->
     <div class="chord-builder-layout">
       
       <!-- Left Compact Box for Controls -->
@@ -722,11 +754,22 @@
   <div class="section-card">
     <div class="section-header">
       <div class="section-title"><i data-lucide="layers"></i> SECTION 2: Custom Progression Builder</div>
-      <div style="display: flex; gap: 8px;">
-        <button class="btn" onclick="playCustomProgression()"><i data-lucide="play"></i> Play Progression</button>
+    </div>
+
+    <!-- Progression Toolbar with Song Name & Loop Button -->
+    <div class="progression-toolbar">
+      <div class="progression-left-tools">
+        <label for="song-name-input"><i data-lucide="file-text"></i> Song Name:</label>
+        <input type="text" id="song-name-input" value="My Masterpiece Progression" style="flex: 1;" onchange="saveSongName(this.value)">
+      </div>
+
+      <div class="progression-right-tools">
+        <button id="loop-btn" class="btn btn-secondary toggle-btn" onclick="toggleLoop()"><i data-lucide="repeat"></i> Loop: OFF</button>
+        <button class="btn" onclick="playCustomProgression()"><i data-lucide="play"></i> Play</button>
         <button class="btn btn-secondary" onclick="stopPlayback()"><i data-lucide="square"></i> Stop</button>
         <button class="btn btn-secondary" onclick="clearCustomProgression()"><i data-lucide="trash-2"></i> Clear</button>
-        <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> Export JSON</button>
+        <button class="btn btn-secondary" onclick="exportProgression()"><i data-lucide="download"></i> JSON</button>
+        <button class="btn btn-pdf" onclick="downloadProgressionPDF()"><i data-lucide="file-down"></i> Download PDF</button>
       </div>
     </div>
 
@@ -778,6 +821,7 @@
       currentUser: "Default User",
       users: {
         "Default User": {
+          songName: "My Masterpiece Progression",
           favourites: ["Cmaj7", "Am7", "Dm7", "G7"],
           customProgression: [
             { name: "Cmaj7", notes: ["C4", "E4", "G4", "B4"] },
@@ -848,6 +892,7 @@
         try { appData = JSON.parse(saved); } catch(e) {}
       }
       populateUserDropdown();
+      loadUserDataToUI();
       renderFavourites();
       renderProgressionCanvas();
     }
@@ -858,9 +903,20 @@
 
     function getUserData() {
       if (!appData.users[appData.currentUser]) {
-        appData.users[appData.currentUser] = { favourites: [], customProgression: [] };
+        appData.users[appData.currentUser] = { songName: "My Song", favourites: [], customProgression: [] };
       }
       return appData.users[appData.currentUser];
+    }
+
+    function loadUserDataToUI() {
+      const userData = getUserData();
+      document.getElementById("song-name-input").value = userData.songName || "My Masterpiece Progression";
+    }
+
+    function saveSongName(name) {
+      const userData = getUserData();
+      userData.songName = name;
+      saveStorage();
     }
 
     function populateUserDropdown() {
@@ -878,6 +934,7 @@
     function switchUser(userName) {
       appData.currentUser = userName;
       saveStorage();
+      loadUserDataToUI();
       renderFavourites();
       renderProgressionCanvas();
     }
@@ -887,11 +944,12 @@
       if (name && name.trim() !== "") {
         const cleanName = name.trim();
         if (!appData.users[cleanName]) {
-          appData.users[cleanName] = { favourites: [], customProgression: [] };
+          appData.users[cleanName] = { songName: "My Masterpiece Progression", favourites: [], customProgression: [] };
         }
         appData.currentUser = cleanName;
         saveStorage();
         populateUserDropdown();
+        loadUserDataToUI();
         renderFavourites();
         renderProgressionCanvas();
       }
@@ -1214,14 +1272,88 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userData.customProgression, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `chord_progression_${appData.currentUser}.json`);
+      downloadAnchor.setAttribute("download", `${(userData.songName || 'progression').replace(/\s+/g, '_')}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
     }
 
     /* ==========================================================================
-       6. SEQUENCER & PRESETS
+       6. PDF EXPORT GENERATOR (jsPDF)
+       ========================================================================== */
+    function downloadProgressionPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const userData = getUserData();
+      const songTitle = document.getElementById("song-name-input").value || "Untitled Progression";
+
+      // Header styling
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(songTitle, 20, 25);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11, "normal");
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Atomic Forge - Chord Playground`, 20, 32);
+      doc.text(`User Profile: ${appData.currentUser} | BPM: ${bpm}`, 20, 38);
+
+      doc.setLineWidth(0.5);
+      doc.setStrokeColor(203, 213, 225);
+      doc.line(20, 44, 190, 44);
+
+      // Progression list
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Chord Sequence:", 20, 56);
+
+      let startY = 66;
+      if (userData.customProgression.length === 0) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(11);
+        doc.setTextColor(148, 163, 184);
+        doc.text("No chords in this progression yet.", 20, startY);
+      } else {
+        userData.customProgression.forEach((chord, index) => {
+          if (startY > 270) {
+            doc.addPage();
+            startY = 25;
+          }
+
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(20, startY, 170, 18, 3, 3, "F");
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(12);
+          doc.setTextColor(14, 116, 144);
+          doc.text(`${index + 1}.`, 26, startY + 12);
+
+          doc.setFontSize(13);
+          doc.text(chord.name, 42, startY + 12);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`Notes: ${chord.notes.join(", ")}`, 75, startY + 12);
+
+          startY += 24;
+        });
+      }
+
+      // Footer
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Generated with Atomic Forge Chord Playground", 20, 285);
+
+      const safeFilename = songTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".pdf";
+      doc.save(safeFilename);
+    }
+
+    /* ==========================================================================
+       7. SEQUENCER & PRESETS
        ========================================================================== */
     function updateBPM(val) { bpm = parseInt(val); }
 
@@ -1360,7 +1492,7 @@
     }
 
     /* ==========================================================================
-       7. INITIALIZATION
+       8. INITIALIZATION
        ========================================================================== */
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
