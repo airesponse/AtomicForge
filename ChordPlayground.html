@@ -13,12 +13,17 @@
 
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --panel-bg: #1e293b;
-      --panel-border: #334155;
+      --bg-dark: #0a0f1d;
+      --bg-gradient: radial-gradient(circle at 50% -20%, #1e1b4b 0%, #0a0f1d 70%);
+      --panel-bg: rgba(15, 23, 42, 0.75);
+      --panel-border: rgba(56, 189, 248, 0.2);
+      --panel-glow: rgba(56, 189, 248, 0.1);
       --accent: #38bdf8;
+      --accent-glow: 0 0 20px rgba(56, 189, 248, 0.5);
       --accent-hover: #0284c7;
       --accent-amber: #f59e0b;
+      --amber-glow: 0 0 18px rgba(245, 158, 11, 0.5);
+      --accent-purple: #c084fc;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --danger: #ef4444;
@@ -33,9 +38,10 @@
     }
 
     body {
-      background-color: var(--bg-dark);
+      background: var(--bg-dark);
+      background-image: var(--bg-gradient);
       color: var(--text-main);
-      padding: 20px;
+      padding: 24px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -45,69 +51,98 @@
     /* Header & Navigation */
     header {
       display: flex;
-      justify: space-between;
+      justify-content: space-between;
       align-items: center;
       background: var(--panel-bg);
-      padding: 12px 24px;
-      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      padding: 16px 28px;
+      border-radius: 16px;
       border: 1px solid var(--panel-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), var(--panel-glow);
     }
 
     .brand-section {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 18px;
     }
 
-    /* Invisible link wrapping app icon back to Atomic Forge index */
+    /* Invisible link wrapping app icon back to Atomic Forge index site */
     .app-icon-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-decoration: none;
-      color: var(--accent);
-      padding: 8px;
-      border-radius: 8px;
-      transition: background 0.2s, transform 0.1s;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.05);
+      border: 1px solid var(--panel-border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
     }
 
     .app-icon-link:hover {
-      background: rgba(56, 189, 248, 0.1);
-      transform: scale(1.05);
+      background: rgba(56, 189, 248, 0.15);
+      box-shadow: var(--accent-glow);
+      transform: scale(1.08);
     }
 
     .app-icon-svg {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       stroke: var(--accent);
       stroke-width: 2;
       fill: none;
+      filter: drop-shadow(0 0 6px var(--accent));
     }
 
     .title-area h1 {
-      font-size: 1.4rem;
-      font-weight: 700;
+      font-size: 1.5rem;
+      font-weight: 800;
       letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
 
     .user-profile-controls {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(0,0,0,0.2);
-      padding: 6px 12px;
-      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 14px;
+      border-radius: 10px;
       border: 1px solid var(--panel-border);
     }
 
-    .user-profile-controls select, .user-profile-controls input {
+    .user-profile-controls select {
       background: var(--bg-dark);
-      color: var(--text-main);
+      color: var(--accent);
+      font-weight: 600;
       border: 1px solid var(--panel-border);
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 6px;
       outline: none;
+      cursor: pointer;
+    }
+
+    /* Animated Visualizer Banner */
+    .visualizer-container {
+      position: relative;
+      width: 100%;
+      height: 60px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    #audio-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* Global Playback Controls Bar */
@@ -118,9 +153,11 @@
       justify-content: space-between;
       gap: 16px;
       background: var(--panel-bg);
-      padding: 16px 24px;
-      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      padding: 16px 28px;
+      border-radius: 16px;
       border: 1px solid var(--panel-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
     .control-group {
@@ -130,190 +167,257 @@
     }
 
     label {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
     }
 
-    select, input[type="number"], input[type="text"] {
-      background: var(--bg-dark);
+    select, input[type="number"] {
+      background: rgba(10, 15, 29, 0.9);
       color: var(--text-main);
       border: 1px solid var(--panel-border);
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
       font-size: 0.95rem;
-    }
-
-    .btn {
-      background: var(--accent);
-      color: #000;
-      font-weight: 600;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      outline: none;
       transition: all 0.2s;
     }
 
+    select:focus, input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--accent-glow);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: #040914;
+      font-weight: 700;
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
     .btn:hover {
-      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--accent-glow);
       color: #fff;
     }
 
     .btn-secondary {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
       border: 1px solid var(--panel-border);
+      box-shadow: none;
     }
 
     .btn-secondary:hover {
-      background: rgba(255,255,255,0.05);
-      border-color: var(--text-muted);
+      background: rgba(56, 189, 248, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .btn-amber {
-      background: var(--accent-amber);
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
       color: #000;
-    }
-    .btn-amber:hover {
-      background: #d97706;
-      color: #fff;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
     }
 
-    .btn-danger {
-      background: var(--danger);
+    .btn-amber:hover {
+      box-shadow: var(--amber-glow);
       color: #fff;
     }
 
     .toggle-btn.active {
-      background: var(--success);
+      background: linear-gradient(135deg, #34d399 0%, #059669 100%);
       color: #fff;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
     }
 
     /* Section Cards */
     .section-card {
       background: var(--panel-bg);
-      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
       border: 1px solid var(--panel-border);
-      padding: 20px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
     }
 
     .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--panel-border);
-      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 14px;
     }
 
     .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: 1.15rem;
+      font-weight: 700;
       color: var(--accent);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      letter-spacing: -0.3px;
     }
 
-    /* Section 1: Chord Builder */
+    /* SECTION 1: Builder Grid */
     .builder-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
     }
 
     .builder-field {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .chord-display-container {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: var(--bg-dark);
-      padding: 16px 24px;
-      border-radius: 8px;
-      border: 1px dashed var(--accent);
+      background: radial-gradient(circle at left, rgba(56, 189, 248, 0.1) 0%, rgba(10, 15, 29, 0.8) 100%);
+      padding: 20px 28px;
+      border-radius: 12px;
+      border: 1px fill var(--panel-border);
+      border-left: 4px solid var(--accent);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     .chord-name-large {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--accent);
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      text-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
     }
 
     .chord-notes-list {
       font-size: 1rem;
-      color: var(--text-muted);
-      font-family: monospace;
+      color: var(--accent-purple);
+      font-family: 'Courier New', Courier, monospace;
+      margin-top: 4px;
+      font-weight: 600;
     }
 
+    /* Piano Roll Graphic Display */
+    .piano-roll-preview {
+      display: flex;
+      gap: 3px;
+      height: 38px;
+      background: #000;
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      overflow-x: auto;
+    }
+
+    .piano-key {
+      flex: 1;
+      min-width: 12px;
+      background: #334155;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    .piano-key.active {
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .piano-key.black {
+      background: #0f172a;
+      height: 60%;
+    }
+
+    .piano-key.black.active {
+      background: var(--accent-amber);
+      box-shadow: 0 0 10px var(--accent-amber);
+    }
+
+    /* Favourites Bar */
     .favourites-bar {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
       margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid rgba(255,255,255,0.05);
     }
 
     .fav-chip {
-      background: var(--bg-dark);
+      background: rgba(30, 41, 59, 0.8);
       border: 1px solid var(--panel-border);
       color: var(--text-main);
-      padding: 4px 10px;
-      border-radius: 16px;
+      padding: 6px 14px;
+      border-radius: 20px;
       font-size: 0.85rem;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      transition: all 0.2s;
     }
 
     .fav-chip:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--accent-amber);
+      color: var(--accent-amber);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+      transform: translateY(-2px);
     }
 
     /* Drag and Drop Progression Canvas */
     .progression-canvas {
-      min-height: 120px;
-      background: var(--bg-dark);
-      border: 2px dashed var(--panel-border);
-      border-radius: 8px;
-      padding: 16px;
+      min-height: 130px;
+      background: rgba(10, 15, 29, 0.8);
+      border: 2px dashed rgba(56, 189, 248, 0.3);
+      border-radius: 12px;
+      padding: 20px;
       display: flex;
-      gap: 12px;
+      gap: 14px;
       align-items: center;
       overflow-x: auto;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+      transition: border-color 0.3s, background 0.3s;
     }
 
     .progression-canvas.drag-over {
       border-color: var(--accent);
-      background: rgba(56, 189, 248, 0.05);
+      background: rgba(56, 189, 248, 0.08);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
     }
 
     .chord-card {
-      background: var(--panel-bg);
+      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
       border: 1px solid var(--panel-border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      min-width: 100px;
+      border-radius: 10px;
+      padding: 14px 18px;
+      min-width: 110px;
       text-align: center;
       cursor: grab;
       position: relative;
       user-select: none;
-      transition: transform 0.15s, border-color 0.15s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .chord-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.2);
     }
 
     .chord-card:active {
@@ -321,36 +425,40 @@
     }
 
     .chord-card.playing {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-      transform: translateY(-2px);
+      border-color: var(--accent-amber);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+      transform: translateY(-4px) scale(1.05);
+      background: linear-gradient(145deg, #2b2310 0%, #0f172a 100%);
     }
 
     .chord-card .card-title {
-      font-weight: 700;
-      font-size: 1.1rem;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #fff;
     }
 
     .chord-card .card-notes {
       font-size: 0.75rem;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 6px;
+      font-family: monospace;
     }
 
     .chord-card .btn-remove {
       position: absolute;
-      top: -6px;
-      right: -6px;
+      top: -8px;
+      right: -8px;
       background: var(--danger);
       color: #fff;
       border: none;
       border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      font-size: 10px;
-      line-height: 18px;
+      width: 22px;
+      height: 22px;
+      font-size: 12px;
+      line-height: 22px;
       cursor: pointer;
       display: none;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
     }
 
     .chord-card:hover .btn-remove {
@@ -363,16 +471,18 @@
       color: var(--text-muted);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: var(--accent-amber);
+      box-shadow: 0 0 8px var(--accent-amber);
     }
     .status-dot.ready {
       background: var(--success);
+      box-shadow: 0 0 8px var(--success);
     }
   </style>
 </head>
@@ -381,7 +491,7 @@
   <!-- Header -->
   <header>
     <div class="brand-section">
-      <!-- Invisible link wrapping icon back to main index site -->
+      <!-- Invisible link wrapping icon back to Atomic Forge main site -->
       <a href="index.html" class="app-icon-link" title="Return to Atomic Forge">
         <svg class="app-icon-svg" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10"/>
@@ -396,13 +506,18 @@
 
     <!-- Persistent User Profile Selection -->
     <div class="user-profile-controls">
-      <label for="user-select"><i data-lucide="user"></i> User Profile:</label>
+      <label for="user-select"><i data-lucide="user"></i> User:</label>
       <select id="user-select" onchange="switchUser(this.value)">
-        <!-- Dynamically populated -->
+        <!-- Populated via JS -->
       </select>
-      <button class="btn btn-secondary" onclick="createNewUserPrompt()" title="Add New User Profile"><i data-lucide="user-plus"></i></button>
+      <button class="btn btn-secondary" style="padding: 6px 10px;" onclick="createNewUserPrompt()" title="Add New User Profile"><i data-lucide="user-plus"></i></button>
     </div>
   </header>
+
+  <!-- Interactive Waveform Visualizer Canvas -->
+  <div class="visualizer-container">
+    <canvas id="audio-canvas"></canvas>
+  </div>
 
   <!-- Global Playback & Instrument Controls -->
   <div class="global-controls">
@@ -421,7 +536,7 @@
 
     <div class="control-group">
       <label for="bpm-input"><i data-lucide="clock"></i> BPM:</label>
-      <input type="number" id="bpm-input" value="100" min="40" max="240" style="width: 70px;" onchange="updateBPM(this.value)">
+      <input type="number" id="bpm-input" value="100" min="40" max="240" style="width: 75px;" onchange="updateBPM(this.value)">
     </div>
 
     <div class="control-group">
@@ -475,7 +590,7 @@
           <option value="madd9">mAdd9</option>
           <option value="6">Major 6th</option>
           <option value="m6">Minor 6th</option>
-          <option value="11"> Dominant 11th</option>
+          <option value="11">Dominant 11th</option>
           <option value="13">Dominant 13th</option>
           <option value="7#9">7#9 (Hendrix)</option>
           <option value="7b9">7b9</option>
@@ -483,7 +598,7 @@
       </div>
 
       <div class="builder-field">
-        <label>Bass Note / Inversion</label>
+        <label>Bass / Inversion</label>
         <select id="build-bass" onchange="updateChordBuilder()">
           <option value="">None (Standard)</option>
           <option value="C">/ C</option><option value="C#">/ C#</option><option value="D">/ D</option>
@@ -503,6 +618,7 @@
       </div>
     </div>
 
+    <!-- Main Chord Display & Play Button -->
     <div class="chord-display-container">
       <div>
         <div class="chord-name-large" id="builder-chord-name">C</div>
@@ -511,7 +627,15 @@
       <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
     </div>
 
-    <!-- Draggable Builder Card Preview -->
+    <!-- Piano Keyboard Note Visualizer Bar -->
+    <div>
+      <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
+      <div class="piano-roll-preview" id="piano-roll">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Draggable Chord Card -->
     <div>
       <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
       <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
@@ -522,9 +646,9 @@
 
     <!-- User Favourites Bar -->
     <div>
-      <label>User Favourite Chords (Click to load):</label>
+      <label>User Favourites (Click to load):</label>
       <div class="favourites-bar" id="favourites-list">
-        <!-- Dynamically rendered -->
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
@@ -542,7 +666,7 @@
     </div>
 
     <p style="font-size: 0.85rem; color: var(--text-muted);">
-      Drag chords from Section 1 into the area below to build your custom sequence. You can also re-order chords within the progression by dragging them.
+      Drag chords from Section 1 into the progression line below. Reorder chords by dragging them inside the timeline.
     </p>
 
     <div class="progression-canvas" id="progression-canvas">
@@ -561,19 +685,19 @@
     </div>
 
     <div class="control-group" style="width: 100%;">
-      <select id="preset-select" style="width: 100%;" onchange="loadPresetProgression(this.value)">
-        <!-- 200 items populated dynamically via JS -->
+      <select id="preset-select" style="width: 100%; font-weight:600; color:var(--accent);" onchange="loadPresetProgression(this.value)">
+        <!-- Populated via JS -->
       </select>
     </div>
 
-    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent); font-size: 0.95rem; min-height: 24px;">
+    <div id="preset-notes-display" style="font-family: monospace; color: var(--accent-purple); font-size: 0.95rem; min-height: 24px; font-weight: 600;">
       <!-- Selected Preset preview -->
     </div>
   </div>
 
   <script>
     /* ==========================================================================
-       1. GLOBAL STATE & USER PERSISTENCE MANAGEMENT
+       1. GLOBAL STATE & USER PERSISTENCE
        ========================================================================== */
     let audioCtx = null;
     let soundfontPlayer = null;
@@ -583,7 +707,6 @@
     let isPlaying = false;
     let activeScheduledEvents = [];
 
-    // Storage Key
     const STORAGE_KEY = "atomic_chord_playground_data";
 
     let appData = {
@@ -604,11 +727,7 @@
     function initStorage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        try {
-          appData = JSON.parse(saved);
-        } catch(e) {
-          console.error("Failed to parse saved data", e);
-        }
+        try { appData = JSON.parse(saved); } catch(e) {}
       }
       populateUserDropdown();
       renderFavourites();
@@ -661,7 +780,58 @@
     }
 
     /* ==========================================================================
-       2. AUDIO & SOUNDFONT PLAYER SETUP
+       2. CANVAS ANIMATED WAVEFORM GRAPHIC
+       ========================================================================== */
+    let canvas, ctx;
+    let wavePulse = 0;
+
+    function initCanvasVisualizer() {
+      canvas = document.getElementById("audio-canvas");
+      ctx = canvas.getContext("2d");
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+      animateVisualizer();
+    }
+
+    function resizeCanvas() {
+      if (!canvas) return;
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+
+    function animateVisualizer() {
+      requestAnimationFrame(animateVisualizer);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerY = height / 2;
+
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#38bdf8";
+
+      const time = Date.now() * 0.003;
+      for (let x = 0; x < width; x++) {
+        const freq = 0.02;
+        const amp = (wavePulse > 0) ? Math.sin(x * freq + time) * (10 + wavePulse * 15) : Math.sin(x * 0.01 + time) * 3;
+        const y = centerY + amp;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      if (wavePulse > 0) {
+        wavePulse *= 0.92;
+      }
+    }
+
+    function triggerVisualizerPulse() {
+      wavePulse = 1.0;
+    }
+
+    /* ==========================================================================
+       3. AUDIO & SOUNDFONT PLAYER SETUP
        ========================================================================== */
     function initAudioContext() {
       if (!audioCtx) {
@@ -683,7 +853,6 @@
       initAudioContext();
       updateStatus(`Loading soundfont (${instName.replace(/_/g, ' ')})...`, false);
       
-      // Handle custom strummed style mapping to base nylon guitar soundfont
       let targetSoundfont = instName;
       if (instName === "acoustic_guitar_nylon_strum") {
         targetSoundfont = "acoustic_guitar_nylon";
@@ -697,7 +866,7 @@
         updateStatus("Audio Engine Ready", true);
       } catch(err) {
         console.error("Error loading Soundfont:", err);
-        updateStatus("Audio Load Error - Check Network", false);
+        updateStatus("Audio Load Error", false);
       }
     }
 
@@ -707,7 +876,7 @@
     }
 
     /* ==========================================================================
-       3. CHORD CALCULATOR & BUILDER LOGIC
+       4. CHORD CALCULATOR & VISUAL KEYBOARD
        ========================================================================== */
     function updateChordBuilder() {
       const root = document.getElementById("build-root").value;
@@ -716,12 +885,9 @@
       const octave = document.getElementById("build-octave").value;
 
       const chordSymbol = root + quality + (bass ? "/" + bass : "");
-      
-      // Calculate chord notes using Tonal.js
       let chordData = Tonal.Chord.get(root + quality);
       let notes = chordData.notes.length ? chordData.notes : [root];
 
-      // Format octave notes
       let octaveNotes = notes.map(n => Tonal.Note.simplify(n) + octave);
 
       if (bass && !notes.includes(bass)) {
@@ -734,16 +900,34 @@
       document.getElementById("drag-card-title").textContent = chordSymbol;
       document.getElementById("drag-card-notes").textContent = octaveNotes.join(", ");
       
-      // Store on dataset for drag operations
       const dragCard = document.getElementById("builder-draggable-card");
       dragCard.dataset.chordName = chordSymbol;
       dragCard.dataset.chordNotes = JSON.stringify(octaveNotes);
+
+      renderPianoRoll(notes);
+    }
+
+    function renderPianoRoll(activeNotes) {
+      const container = document.getElementById("piano-roll");
+      container.innerHTML = "";
+      const chromaticScale = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+      chromaticScale.forEach(noteName => {
+        const key = document.createElement("div");
+        const isBlack = noteName.includes("#");
+        const isActive = activeNotes.some(n => Tonal.Note.pitchClass(n) === noteName);
+
+        key.className = `piano-key ${isBlack ? 'black' : ''} ${isActive ? 'active' : ''}`;
+        key.title = noteName;
+        container.appendChild(key);
+      });
     }
 
     function playNotes(notesArray, duration = 1.5, isStrummed = false) {
       initAudioContext();
       if (!soundfontPlayer) return;
 
+      triggerVisualizerPulse();
       const now = audioCtx.currentTime;
       notesArray.forEach((note, index) => {
         const strumDelay = (isStrummed || currentInstrument === "acoustic_guitar_nylon_strum") ? index * 0.035 : 0;
@@ -758,7 +942,7 @@
     }
 
     /* ==========================================================================
-       4. FAVOURITES MANAGEMENT
+       5. FAVOURITES & CANVAS
        ========================================================================== */
     function saveCurrentChordToFavourites() {
       const name = document.getElementById("builder-chord-name").textContent;
@@ -788,7 +972,6 @@
         chip.className = "fav-chip";
         chip.innerHTML = `<span>${fav}</span> <i data-lucide="x" style="width:12px; height:12px;"></i>`;
         chip.onclick = () => {
-          // Parse back into chord builder
           const parts = fav.split('/');
           const main = parts[0];
           const bass = parts[1] || "";
@@ -810,9 +993,6 @@
       lucide.createIcons();
     }
 
-    /* ==========================================================================
-       5. DRAG & DROP SECTION 2: PROGRESSION CANVAS
-       ========================================================================== */
     let draggedIndex = null;
 
     function setupDragAndDrop() {
@@ -845,11 +1025,9 @@
           const userData = getUserData();
           
           if (draggedIndex !== null) {
-            // Reordering existing item
             const item = userData.customProgression.splice(draggedIndex, 1)[0];
             userData.customProgression.push(item);
           } else {
-            // Adding new item from builder
             userData.customProgression.push(chordData);
           }
           saveStorage();
@@ -864,7 +1042,7 @@
       const userData = getUserData();
 
       if (userData.customProgression.length === 0) {
-        canvas.innerHTML = `<div style="color: var(--text-muted); font-size:0.9rem; text-align:center; width:100%;">Drag chords here to build your progression...</div>`;
+        canvas.innerHTML = `<div style="color: var(--text-muted); font-size:0.9rem; text-align:center; width:100%;">Drag chords here to build your sequence...</div>`;
         return;
       }
 
@@ -917,11 +1095,9 @@
     }
 
     /* ==========================================================================
-       6. PLAYBACK SEQUENCER (SECTION 2 & SECTION 3)
+       6. SEQUENCER & PRESETS
        ========================================================================== */
-    function updateBPM(val) {
-      bpm = parseInt(val);
-    }
+    function updateBPM(val) { bpm = parseInt(val); }
 
     function toggleLoop() {
       isLooping = !isLooping;
@@ -948,33 +1124,26 @@
       if (chordList.length === 0) return;
 
       isPlaying = true;
-      const beatDuration = 60 / bpm; // Beat length in seconds
-      const chordDuration = beatDuration * 2; // Play each chord for 2 beats
+      const beatDuration = 60 / bpm;
+      const chordDuration = beatDuration * 2;
 
       function step(index) {
         if (!isPlaying) return;
 
         if (index >= chordList.length) {
-          if (isLooping) {
-            step(0);
-          } else {
-            stopPlayback();
-          }
+          if (isLooping) step(0);
+          else stopPlayback();
           return;
         }
 
         const chord = chordList[index];
         playNotes(chord.notes, chordDuration);
 
-        // Visual highlighting
         document.querySelectorAll(".chord-card").forEach(c => c.classList.remove("playing"));
         const activeCard = document.getElementById(`${highlightPrefix}${index}`);
         if (activeCard) activeCard.classList.add("playing");
 
-        const timerId = setTimeout(() => {
-          step(index + 1);
-        }, chordDuration * 1000);
-
+        const timerId = setTimeout(() => { step(index + 1); }, chordDuration * 1000);
         activeScheduledEvents.push(timerId);
       }
 
@@ -986,12 +1155,7 @@
       playSequence(userData.customProgression, "custom-chord-card-");
     }
 
-    /* ==========================================================================
-       7. SECTION 3: 200 ESSENTIAL GENRE PROGRESSIONS DATA & LOGIC
-       ========================================================================== */
-    const genres = ["Jazz", "Blues", "Rock", "Soul/R&B", "Pop", "Grunge/Alt", "Ethnic/World"];
-    
-    // Generate 200 Curated/Rich Progression Patterns across genres
+    // Generate 200 Progression Database
     function generate200Progressions() {
       const presets = [];
       const baseTemplates = [
@@ -999,36 +1163,22 @@
         { g: "Jazz", p: ["Cmaj7", "Am7", "Dm7", "G7"], desc: "Rhythm Changes Turnaround" },
         { g: "Jazz", p: ["Dm7", "G7", "Cmaj7", "Cmaj7"], desc: "Standard Major ii-V-I" },
         { g: "Jazz", p: ["Dm7b5", "G7alt", "Cm7", "Cm7"], desc: "Minor ii-V-i" },
-        { g: "Jazz", p: ["Fmaj7", "Fm7", "Em7", "A7"], desc: "Backdoor & Chromatic Pass" },
         { g: "Blues", p: ["C7", "F7", "C7", "G7"], desc: "12-Bar Quick Change Blues" },
         { g: "Blues", p: ["Cm7", "Fm7", "Cm7", "Gm7"], desc: "Minor Blues Sequence" },
-        { g: "Blues", p: ["C7", "C7", "C7", "C7", "F7", "F7", "C7", "C7", "G7", "F7", "C7", "G7"], desc: "Full 12-Bar Blues Standard" },
         { g: "Rock", p: ["C", "G", "Am", "F"], desc: "Classic 4-Chord Rock Standard" },
         { g: "Rock", p: ["C", "F", "G", "F"], desc: "Classic 3-Chord Garage Rock" },
-        { g: "Rock", p: ["Am", "G", "F", "E"], desc: "Andalusian Rock Descent" },
-        { g: "Rock", p: ["C5", "A#5", "F5", "C5"], desc: "Hard Rock Power Groove" },
         { g: "Soul/R&B", p: ["Cmaj7", "Bm7", "Am7", "Gmaj7"], desc: "Neo-Soul Step Down" },
-        { g: "Soul/R&B", p: ["Fmaj7", "Em7", "Dm7", "Cmaj7"], desc: "70s R&B Smooth Groove" },
-        { g: "Soul/R&B", p: ["Dm9", "G13", "Cmaj9", "A7#9"], desc: "Modern Urban Soul Cadence" },
         { g: "Pop", p: ["Am", "F", "C", "G"], desc: "Pop Sensitive Chord Loop" },
-        { g: "Pop", p: ["C", "Am", "F", "G"], desc: "50s Doo-Wop Progression" },
-        { g: "Pop", p: ["F", "G", "Em", "Am"], desc: "Royal Road Anime/Pop Progression" },
         { g: "Grunge/Alt", p: ["E5", "G5", "A5", "C5"], desc: "Grunge Heavy Riff Loop" },
-        { g: "Grunge/Alt", p: ["Am", "F", "D", "F"], desc: "Alternative Rock Tension Loop" },
-        { g: "Ethnic/World", p: ["Am", "A#", "Am", "Gm"], desc: "Flamenco/Middle Eastern Modal" },
-        { g: "Ethnic/World", p: ["C", "F", "C", "G7"], desc: "Reggae/Ska Offbeat Rhythm" },
-        { g: "Ethnic/World", p: ["Em", "Am", "B7", "Em"], desc: "Bossa Nova Basic Groove" }
+        { g: "Ethnic/World", p: ["Am", "A#", "Am", "Gm"], desc: "Flamenco Modal Groove" }
       ];
 
       const keys = ["C", "G", "D", "A", "E", "F"];
-
       let count = 1;
-      // Synthesulate up to 200 distinct entries across genres and transpose keys
       for (let i = 0; count <= 200; i++) {
         const tmpl = baseTemplates[i % baseTemplates.length];
         const key = keys[Math.floor(i / baseTemplates.length) % keys.length];
         
-        // Transpose template chords slightly for variation
         const transposedChords = tmpl.p.map(ch => {
           if (key === "C") return ch;
           const root = ch.match(/^[A-G][#b]?/)?.[0] || "C";
@@ -1044,7 +1194,6 @@
         });
         count++;
       }
-
       return presets;
     }
 
@@ -1070,14 +1219,13 @@
 
       currentPresetChords = preset.chords.map(chName => {
         let root = chName.match(/^[A-G][#b]?/)?.[0] || "C";
-        let quality = chName.substring(root.length) || "major";
         let chordData = Tonal.Chord.get(chName);
         let notes = chordData.notes.length ? chordData.notes : [root];
         let octaveNotes = notes.map(n => Tonal.Note.simplify(n) + "4");
         return { name: chName, notes: octaveNotes };
       });
 
-      document.getElementById("preset-notes-display").textContent = 
+      document.getElementById("preset-notes-display").textContent =
         "Selected Sequence Notes: " + currentPresetChords.map(c => `${c.name} (${c.notes.join(",")})`).join("  |  ");
     }
 
@@ -1086,18 +1234,19 @@
     }
 
     /* ==========================================================================
-       8. INITIALIZATION
+       7. INITIALIZATION
        ========================================================================== */
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       initStorage();
+      initCanvasVisualizer();
       updateChordBuilder();
       setupDragAndDrop();
       populatePresetDropdown();
 
-      // Load Default Grand Piano
       loadInstrumentSoundfont("acoustic_grand_piano");
     });
   </script>
 </body>
 </html>
+
