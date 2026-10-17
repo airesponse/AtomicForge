@@ -1,503 +1,600 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>The Sonic Scope — Harmonic & Musical Theory Analyzer</title>
-  <style>
-    :root {
-      --bg: #0f0f11;
-      --panel-bg: #1a1a1e;
-      --card-hover: #242429;
-      --accent: #f39c12;
-      --accent-glow: rgba(243, 156, 18, 0.15);
-      --text: #f5f5f7;
-      --muted: #8e8e93;
-      --border: #2c2c2e;
-      --success: #2ecc71;
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      margin: 0;
-      padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    header {
-      width: 100%;
-      max-width: 900px;
-      padding: 24px 0 16px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--accent-glow);
-      border: 1px solid var(--accent);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .nav-back {
-      color: var(--accent);
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    main {
-      width: 100%;
-      max-width: 900px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-    }
-
-    .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 30px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .upload-zone:hover {
-      border-color: var(--accent);
-      background: rgba(243, 156, 18, 0.05);
-    }
-
-    input[type="file"] {
-      display: none;
-    }
-
-    .controls-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: opacity 0.2s ease;
-    }
-
-    .btn:hover {
-      opacity: 0.9;
-    }
-
-    .btn-secondary {
-      background: #2c2c2e;
-      color: var(--text);
-    }
-
-    .btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    canvas#visualizer {
-      width: 100%;
-      height: 60px;
-      background: #111114;
-      border-radius: 8px;
-      margin-top: 12px;
-    }
-
-    /* Analysis Report Grid */
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #fff;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .metric-card {
-      background: #141417;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-    }
-
-    .metric-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .metric-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    /* Progressions & Suggestions */
-    .progression-box {
-      background: #141417;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    .chord-badge-list {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .chord-badge {
-      background: #242429;
-      border: 1px solid var(--accent);
-      color: #fff;
-      padding: 6px 14px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    .suggestion-item {
-      background: #141417;
-      border-left: 3px solid var(--accent);
-      padding: 14px;
-      border-radius: 0 10px 10px 0;
-      margin-bottom: 12px;
-    }
-
-    .suggestion-title {
-      font-weight: 600;
-      font-size: 0.95rem;
-      margin-bottom: 4px;
-      color: #fff;
-    }
-
-    .suggestion-desc {
-      font-size: 0.85rem;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    @media print {
-      body {
-        background: #fff !important;
-        color: #000 !important;
-      }
-      header, .upload-zone, .controls-row, canvas, .nav-back, footer {
-        display: none !important;
-      }
-      .panel {
-        border: none !important;
-        background: transparent !important;
-      }
-      .metric-card, .progression-box, .suggestion-item {
-        background: #f9f9f9 !important;
-        border: 1px solid #ddd !important;
-        color: #000 !important;
-      }
-      .metric-value, .suggestion-title, .section-title {
-        color: #000 !important;
-      }
-    }
-
-    footer {
-      margin-top: 30px;
-      color: var(--muted);
-      font-size: 0.8rem;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101014">
+<title>The Sonic Scope | Atomic Forge</title>
+<style>
+:root {
+  --bg:#101014; --panel:#1b1b22; --line:#34343e;
+  --text:#f5f5f7; --muted:#aaaab6; --accent:#f39c12;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; padding:20px; color:var(--text);
+  background:radial-gradient(ellipse at top,#292019,#101014 55%);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+header,main,footer { max-width:950px; margin:auto; }
+header {
+  display:flex; justify-content:space-between; align-items:center;
+  gap:12px; padding:15px 0 22px; border-bottom:1px solid var(--line);
+  margin-bottom:22px;
+}
+h1 { margin:0; font-size:clamp(23px,4vw,34px); }
+h2 { font-size:19px; margin:0 0 16px; }
+h3 { font-size:16px; margin:0 0 8px; }
+p { margin:8px 0; }
+a { color:var(--accent); text-decoration:none; }
+.muted { color:var(--muted); }
+.small { font-size:13px; }
+main { display:grid; gap:18px; }
+.panel {
+  background:linear-gradient(145deg,#202027,#17171d);
+  border:1px solid var(--line); border-radius:15px;
+  padding:clamp(16px,3vw,24px);
+}
+.upload {
+  display:block; text-align:center; padding:26px 14px;
+  border:2px dashed #55515a; border-radius:12px;
+  background:#111115; cursor:pointer;
+}
+.upload:hover { border-color:var(--accent); }
+.upload strong { display:block; font-size:17px; }
+.upload input { display:block; margin:12px auto 0; max-width:100%; }
+button,select {
+  border:1px solid #454550; border-radius:8px;
+  padding:10px 13px; font:inherit; cursor:pointer;
+}
+button { background:var(--accent); color:#19130a; font-weight:750; }
+button.secondary,select { background:#303039; color:var(--text); }
+button:disabled { opacity:.45; cursor:not-allowed; }
+.actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+audio { width:100%; margin-top:16px; }
+.status { margin-top:10px; color:var(--muted); font-size:13px; }
+.metrics {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+  gap:10px;
+}
+.metric {
+  background:#121217; border:1px solid var(--line);
+  border-radius:10px; padding:13px;
+}
+.label { color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:1px; }
+.value { color:var(--accent); font-size:21px; font-weight:800; margin-top:5px; }
+#spectrum { width:100%; height:100px; display:block; margin-top:14px; background:#111115; border-radius:8px; }
+.notes,.chords { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.tag {
+  background:#292932; border:1px solid #51412c;
+  border-radius:7px; padding:6px 10px; font-weight:650;
+}
+.ideas { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr)); gap:12px; }
+.idea {
+  border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:10px; padding:15px; background:#131318;
+  display:flex; flex-direction:column; gap:9px;
+}
+.idea p { color:#c7c7d0; font-size:13px; }
+.idea button { align-self:flex-start; margin-top:auto; }
+.warning {
+  margin-top:14px; padding:12px; border-radius:9px;
+  background:#f39c1210; border:1px solid #5b482b;
+  color:#e8d6b6; font-size:13px;
+}
+footer { padding:25px 0; color:var(--muted); font-size:12px; text-align:center; }
+@media(max-width:500px) {
+  body { padding:12px; }
+  header { align-items:flex-start; }
+}
+</style>
 </head>
 <body>
 
-  <header>
-    <div class="brand">
-      <div class="brand-icon">🔍</div>
-      <div>
-        <h1>The Sonic Scope</h1>
-        <span style="font-size: 0.8rem; color: var(--muted);">Harmonic & Musical Theory Analyzer</span>
+<header>
+  <div>
+    <h1>⌕ The Sonic Scope</h1>
+    <div class="muted">Guitar idea analyzer · Atomic Forge</div>
+  </div>
+  <a href="index.html">← Back to Forge</a>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>🎸 Bring in a musical idea</h2>
+    <label class="upload">
+      <strong>Choose an audio file</strong>
+      <span class="muted small">MP3, M4A, WAV or AAC · Processed locally</span>
+      <input id="file" type="file" accept="audio/*">
+    </label>
+    <audio id="player" controls></audio>
+    <div class="actions">
+      <button id="analyze">Analyze riff</button>
+      <button class="secondary" id="ideasButton">Refresh ideas</button>
+      <button class="secondary" onclick="window.print()">Print / Save PDF</button>
+    </div>
+    <div class="status" id="status">Choose an audio file to begin.</div>
+    <canvas id="spectrum"></canvas>
+    <div class="warning">
+      This is an experimental, single-file prototype. Musical results are estimates,
+      not a full guitar transcription. No account, API key or server upload is used.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>📊 Analysis snapshot</h2>
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">Likely key</div>
+        <div class="value" id="key">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Scale candidate</div>
+        <div class="value" id="scale">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Tempo estimate</div>
+        <div class="value" id="tempo">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Prominent notes</div>
+        <div class="value" id="noteCount">—</div>
       </div>
     </div>
-    <a href="index.html" class="nav-back">← Back to Forge</a>
-  </header>
+    <h3 style="margin-top:20px">Pitch-class profile</h3>
+    <div class="notes" id="notes"><span class="muted">Analysis will appear here.</span></div>
+    <h3 style="margin-top:20px">Chord candidates</h3>
+    <div class="chords" id="chords"><span class="muted">Not analyzed yet.</span></div>
+  </section>
 
-  <main>
-    <!-- Audio Import Panel -->
-    <div class="panel">
-      <div class="upload-zone" id="dropZone" onclick="document.getElementById('audioInput').click();">
-        <div style="font-size: 2rem; margin-bottom: 8px;">🎵</div>
-        <div style="font-weight: 600; font-size: 1rem;">Click or Drag Audio File to Analyze</div>
-        <div style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Supports M4A, MP3, WAV, AAC</div>
-        <input type="file" id="audioInput" accept="audio/*,.m4a,.mp3,.wav,.aac">
-      </div>
-
-      <div class="controls-row">
-        <button class="btn" id="playBtn" disabled>▶ Play Audio</button>
-        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Run Harmonic Analysis</button>
-        <button class="btn btn-secondary" id="pdfBtn">📄 Export Report (PDF)</button>
-        <span id="statusText" style="font-size: 0.85rem; color: var(--muted); margin-left: auto;">No audio loaded</span>
-      </div>
-
-      <canvas id="visualizer"></canvas>
+  <section class="panel">
+    <h2>💡 Creative development lab</h2>
+    <p class="muted small">
+      Explore alternative harmonic directions. Change the tonal centre to experiment
+      with different roots, even if the automatic key estimate is wrong.
+    </p>
+    <div class="actions">
+      <label for="root" class="muted">Tonal centre</label>
+      <select id="root"></select>
+      <label for="direction" class="muted">Style</label>
+      <select id="direction">
+        <option value="all">All directions</option>
+        <option value="heavy">Heavy / dark</option>
+        <option value="cinematic">Cinematic</option>
+        <option value="blues">Blues / soul</option>
+        <option value="adventurous">Adventurous harmony</option>
+        <option value="melodic">Songwriting</option>
+      </select>
     </div>
+    <div class="ideas" id="ideas" style="margin-top:16px"></div>
+  </section>
 
-    <!-- Harmonic Analysis Report Section -->
-    <div class="panel">
-      <div class="section-title">📊 Harmonic Audit & Musical Metadata</div>
-      
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-label">Detected Key Signature</div>
-          <div class="metric-value" id="resKey">E Minor</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Primary Scale / Mode</div>
-          <div class="metric-value" id="resScale">E Natural Minor (Aeolian)</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Estimated Tempo</div>
-          <div class="metric-value" id="resTempo">120 BPM</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">Harmonic Complexity</div>
-          <div class="metric-value" id="resComplexity">Moderate (Diatonic & Modal)</div>
-        </div>
-      </div>
+  <section class="panel">
+    <h2>🧭 How to use the results</h2>
+    <p class="muted">
+      Start with the suggested tonal centre, then compare the candidate chords against
+      your actual riff. Try one new chord at a time, preserve the riff's rhythmic
+      identity, and listen for how the melody's notes interact with the new harmony.
+    </p>
+    <p class="muted">
+      Distorted guitars, bends, drop tunings, bass notes and layered recordings can
+      confuse automated pitch estimates. A low-confidence result is a prompt to
+      experiment, not a reason to discard your ears.
+    </p>
+  </section>
+</main>
 
-      <div class="progression-box">
-        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">Detected Chord Progression Map</div>
-        <div class="chord-badge-list" id="resProgression">
-          <div class="chord-badge">Em</div>
-          <div class="chord-badge">G</div>
-          <div class="chord-badge">D</div>
-          <div class="chord-badge">Am</div>
-        </div>
-      </div>
-    </div>
+<footer>Atomic Forge · The Sonic Scope · Single-file local prototype</footer>
 
-    <!-- Compositional Development & Suggestions Section -->
-    <div class="panel">
-      <div class="section-title">💡 Compositional Development & Opportunities</div>
-      <div id="suggestionsList">
-        <div class="suggestion-item">
-          <div class="suggestion-title">Secondary Dominant Substitution (V7/iv)</div>
-          <div class="suggestion-desc">Introducing a B7 or B7(b9) before moving to the minor iv chord (Am) injects strong chromatic tension and classical voice-leading.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Modal Interchange / Borrowed Chords</div>
-          <div class="suggestion-desc">Try substituting the major G chord with a borrowed Cmaj7 or Fmaj7 from the parallel E major/minor Dorian mode for a lush, cinematic texture shift.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Relative Major Modulation (Bridge Opportunity)</div>
-          <div class="suggestion-desc">Transitioning into the relative major key (G major) for the chorus or bridge section opens up uplifting melodic arcs before returning to the dark moody home key of E minor.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Pedal Point Bass Line</div>
-          <div class="suggestion-desc">Maintain an open low E string as a continuous pedal tone underneath the chord sequence (Em – G/E – D/E – Am/E) to create suspension and atmospheric tension.</div>
-        </div>
-      </div>
-    </div>
-  </main>
+<script>
+(() => {
+  "use strict";
 
-  <footer>
-    Atomic Forge Suite • The Sonic Scope Analyzer
-  </footer>
+  const $ = id => document.getElementById(id);
+  const names = ["C","C♯","D","E♭","E","F","F♯","G","A♭","A","B♭","B"];
+  let audioBuffer = null;
+  let currentUrl = null;
 
-  <script>
-    let audioContext, audioBuffer, audioSource, analyser;
-    let isPlaying = false;
+  const rootSelect = $("root");
+  names.forEach((name, i) => {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = name;
+    rootSelect.appendChild(option);
+  });
 
-    const audioInput = document.getElementById('audioInput');
-    const playBtn = document.getElementById('playBtn');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const pdfBtn = document.getElementById('pdfBtn');
-    const statusText = document.getElementById('statusText');
-    const canvas = document.getElementById('visualizer');
-    const canvasCtx = canvas.getContext('2d');
+  $("file").addEventListener("change", async event => {
+    const file = event.target.files[0];
+    if (!file) return;
 
-    const resKey = document.getElementById('resKey');
-    const resScale = document.getElementById('resScale');
-    const resTempo = document.getElementById('resTempo');
-    const resComplexity = document.getElementById('resComplexity');
-    const resProgression = document.getElementById('resProgression');
+    if (currentUrl) URL.revokeObjectURL(currentUrl);
+    currentUrl = URL.createObjectURL(file);
+    $("player").src = currentUrl;
+    $("status").textContent = "Loading audio locally…";
+    $("analyze").disabled = true;
 
-    audioInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      statusText.textContent = "Loading audio...";
-      const arrayBuffer = await file.arrayBuffer();
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      audioContext.decodeAudioData(arrayBuffer, (buffer) => {
-        audioBuffer = buffer;
-        statusText.textContent = `Loaded (${Math.round(buffer.duration)}s)`;
-        playBtn.disabled = false;
-        analyzeBtn.disabled = false;
-      }, () => {
-        statusText.textContent = "Error decoding audio file.";
-      });
-    });
-
-    playBtn.addEventListener('click', () => {
-      if (isPlaying) {
-        stopAudio();
-      } else {
-        startAudio();
-      }
-    });
-
-    function startAudio() {
-      if (!audioBuffer) return;
-      audioSource = audioContext.createBufferSource();
-      audioSource.buffer = audioBuffer;
-      
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      
-      audioSource.connect(analyser);
-      analyser.connect(audioContext.destination);
-      
-      audioSource.start(0);
-      isPlaying = true;
-      playBtn.textContent = "⏸ Pause Audio";
-      statusText.textContent = "Playing...";
-
-      drawVisualizer();
-
-      audioSource.onended = () => {
-        stopAudio();
-      };
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      audioBuffer = await audioContext.decodeAudioData(await file.arrayBuffer());
+      await audioContext.close();
+      $("status").textContent =
+        `Loaded ${file.name} · ${audioBuffer.duration.toFixed(1)} seconds`;
+      $("analyze").disabled = false;
+      drawSpectrum(audioBuffer);
+    } catch (error) {
+      audioBuffer = null;
+      $("status").textContent =
+        "Could not read this file. Try a standard MP3 or WAV file.";
     }
+  });
 
-    function stopAudio() {
-      if (audioSource) {
-        audioSource.stop();
+  function drawSpectrum(buffer) {
+    const canvas = $("spectrum");
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width = Math.max(300, canvas.clientWidth * devicePixelRatio);
+    const height = canvas.height = 100 * devicePixelRatio;
+    const data = buffer.getChannelData(0);
+    const bars = 90;
+    const step = Math.max(1, Math.floor(data.length / bars));
+    ctx.clearRect(0, 0, width, height);
+
+    for (let i = 0; i < bars; i++) {
+      let peak = 0;
+      for (let j = i * step; j < Math.min(data.length, (i + 1) * step); j++) {
+        peak = Math.max(peak, Math.abs(data[j]));
       }
-      isPlaying = false;
-      playBtn.textContent = "▶ Play Audio";
-      statusText.textContent = "Stopped";
+      const barHeight = peak * height * 0.9;
+      ctx.fillStyle = "#f39c12";
+      ctx.fillRect(i * width / bars, height - barHeight,
+                   Math.max(1, width / bars - 2), barHeight);
     }
+  }
 
-    function drawVisualizer() {
-      if (!isPlaying) return;
-      requestAnimationFrame(drawVisualizer);
+  function fft(re, im) {
+    const n = re.length;
+    let j = 0;
 
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteFrequencyData(dataArray);
-
-      canvasCtx.fillStyle = '#111114';
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let barX = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height;
-        canvasCtx.fillStyle = '#f39c12';
-        canvasCtx.fillRect(barX, canvas.height - barHeight, barWidth, barHeight);
-        barX += barWidth + 1;
+    for (let i = 1; i < n; i++) {
+      let bit = n >> 1;
+      while (j & bit) { j ^= bit; bit >>= 1; }
+      j ^= bit;
+      if (i < j) {
+        [re[i], re[j]] = [re[j], re[i]];
+        [im[i], im[j]] = [im[j], im[i]];
       }
     }
 
-    analyzeBtn.addEventListener('click', () => {
-      statusText.textContent = "Analyzing musical spectrum...";
-      setTimeout(() => {
-        const keys = [
-          { key: 'A Minor', scale: 'A Natural Minor (Aeolian)', tempo: '116 BPM', chords: ['Am', 'F', 'C', 'G'] },
-          { key: 'E Minor', scale: 'E Minor Pentatonic / Blues', tempo: '124 BPM', chords: ['Em', 'G', 'D', 'Am'] },
-          { key: 'D Major', scale: 'D Ionian (Major Scale)', tempo: '108 BPM', chords: ['D', 'Bm', 'G', 'A'] },
-          { key: 'C Major', scale: 'C Major / Lydian Flavor', tempo: '112 BPM', chords: ['C', 'Am', 'F', 'G7'] }
-        ];
-        const selected = keys[Math.floor(Math.random() * keys.length)];
-        
-        resKey.textContent = selected.key;
-        resScale.textContent = selected.scale;
-        resTempo.textContent = selected.tempo;
-        resComplexity.textContent = "Rich Harmonic Structure";
-        
-        resProgression.innerHTML = '';
-        selected.chords.forEach(c => {
-          const badge = document.createElement('div');
-          badge.className = 'chord-badge';
-          badge.textContent = c;
-          resProgression.appendChild(badge);
+    for (let len = 2; len <= n; len <<= 1) {
+      const angle = -2 * Math.PI / len;
+      const wr0 = Math.cos(angle), wi0 = Math.sin(angle);
+
+      for (let i = 0; i < n; i += len) {
+        let wr = 1, wi = 0;
+        for (let k = 0; k < len / 2; k++) {
+          const u = i + k, v = i + k + len / 2;
+          const tr = re[v] * wr - im[v] * wi;
+          const ti = re[v] * wi + im[v] * wr;
+          re[v] = re[u] - tr;
+          im[v] = im[u] - ti;
+          re[u] += tr;
+          im[u] += ti;
+
+          const nextWr = wr * wr0 - wi * wi0;
+          wi = wr * wi0 + wi * wr0;
+          wr = nextWr;
+        }
+      }
+    }
+  }
+
+  function getPitchProfile(buffer) {
+    const samples = buffer.getChannelData(0);
+    const sampleRate = buffer.sampleRate;
+    const size = 8192, hop = 4096;
+    const chroma = Array(12).fill(0);
+    const energies = [];
+
+    for (let start = 0; start + size < samples.length; start += hop) {
+      const re = new Float64Array(size);
+      const im = new Float64Array(size);
+      let energy = 0;
+
+      for (let i = 0; i < size; i++) {
+        const value = samples[start + i];
+        energy += value * value;
+        re[i] = value * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (size - 1)));
+      }
+
+      energy = Math.sqrt(energy / size);
+      energies.push(energy);
+      fft(re, im);
+
+      const local = Array(12).fill(0);
+      const firstBin = Math.max(1, Math.ceil(55 * size / sampleRate));
+      const lastBin = Math.min(size / 2, Math.floor(1500 * size / sampleRate));
+
+      for (let k = firstBin; k < lastBin; k++) {
+        const magnitude = Math.hypot(re[k], im[k]);
+        const frequency = k * sampleRate / size;
+        const midi = Math.round(69 + 12 * Math.log2(frequency / 440));
+        const pitchClass = ((midi % 12) + 12) % 12;
+        local[pitchClass] += magnitude;
+      }
+
+      const total = local.reduce((a, b) => a + b, 0) || 1;
+      for (let i = 0; i < 12; i++) {
+        chroma[i] += (local[i] / total) * energy;
+      }
+    }
+
+    return { chroma, energies };
+  }
+
+  function findKey(chroma) {
+    const profiles = [
+      { name:"Major", values:[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88] },
+      { name:"Minor", values:[6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17] }
+    ];
+
+    const maximum = Math.max(...chroma) || 1;
+    const normalized = chroma.map(v => v / maximum);
+    let best = { score:-Infinity, root:0, name:"Major" };
+
+    for (let root = 0; root < 12; root++) {
+      for (const profile of profiles) {
+        const x = normalized.map((_, i) => normalized[(i + root) % 12]);
+        const y = profile.values;
+        const mx = x.reduce((a,b) => a+b,0) / 12;
+        const my = y.reduce((a,b) => a+b,0) / 12;
+        let numerator = 0, xx = 0, yy = 0;
+
+        for (let i = 0; i < 12; i++) {
+          numerator += (x[i] - mx) * (y[i] - my);
+          xx += (x[i] - mx) ** 2;
+          yy += (y[i] - my) ** 2;
+        }
+
+        const score = numerator / (Math.sqrt(xx * yy) || 1);
+        if (score > best.score) {
+          best = { score, root, name:profile.name };
+        }
+      }
+    }
+    return best;
+  }
+
+  function estimateTempo(energies, sampleRate) {
+    if (energies.length < 12) return null;
+
+    const flux = energies.map((v, i) =>
+      i ? Math.max(0, v - energies[i - 1]) : 0
+    );
+    const max = Math.max(...flux) || 1;
+    for (let i = 0; i < flux.length; i++) flux[i] /= max;
+
+    let best = { score:0, bpm:0 };
+    for (let bpm = 60; bpm <= 180; bpm++) {
+      const lag = Math.round((60 / bpm) * sampleRate / 4096);
+      if (lag < 1 || lag >= flux.length / 2) continue;
+
+      let score = 0;
+      for (let i = lag; i < flux.length; i++) {
+        score += flux[i] * flux[i - lag];
+      }
+      score /= flux.length - lag;
+
+      if (score > best.score) best = { score, bpm };
+    }
+    return best.bpm ? best.bpm : null;
+  }
+
+  const templates = [
+    { suffix:"", intervals:[0,4,7] },
+    { suffix:"m", intervals:[0,3,7] },
+    { suffix:"7", intervals:[0,4,7,10] },
+    { suffix:"m7", intervals:[0,3,7,10] },
+    { suffix:"maj7", intervals:[0,4,7,11] },
+    { suffix:"sus2", intervals:[0,2,7] },
+    { suffix:"sus4", intervals:[0,5,7] },
+    { suffix:"dim", intervals:[0,3,6] }
+  ];
+
+  function getChords(chroma) {
+    const max = Math.max(...chroma) || 1;
+    const values = chroma.map(v => v / max);
+    const results = [];
+
+    for (let root = 0; root < 12; root++) {
+      for (const template of templates) {
+        let score = 0;
+        for (let i = 0; i < 12; i++) {
+          const belongs = template.intervals.includes((i - root + 12) % 12);
+          score += values[i] * (belongs ? 1 : -0.35);
+        }
+        results.push({
+          name:names[root] + template.suffix,
+          score
+        });
+      }
+    }
+
+    return results.sort((a,b) => b.score - a.score).slice(0,5);
+  }
+
+  $("analyze").addEventListener("click", () => {
+    if (!audioBuffer) return;
+    $("status").textContent = "Analyzing audio on this device…";
+
+    setTimeout(() => {
+      try {
+        const result = getPitchProfile(audioBuffer);
+        const key = findKey(result.chroma);
+        const tempo = estimateTempo(result.energies, audioBuffer.sampleRate);
+        const maximum = Math.max(...result.chroma) || 1;
+
+        $("key").textContent = names[key.root] + (key.name === "Minor" ? " minor" : " major");
+        $("scale").textContent = key.name;
+        $("tempo").textContent = tempo ? tempo + " BPM*" : "Unclear";
+        $("noteCount").textContent =
+          result.chroma.filter(v => v > maximum * 0.17).length;
+
+        $("notes").replaceChildren();
+        result.chroma
+          .map((value, index) => ({value,index}))
+          .sort((a,b) => b.value - a.value)
+          .filter(item => item.value > maximum * 0.12)
+          .forEach(item => {
+            const span = document.createElement("span");
+            span.className = "tag";
+            span.textContent = names[item.index] + " · " +
+              Math.round(item.value / maximum * 100) + "%";
+            $("notes").appendChild(span);
+          });
+
+        $("chords").replaceChildren();
+        getChords(result.chroma).forEach(chord => {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = chord.name;
+          $("chords").appendChild(span);
         });
 
-        statusText.textContent = "Analysis complete!";
-      }, 900);
-    });
+        rootSelect.value = key.root;
+        renderIdeas();
+        $("status").textContent =
+          "Analysis complete. *Tempo is a rough estimate; half-time or double-time may fit.";
+      } catch (error) {
+        console.error(error);
+        $("status").textContent = "Analysis failed. Try a shorter audio file.";
+      }
+    }, 20);
+  });
 
-    pdfBtn.addEventListener('click', () => {
-      window.print();
-    });
-  </script>
+  function makeChord(root, suffix = "") {
+    return names[((root % 12) + 12) % 12] + suffix;
+  }
+
+  function buildIdeas(root) {
+    const r = Number(root);
+    return [
+      {
+        dir:"heavy", title:"Chromatic flat-two tension",
+        chords:[makeChord(r,"m"),makeChord(r+1),makeChord(r+5),makeChord(r+7,"7")],
+        why:"A ♭II chord creates a dark, tense move. Return to the home chord to make the riff feel grounded.",
+        tip:"Keep a low root pedal and move the upper chord shape."
+      },
+      {
+        dir:"heavy", title:"Minor riff with a dominant lift",
+        chords:[makeChord(r,"m"),makeChord(r+3),makeChord(r+7,"7"),makeChord(r,"m")],
+        why:"A major V7 chord introduces a leading tone that pulls strongly toward the minor tonic.",
+        tip:"Try a raised seventh in the melody for extra bite."
+      },
+      {
+        dir:"cinematic", title:"Wide, open harmony",
+        chords:[makeChord(r,"m(add9)"),makeChord(r+8,"maj7"),makeChord(r+3),makeChord(r+10,"sus2")],
+        why:"Extended chords and shared tones can create a spacious, cinematic sound.",
+        tip:"Use open strings, high-register notes and pauses between phrases."
+      },
+      {
+        dir:"cinematic", title:"Pedal-point landscape",
+        chords:[makeChord(r,"m"),makeChord(r+3),makeChord(r+7),makeChord(r+5)],
+        why:"Keep the same bass note beneath changing chords for tension and a suspended feeling.",
+        tip:"Hold the root in the bass while the guitar changes voicing."
+      },
+      {
+        dir:"blues", title:"Minor groove with soul",
+        chords:[makeChord(r,"m7"),makeChord(r+5,"7"),makeChord(r+3,"maj7"),makeChord(r+7,"7")],
+        why:"Minor sevenths and dominant chords bring a bluesy, soulful flavour to a rock idea.",
+        tip:"Answer the riff with short minor-pentatonic phrases."
+      },
+      {
+        dir:"blues", title:"Dorian lift",
+        chords:[makeChord(r,"m7"),makeChord(r+2,"m7"),makeChord(r+5,"7"),makeChord(r,"m7")],
+        why:"The Dorian sound combines a minor tonic with a brighter natural sixth.",
+        tip:"Emphasize the natural sixth in a melody and keep the groove steady."
+      },
+      {
+        dir:"adventurous", title:"Chromatic mediant",
+        chords:[makeChord(r,"m"),makeChord(r+8,"maj7"),makeChord(r+1),makeChord(r+7,"7")],
+        why:"A chord a third away can introduce surprising colour while retaining some shared tones.",
+        tip:"Connect chord tones using the smallest possible melodic movements."
+      },
+      {
+        dir:"adventurous", title:"Dominant approach",
+        chords:[makeChord(r,"m7"),makeChord(r+2,"7"),makeChord(r+7,"7"),makeChord(r,"m")],
+        why:"Secondary dominants can briefly pull the listener toward a new chord before returning home.",
+        tip:"Listen for the chord's third and seventh resolving by step."
+      },
+      {
+        dir:"melodic", title:"Build a verse and chorus",
+        chords:[makeChord(r,"m"),makeChord(r+3),makeChord(r+5),makeChord(r+7)],
+        why:"A simple progression can support a verse; a wider register and longer chords can open up the chorus.",
+        tip:"Keep the signature rhythm in one section and simplify it in the other."
+      },
+      {
+        dir:"melodic", title:"Develop the riff as a sequence",
+        chords:[makeChord(r,"m"),makeChord(r+2,"m"),makeChord(r+3),makeChord(r+5)],
+        why:"Repeat a recognizable melodic shape at a new pitch level, then change its ending.",
+        tip:"Preserve one rhythmic motif so the new section still feels related."
+      }
+    ];
+  }
+
+  function renderIdeas() {
+    const root = rootSelect.value;
+    const direction = $("direction").value;
+    const host = $("ideas");
+    host.replaceChildren();
+
+    buildIdeas(root)
+      .filter(idea => direction === "all" || idea.dir === direction)
+      .forEach(idea => {
+        const card = document.createElement("article");
+        card.className = "idea";
+
+        const heading = document.createElement("h3");
+        heading.textContent = idea.title;
+
+        const chordRow = document.createElement("div");
+        chordRow.className = "chords";
+        idea.chords.forEach(chord => {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = chord;
+          chordRow.appendChild(span);
+        });
+
+        const description = document.createElement("p");
+        description.textContent = idea.why;
+
+        const tip = document.createElement("p");
+        tip.textContent = "Try it: " + idea.tip;
+
+        const button = document.createElement("button");
+        button.className = "secondary";
+        button.textContent = "Copy progression";
+        button.addEventListener("click", async () => {
+          const text = idea.chords.join("  |  ");
+          try {
+            await navigator.clipboard.writeText(text);
+            button.textContent = "Copied!";
+          } catch {
+            window.prompt("Copy this progression:", text);
+          }
+        });
+
+        card.append(heading, chordRow, description, tip, button);
+        host.appendChild(card);
+      });
+  }
+
+  $("ideasButton").addEventListener("click", renderIdeas);
+  rootSelect.addEventListener("change", renderIdeas);
+  $("direction").addEventListener("change", renderIdeas);
+  renderIdeas();
+})();
+</script>
 </body>
 </html>
