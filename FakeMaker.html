@@ -74,10 +74,11 @@
           <i data-lucide="upload-cloud" class="text-amber-400 w-5 h-5"></i> Load Audio
         </h2>
         <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 text-center cursor-pointer transition bg-slate-950/50">
-          <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
+          <!-- Expanded accept attribute for broad compatibility across macOS/Windows file dialogs -->
+          <input type="file" id="audioFileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.wma" class="hidden" />
           <i data-lucide="music" class="w-10 h-10 text-slate-500 mx-auto mb-2"></i>
           <p class="text-sm text-slate-300 font-medium">Click to upload or drag & drop</p>
-          <p class="text-xs text-slate-500 mt-1">MP3, WAV, AAC, OGG, FLAC</p>
+          <p class="text-xs text-slate-500 mt-1">MP3, WAV, M4A, FLAC, AAC, OGG</p>
         </div>
         <div id="fileInfo" class="mt-3 hidden text-xs text-amber-400 flex items-center gap-2 bg-amber-500/10 p-2 rounded border border-amber-500/20">
           <i data-lucide="file-audio" class="w-4 h-4 shrink-0"></i>
@@ -207,7 +208,6 @@ Watch the tempo steady go</textarea>
             <i data-lucide="git-commit" class="w-4 h-4 text-amber-400"></i> Main Lick (Graphical Tablature)
           </h3>
           <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto">
-            <!-- Canvas where tab staff and frets are rendered as vector graphics -->
             <canvas id="tabCanvas" width="700" height="150" class="w-full min-w-[600px] block"></canvas>
           </div>
         </div>
@@ -328,25 +328,36 @@ Watch the tempo steady go
       sheetAudioName.innerText = file.name;
       fileInfo.classList.remove('hidden');
 
-      const arrayBuffer = await file.arrayBuffer();
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-      audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
-        audioBuffer = buffer;
-        analyzeAudio(buffer);
-        drawWaveform(buffer);
-        exportPdfBtn.disabled = false;
-      }, (err) => {
-        alert('Error decoding audio file: ' + err);
-      });
+        audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+          audioBuffer = buffer;
+          analyzeAudio(buffer);
+          drawWaveform(buffer);
+          exportPdfBtn.disabled = false;
+        }, (err) => {
+          console.warn('Decoding error via Web Audio, allowing manual sheet override:', err);
+          exportPdfBtn.disabled = false; // still allow PDF generation even if codec decode hits a snag
+        });
+      } catch (err) {
+        console.error('File read error:', err);
+      }
+
+      // Auto-populate title from filename immediately
+      if (songTitleInput.value === 'Untitled Track' && file.name) {
+        const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        songTitleInput.value = cleanName;
+        sheetTitle.innerText = cleanName;
+      }
     }
 
-    // Simple Peak/Autocorrelation BPM & Key estimation heuristic
+    // Simple Peak/Autocorrelation BPM estimation heuristic
     function analyzeAudio(buffer) {
       const channelData = buffer.getChannelData(0);
       const sampleRate = buffer.sampleRate;
 
-      // 1. Peak detection for rough BPM estimation
       let peaks = [];
       const step = Math.floor(sampleRate / 10);
       for (let i = 0; i < channelData.length; i += step) {
@@ -358,7 +369,6 @@ Watch the tempo steady go
         if (max > 0.3) peaks.push(i);
       }
 
-      // Calculate average interval between peaks
       let intervals = [];
       for (let i = 1; i < peaks.length; i++) {
         intervals.push(peaks[i] - peaks[i - 1]);
@@ -369,19 +379,11 @@ Watch the tempo steady go
         const secondsPerBeat = avgInterval / sampleRate;
         let estimatedBpm = Math.round(60 / secondsPerBeat);
         
-        // Clamp to plausible musical range
         while (estimatedBpm < 70) estimatedBpm *= 2;
         while (estimatedBpm > 170) estimatedBpm /= 2;
 
         bpmInput.value = Math.round(estimatedBpm);
         sheetBpm.innerText = Math.round(estimatedBpm);
-      }
-
-      // Auto-populate title if missing
-      if (songTitleInput.value === 'Untitled Track' && fileName.innerText) {
-        const cleanName = fileName.innerText.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        songTitleInput.value = cleanName;
-        sheetTitle.innerText = cleanName;
       }
     }
 
@@ -417,7 +419,7 @@ Watch the tempo steady go
       ctx.stroke();
     }
 
-    // Render Graphical Tablature Canvas (Graphical lines, frets, and string markers)
+    // Render Graphical Tablature Canvas
     function renderGraphicalTab() {
       const ctx = tabCanvas.getContext('2d');
       const width = tabCanvas.width;
@@ -425,7 +427,6 @@ Watch the tempo steady go
 
       ctx.clearRect(0, 0, width, height);
 
-      // Background
       ctx.fillStyle = '#020617';
       ctx.fillRect(0, 0, width, height);
 
@@ -435,26 +436,22 @@ Watch the tempo steady go
       const startX = 40;
       const endX = width - 20;
 
-      // Draw 6 guitar staff lines
       ctx.strokeStyle = '#475569';
       ctx.lineWidth = 1;
 
       strings.forEach((str, idx) => {
         const y = topPadding + (idx * lineSpacing);
         
-        // Label
         ctx.fillStyle = '#94a3b8';
         ctx.font = 'bold 12px monospace';
         ctx.fillText(str, 15, y + 4);
 
-        // Staff line
         ctx.beginPath();
         ctx.moveTo(startX, y);
         ctx.lineTo(endX, y);
         ctx.stroke();
       });
 
-      // Parse and draw notes
       const notesRaw = tabNotesInput.value.split(',');
       let currentX = startX + 30;
       const stepX = Math.min(50, (endX - startX - 40) / Math.max(notesRaw.length, 1));
@@ -471,7 +468,6 @@ Watch the tempo steady go
           const strName = parts[0].trim();
           fretVal = parts[1].trim();
 
-          // Match string name or index
           if (!isNaN(strName)) {
             stringIdx = parseInt(strName) - 1;
           } else {
@@ -482,19 +478,16 @@ Watch the tempo steady go
         if (stringIdx >= 0 && stringIdx < 6) {
           const y = topPadding + (stringIdx * lineSpacing);
 
-          // Clear area behind note for clarity
           ctx.fillStyle = '#020617';
           ctx.beginPath();
           ctx.arc(currentX, y, 9, 0, Math.PI * 2);
           ctx.fill();
 
-          // Draw fret marker node
           ctx.fillStyle = '#f59e0b';
           ctx.beginPath();
           ctx.arc(currentX, y, 8, 0, Math.PI * 2);
           ctx.fill();
 
-          // Draw fret number text
           ctx.fillStyle = '#020617';
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
@@ -510,7 +503,6 @@ Watch the tempo steady go
     exportPdfBtn.addEventListener('click', () => {
       const element = document.getElementById('fakeSheetCard');
 
-      // Temporarily adapt element for print styling
       element.classList.add('pdf-page');
 
       const opt = {
@@ -528,7 +520,6 @@ Watch the tempo steady go
 
     // Initial render
     renderGraphicalTab();
-    // Blank waveform placeholder
     const wCtx = waveformCanvas.getContext('2d');
     wCtx.fillStyle = '#020617';
     wCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
