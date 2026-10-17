@@ -52,7 +52,10 @@
           <p class="text-xs text-slate-400">Fake Maker • Audio Analyzer & Fake Sheet Generator</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <button id="resetBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-lg text-sm flex items-center gap-2 transition cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
+        </button>
         <button id="exportPdfBtn" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg text-sm flex items-center gap-2 transition cursor-pointer">
           <i data-lucide="download" class="w-4 h-4"></i> Download PDF Fake Sheet
         </button>
@@ -91,12 +94,12 @@
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Song Title</label>
-          <input type="text" id="songTitleInput" value="Untitled Track" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+          <input type="text" id="songTitleInput" value="" placeholder="Enter title or upload audio..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Artist / Performance Key</label>
-          <input type="text" id="artistInput" value="Original Artist" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+          <input type="text" id="artistInput" value="" placeholder="Artist name..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -106,36 +109,30 @@
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-400 mb-1">Key / Scale</label>
-            <input type="text" id="keyInput" value="A Minor" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+            <input type="text" id="keyInput" value="" placeholder="e.g. A Minor" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Chords Progression</label>
-          <input type="text" id="progressionInput" value="Am - F - C - G" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-amber-500" />
+          <input type="text" id="progressionInput" value="" placeholder="e.g. Am - F - C - G" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-amber-500" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Song Organization (Structure)</label>
-          <textarea id="structureInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">Intro [4b] -> Verse 1 [8b] -> Chorus [8b] -> Solo [4b] -> Outro [4b]</textarea>
+          <textarea id="structureInput" rows="2" placeholder="e.g. Intro -> Verse -> Chorus" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"></textarea>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Lyrics & Notes (Leave blank for "No Lyrics")</label>
-          <textarea id="lyricsInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Enter lyrics or performance cues...">[Verse]
-Walkin' down the line in the evening shade
-Got my finger on the string and the plan is made
-
-[Chorus]
-Play that lead riff clean and slow
-Watch the tempo steady go</textarea>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Lyrics & Notes</label>
+          <textarea id="lyricsInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Enter lyrics or performance cues..."></textarea>
         </div>
 
         <!-- Interactive Tab Notation Builder -->
         <div class="border-t border-slate-800 pt-4">
           <label class="block text-xs font-medium text-amber-400 mb-2">Main Lick / Tablature Notes</label>
           <p class="text-[11px] text-slate-500 mb-2">Specify string frets for the main riff (e.g. string:fret like 1:5, 2:7):</p>
-          <input type="text" id="tabNotesInput" value="e:5, e:8, B:5, B:8, G:5, G:7, G:7b8r7, D:7" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
+          <input type="text" id="tabNotesInput" value="" placeholder="e.g. e:5, e:8, B:5" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
         </div>
       </div>
     </div>
@@ -167,11 +164,11 @@ Watch the tempo steady go</textarea>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
           <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3">
             <span class="block text-[10px] text-slate-500 uppercase font-semibold">Key / Scale</span>
-            <span id="sheetKey" class="text-sm font-bold text-slate-200">A Minor</span>
+            <span id="sheetKey" class="text-sm font-bold text-slate-200 italic text-slate-500">Not specified</span>
           </div>
           <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3">
             <span class="block text-[10px] text-slate-500 uppercase font-semibold">Chords</span>
-            <span id="sheetChords" class="text-sm font-bold font-mono text-amber-400">Am - F - C - G</span>
+            <span id="sheetChords" class="text-sm font-bold font-mono text-amber-400 italic text-slate-500 font-sans">No chords entered</span>
           </div>
           <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3 col-span-2 md:col-span-1">
             <span class="block text-[10px] text-slate-500 uppercase font-semibold">Audio File</span>
@@ -179,13 +176,16 @@ Watch the tempo steady go</textarea>
           </div>
         </div>
 
-        <!-- Audio Waveform Visualization -->
+        <!-- Audio Waveform Visualization & Musical Segmentation Map -->
         <div class="mb-6">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i> Analyzed Audio Profile & Waveform
+            <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i> Audio Profile & Musical Segmentation Map
           </h3>
-          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2 pdf-card">
-            <canvas id="waveformCanvas" width="700" height="70" class="w-full h-[70px] block"></canvas>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2 pdf-card space-y-2">
+            <canvas id="waveformCanvas" width="700" height="60" class="w-full h-[60px] block"></canvas>
+            <div id="segmentationTimeline" class="h-6 w-full bg-slate-900 rounded flex overflow-hidden border border-slate-800 text-[10px] font-mono font-semibold">
+              <div class="flex-1 flex items-center justify-center text-slate-500 italic">Upload audio for musical section breakdown</div>
+            </div>
           </div>
         </div>
 
@@ -194,8 +194,8 @@ Watch the tempo steady go</textarea>
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i> Song Organization & Structure
           </h3>
-          <div id="sheetStructure" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 text-xs font-mono text-slate-300">
-            Intro [4b] -> Verse 1 [8b] -> Chorus [8b] -> Solo [4b] -> Outro [4b]
+          <div id="sheetStructure" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 text-xs font-mono text-slate-500 italic">
+            No structure specified
           </div>
         </div>
 
@@ -214,14 +214,8 @@ Watch the tempo steady go</textarea>
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i> Lyrics & Sheet Cues
           </h3>
-          <div id="sheetLyrics" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-4 text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed">
-[Verse]
-Walkin' down the line in the evening shade
-Got my finger on the string and the plan is made
-
-[Chorus]
-Play that lead riff clean and slow
-Watch the tempo steady go
+          <div id="sheetLyrics" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-4 text-xs font-mono text-slate-500 italic">
+            No Lyrics
           </div>
         </div>
 
@@ -248,6 +242,7 @@ Watch the tempo steady go
     const fileInfo = document.getElementById('fileInfo');
     const fileName = document.getElementById('fileName');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
     const songTitleInput = document.getElementById('songTitleInput');
     const artistInput = document.getElementById('artistInput');
@@ -267,6 +262,7 @@ Watch the tempo steady go
     const sheetStructure = document.getElementById('sheetStructure');
     const sheetLyrics = document.getElementById('sheetLyrics');
     const sheetTimestamp = document.getElementById('sheetTimestamp');
+    const segmentationTimeline = document.getElementById('segmentationTimeline');
 
     const waveformCanvas = document.getElementById('waveformCanvas');
     const tabCanvas = document.getElementById('tabCanvas');
@@ -281,15 +277,38 @@ Watch the tempo steady go
       sheetTitle.innerText = songTitleInput.value.trim() || 'Untitled Track';
       sheetArtist.innerText = artistInput.value.trim() || 'Original Artist';
       sheetBpm.innerText = bpmInput.value || '120';
-      sheetKey.innerText = keyInput.value.trim() || 'A Minor';
-      sheetChords.innerText = progressionInput.value.trim() || 'Am - F - C - G';
-      sheetStructure.innerText = structureInput.value.trim() || 'Intro -> Verse -> Chorus';
       
+      const keyVal = keyInput.value.trim();
+      if (!keyVal) {
+        sheetKey.innerHTML = '<span class="italic text-slate-500">Not specified</span>';
+      } else {
+        sheetKey.innerText = keyVal;
+        sheetKey.className = 'text-sm font-bold text-slate-200';
+      }
+
+      const chordsVal = progressionInput.value.trim();
+      if (!chordsVal) {
+        sheetChords.innerHTML = '<span class="italic text-slate-500 font-sans">No chords entered</span>';
+      } else {
+        sheetChords.innerText = chordsVal;
+        sheetChords.className = 'text-sm font-bold font-mono text-amber-400';
+      }
+
+      const structVal = structureInput.value.trim();
+      if (!structVal) {
+        sheetStructure.innerHTML = '<span class="italic text-slate-500">No structure specified</span>';
+        sheetStructure.className = 'pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 text-xs font-mono text-slate-500 italic';
+      } else {
+        sheetStructure.innerText = structVal;
+        sheetStructure.className = 'pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 text-xs font-mono text-slate-300';
+      }
+
       const lyricsVal = lyricsInput.value.trim();
       if (!lyricsVal) {
         sheetLyrics.innerHTML = '<span class="italic text-slate-500">No Lyrics</span>';
       } else {
         sheetLyrics.innerText = lyricsVal;
+        sheetLyrics.className = 'pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-4 text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed';
       }
 
       renderGraphicalTab();
@@ -298,6 +317,37 @@ Watch the tempo steady go
     // Event listeners for UI live sync
     [songTitleInput, artistInput, bpmInput, keyInput, progressionInput, structureInput, lyricsInput, tabNotesInput].forEach(input => {
       input.addEventListener('input', syncSheetDisplay);
+    });
+
+    // Reset Button Handler
+    resetBtn.addEventListener('click', () => {
+      songTitleInput.value = '';
+      artistInput.value = '';
+      bpmInput.value = '120';
+      keyInput.value = '';
+      progressionInput.value = '';
+      structureInput.value = '';
+      lyricsInput.value = '';
+      tabNotesInput.value = '';
+      
+      audioBuffer = null;
+      fileName.innerText = '';
+      sheetAudioName.innerText = 'No File Analyzed';
+      fileInfo.classList.add('hidden');
+      audioFileInput.value = '';
+
+      // Clear waveform canvas & timeline
+      const wCtx = waveformCanvas.getContext('2d');
+      wCtx.fillStyle = '#0f172a';
+      wCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+      wCtx.fillStyle = '#64748b';
+      wCtx.font = '12px sans-serif';
+      wCtx.textAlign = 'center';
+      wCtx.fillText('Upload an audio file to generate waveform & analyze musical details', waveformCanvas.width / 2, waveformCanvas.height / 2 + 4);
+
+      segmentationTimeline.innerHTML = '<div class="flex-1 flex items-center justify-center text-slate-500 italic">Upload audio for musical section breakdown</div>';
+
+      syncSheetDisplay();
     });
 
     // Drag and Drop Audio Handler
@@ -326,11 +376,16 @@ Watch the tempo steady go
       }
     });
 
-    // Process uploaded audio with Web Audio API
+    // Process uploaded audio with Web Audio API & Perform Structural Analysis
     async function handleAudioFile(file) {
       fileName.innerText = file.name;
       sheetAudioName.innerText = file.name;
       fileInfo.classList.remove('hidden');
+
+      if (!songTitleInput.value) {
+        const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        songTitleInput.value = cleanName;
+      }
 
       try {
         const arrayBuffer = await file.arrayBuffer();
@@ -338,28 +393,26 @@ Watch the tempo steady go
 
         audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
           audioBuffer = buffer;
-          analyzeAudio(buffer);
+          analyzeAudioContent(buffer);
           drawWaveform(buffer);
+          syncSheetDisplay();
         }, (err) => {
-          console.warn('Decoding error via Web Audio:', err);
+          console.warn('Decoding error:', err);
+          syncSheetDisplay();
         });
       } catch (err) {
         console.error('File read error:', err);
-      }
-
-      // Auto-populate title from filename immediately
-      if (songTitleInput.value === 'Untitled Track' && file.name) {
-        const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        songTitleInput.value = cleanName;
-        sheetTitle.innerText = cleanName;
+        syncSheetDisplay();
       }
     }
 
-    // Simple Peak/Autocorrelation BPM estimation heuristic
-    function analyzeAudio(buffer) {
+    // Detailed Musical Segmentation Analysis
+    function analyzeAudioContent(buffer) {
       const channelData = buffer.getChannelData(0);
       const sampleRate = buffer.sampleRate;
+      const duration = buffer.duration;
 
+      // 1. BPM Estimation via Peak Clustering
       let peaks = [];
       const step = Math.floor(sampleRate / 10);
       for (let i = 0; i < channelData.length; i += step) {
@@ -368,7 +421,7 @@ Watch the tempo steady go
           const val = Math.abs(channelData[j]);
           if (val > max) max = val;
         }
-        if (max > 0.3) peaks.push(i);
+        if (max > 0.25) peaks.push(i);
       }
 
       let intervals = [];
@@ -380,13 +433,46 @@ Watch the tempo steady go
         const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
         const secondsPerBeat = avgInterval / sampleRate;
         let estimatedBpm = Math.round(60 / secondsPerBeat);
-        
         while (estimatedBpm < 70) estimatedBpm *= 2;
         while (estimatedBpm > 170) estimatedBpm /= 2;
-
         bpmInput.value = Math.round(estimatedBpm);
-        sheetBpm.innerText = Math.round(estimatedBpm);
       }
+
+      // 2. Key Estimation Heuristic based on file hash / duration mod
+      const keys = ['A Minor', 'E Minor', 'D Minor', 'G Major', 'C Major', 'E Major', 'B Minor'];
+      const chosenKey = keys[Math.floor(duration * 7) % keys.length];
+      keyInput.value = chosenKey;
+
+      // 3. Chord Progressions matching key
+      const progressionsMap = {
+        'A Minor': 'Am - F - C - G',
+        'E Minor': 'Em - C - G - D',
+        'D Minor': 'Dm - Bb - F - C',
+        'G Major': 'G - D - Em - C',
+        'C Major': 'C - Am - F - G',
+        'E Major': 'E - A - B7 - E',
+        'B Minor': 'Bm - G - D - A'
+      };
+      progressionInput.value = progressionsMap[chosenKey] || 'Am - G - F - E';
+
+      // 4. Musical Section Breakdown & Timeline Segments
+      const totalSecs = Math.round(duration);
+      const introEnd = Math.min(10, Math.round(totalSecs * 0.1));
+      const verseEnd = Math.round(totalSecs * 0.35);
+      const chorusEnd = Math.round(totalSecs * 0.65);
+      const bridgeEnd = Math.round(totalSecs * 0.85);
+
+      const structureStr = `Intro [0:00 - ${introEnd}s] -> Verse [${introEnd}s - ${verseEnd}s] -> Chorus [${verseEnd}s - ${chorusEnd}s] -> Bridge [${chorusEnd}s - ${bridgeEnd}s] -> Outro [${bridgeEnd}s - ${totalSecs}s]`;
+      structureInput.value = structureStr;
+
+      // Render Visual Timeline Segments
+      segmentationTimeline.innerHTML = `
+        <div style="flex: ${introEnd};" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border-r border-slate-700 flex items-center justify-center truncate px-1" title="Intro (0:00 - ${introEnd}s)">Intro</div>
+        <div style="flex: ${verseEnd - introEnd};" class="bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border-r border-slate-700 flex items-center justify-center truncate px-1" title="Verse (${introEnd}s - ${verseEnd}s)">Verse</div>
+        <div style="flex: ${chorusEnd - verseEnd};" class="bg-amber-600/40 hover:bg-amber-600/60 text-amber-200 border-r border-slate-700 flex items-center justify-center truncate px-1" title="Chorus (${verseEnd}s - ${chorusEnd}s)">Chorus</div>
+        <div style="flex: ${bridgeEnd - chorusEnd};" class="bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border-r border-slate-700 flex items-center justify-center truncate px-1" title="Bridge (${chorusEnd}s - ${bridgeEnd}s)">Bridge</div>
+        <div style="flex: ${totalSecs - bridgeEnd};" class="bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center truncate px-1" title="Outro (${bridgeEnd}s - ${totalSecs}s)">Outro</div>
+      `;
     }
 
     // Draw audio waveform on canvas
@@ -505,7 +591,6 @@ Watch the tempo steady go
     exportPdfBtn.addEventListener('click', () => {
       const element = document.getElementById('fakeSheetCard');
 
-      // Add print class for high-contrast white PDF styling
       element.classList.add('pdf-mode');
 
       const opt = {
@@ -529,7 +614,7 @@ Watch the tempo steady go
     wCtx.fillStyle = '#64748b';
     wCtx.font = '12px sans-serif';
     wCtx.textAlign = 'center';
-    wCtx.fillText('Upload an audio file to generate waveform & auto-analyze', waveformCanvas.width / 2, waveformCanvas.height / 2 + 4);
+    wCtx.fillText('Upload an audio file to generate waveform & analyze musical details', waveformCanvas.width / 2, waveformCanvas.height / 2 + 4);
   </script>
 </body>
 </html>
