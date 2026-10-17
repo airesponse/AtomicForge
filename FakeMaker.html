@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Maker | Atomic Forge</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2pdf.js for exporting styled PDF reports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .accent-glow {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+    }
+    /* Styles specifically optimized for PDF render */
+    .pdf-page {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      font-family: Arial, sans-serif;
+    }
+    .pdf-page .pdf-card {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    .pdf-page .pdf-text-muted {
+      color: #64748b !important;
+    }
+    .pdf-page .pdf-badge {
+      background-color: #e0f2fe !important;
+      color: #0369a1 !important;
+      border: 1px solid #bae6fd !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Navigation Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold text-xl accent-glow">
+          ⚡
+        </div>
+        <div>
+          <h1 class="font-bold text-xl tracking-wide text-amber-400">ATOMIC FORGE</h1>
+          <p class="text-xs text-slate-400">Fake Maker • Audio Analyzer & Fake Sheet Generator</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportPdfBtn" disabled class="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg text-sm flex items-center gap-2 transition">
+          <i data-lucide="download" class="w-4 h-4"></i> Download PDF Fake Sheet
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Controls & Input Column -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- Audio Upload Box -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+        <h2 class="text-lg font-semibold text-slate-200 mb-3 flex items-center gap-2">
+          <i data-lucide="upload-cloud" class="text-amber-400 w-5 h-5"></i> Load Audio
+        </h2>
+        <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 text-center cursor-pointer transition bg-slate-950/50">
+          <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
+          <i data-lucide="music" class="w-10 h-10 text-slate-500 mx-auto mb-2"></i>
+          <p class="text-sm text-slate-300 font-medium">Click to upload or drag & drop</p>
+          <p class="text-xs text-slate-500 mt-1">MP3, WAV, AAC, OGG, FLAC</p>
+        </div>
+        <div id="fileInfo" class="mt-3 hidden text-xs text-amber-400 flex items-center gap-2 bg-amber-500/10 p-2 rounded border border-amber-500/20">
+          <i data-lucide="file-audio" class="w-4 h-4 shrink-0"></i>
+          <span id="fileName" class="truncate font-mono"></span>
+        </div>
+      </div>
+
+      <!-- Analysis Config & Manual Overrides -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+        <h2 class="text-lg font-semibold text-slate-200 flex items-center gap-2">
+          <i data-lucide="sliders" class="text-amber-400 w-5 h-5"></i> Details & Structure
+        </h2>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Song Title</label>
+          <input type="text" id="songTitleInput" value="Untitled Track" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Artist / Performance Key</label>
+          <input type="text" id="artistInput" value="Original Artist" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Detected BPM</label>
+            <input type="number" id="bpmInput" value="120" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-amber-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Key / Scale</label>
+            <input type="text" id="keyInput" value="A Minor" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Chords Progression</label>
+          <input type="text" id="progressionInput" value="Am - F - C - G" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:border-amber-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Song Organization (Structure)</label>
+          <textarea id="structureInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">Intro [4b] -> Verse 1 [8b] -> Chorus [8b] -> Solo [4b] -> Outro [4b]</textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Lyrics & Notes</label>
+          <textarea id="lyricsInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Enter lyrics or performance cues...">[Verse]
+Walkin' down the line in the evening shade
+Got my finger on the string and the plan is made
+
+[Chorus]
+Play that lead riff clean and slow
+Watch the tempo steady go</textarea>
+        </div>
+
+        <!-- Interactive Tab Notation Builder -->
+        <div class="border-t border-slate-800 pt-4">
+          <label class="block text-xs font-medium text-amber-400 mb-2">Main Lick / Tablature Notes</label>
+          <p class="text-[11px] text-slate-500 mb-2">Specify string frets for the main riff (e.g. string:fret like 1:5, 2:7):</p>
+          <input type="text" id="tabNotesInput" value="e:5, e:8, B:5, B:8, G:5, G:7, G:7b8r7, D:7" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Live Preview Sheet Column -->
+    <div class="lg:col-span-8">
+      
+      <div id="fakeSheetCard" class="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-2xl relative">
+        
+        <!-- Header Sheet Banner -->
+        <div class="border-b-2 border-amber-500/30 pb-4 mb-6 flex justify-between items-start">
+          <div>
+            <span id="sheetBadge" class="text-[10px] font-bold tracking-widest uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full">
+              ATOMIC FORGE • FAKE SHEET
+            </span>
+            <h1 id="sheetTitle" class="text-3xl font-extrabold text-slate-100 tracking-tight mt-2">Untitled Track</h1>
+            <p id="sheetArtist" class="text-sm font-medium text-slate-400 mt-0.5">Original Artist</p>
+          </div>
+          <div class="text-right">
+            <div class="inline-block bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-center">
+              <span class="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">TEMPO</span>
+              <span id="sheetBpm" class="text-2xl font-bold font-mono text-amber-400">120</span>
+              <span class="text-xs text-slate-400 font-mono">BPM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Summary Bar -->
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+            <span class="block text-[10px] text-slate-500 uppercase font-semibold">Key / Scale</span>
+            <span id="sheetKey" class="text-sm font-bold text-slate-200">A Minor</span>
+          </div>
+          <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3">
+            <span class="block text-[10px] text-slate-500 uppercase font-semibold">Chords</span>
+            <span id="sheetChords" class="text-sm font-bold font-mono text-amber-400">Am - F - C - G</span>
+          </div>
+          <div class="pdf-card bg-slate-950/60 border border-slate-800 rounded-lg p-3 col-span-2 md:col-span-1">
+            <span class="block text-[10px] text-slate-500 uppercase font-semibold">Audio File</span>
+            <span id="sheetAudioName" class="text-xs text-slate-400 truncate block font-mono">No File Analyzed</span>
+          </div>
+        </div>
+
+        <!-- Audio Waveform Visualization -->
+        <div class="mb-6">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i> Analyzed Audio Profile & Waveform
+          </h3>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2">
+            <canvas id="waveformCanvas" width="700" height="70" class="w-full h-[70px] block"></canvas>
+          </div>
+        </div>
+
+        <!-- Song Organization / Structure -->
+        <div class="mb-6">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i> Song Organization & Structure
+          </h3>
+          <div id="sheetStructure" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-3 text-xs font-mono text-slate-300">
+            Intro [4b] -> Verse 1 [8b] -> Chorus [8b] -> Solo [4b] -> Outro [4b]
+          </div>
+        </div>
+
+        <!-- Graphical Tablature Section -->
+        <div class="mb-6">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="git-commit" class="w-4 h-4 text-amber-400"></i> Main Lick (Graphical Tablature)
+          </h3>
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto">
+            <!-- Canvas where tab staff and frets are rendered as vector graphics -->
+            <canvas id="tabCanvas" width="700" height="150" class="w-full min-w-[600px] block"></canvas>
+          </div>
+        </div>
+
+        <!-- Lyrics & Lead Sheet Notes -->
+        <div class="mb-4">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i> Lyrics & Sheet Cues
+          </h3>
+          <div id="sheetLyrics" class="pdf-card bg-slate-950/40 border border-slate-800/80 rounded-lg p-4 text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed">
+[Verse]
+Walkin' down the line in the evening shade
+Got my finger on the string and the plan is made
+
+[Chorus]
+Play that lead riff clean and slow
+Watch the tempo steady go
+          </div>
+        </div>
+
+        <!-- Sheet Footer -->
+        <div class="mt-8 border-t border-slate-800 pt-3 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+          <span>Generated via Atomic Forge • Fake Maker</span>
+          <span id="sheetTimestamp"></span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Script Initialization and Functionality -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Elements
+    const dropZone = document.getElementById('dropZone');
+    const audioFileInput = document.getElementById('audioFileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+
+    const songTitleInput = document.getElementById('songTitleInput');
+    const artistInput = document.getElementById('artistInput');
+    const bpmInput = document.getElementById('bpmInput');
+    const keyInput = document.getElementById('keyInput');
+    const progressionInput = document.getElementById('progressionInput');
+    const structureInput = document.getElementById('structureInput');
+    const lyricsInput = document.getElementById('lyricsInput');
+    const tabNotesInput = document.getElementById('tabNotesInput');
+
+    const sheetTitle = document.getElementById('sheetTitle');
+    const sheetArtist = document.getElementById('sheetArtist');
+    const sheetBpm = document.getElementById('sheetBpm');
+    const sheetKey = document.getElementById('sheetKey');
+    const sheetChords = document.getElementById('sheetChords');
+    const sheetAudioName = document.getElementById('sheetAudioName');
+    const sheetStructure = document.getElementById('sheetStructure');
+    const sheetLyrics = document.getElementById('sheetLyrics');
+    const sheetTimestamp = document.getElementById('sheetTimestamp');
+
+    const waveformCanvas = document.getElementById('waveformCanvas');
+    const tabCanvas = document.getElementById('tabCanvas');
+
+    let audioBuffer = null;
+
+    // Set timestamp
+    sheetTimestamp.innerText = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // Sync input fields with live sheet display
+    function syncSheetDisplay() {
+      sheetTitle.innerText = songTitleInput.value || 'Untitled Track';
+      sheetArtist.innerText = artistInput.value || 'Original Artist';
+      sheetBpm.innerText = bpmInput.value || '120';
+      sheetKey.innerText = keyInput.value || 'A Minor';
+      sheetChords.innerText = progressionInput.value || 'Am - F - C - G';
+      sheetStructure.innerText = structureInput.value || 'Intro -> Verse -> Chorus';
+      sheetLyrics.innerText = lyricsInput.value || '';
+      renderGraphicalTab();
+    }
+
+    // Event listeners for UI live sync
+    [songTitleInput, artistInput, bpmInput, keyInput, progressionInput, structureInput, lyricsInput, tabNotesInput].forEach(input => {
+      input.addEventListener('input', syncSheetDisplay);
+    });
+
+    // Drag and Drop Audio Handler
+    dropZone.addEventListener('click', () => audioFileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-amber-500');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-amber-500');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-amber-500');
+      if (e.dataTransfer.files.length > 0) {
+        handleAudioFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    audioFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleAudioFile(e.target.files[0]);
+      }
+    });
+
+    // Process uploaded audio with Web Audio API
+    async function handleAudioFile(file) {
+      fileName.innerText = file.name;
+      sheetAudioName.innerText = file.name;
+      fileInfo.classList.remove('hidden');
+
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+        audioBuffer = buffer;
+        analyzeAudio(buffer);
+        drawWaveform(buffer);
+        exportPdfBtn.disabled = false;
+      }, (err) => {
+        alert('Error decoding audio file: ' + err);
+      });
+    }
+
+    // Simple Peak/Autocorrelation BPM & Key estimation heuristic
+    function analyzeAudio(buffer) {
+      const channelData = buffer.getChannelData(0);
+      const sampleRate = buffer.sampleRate;
+
+      // 1. Peak detection for rough BPM estimation
+      let peaks = [];
+      const step = Math.floor(sampleRate / 10);
+      for (let i = 0; i < channelData.length; i += step) {
+        let max = 0;
+        for (let j = i; j < i + step && j < channelData.length; j++) {
+          const val = Math.abs(channelData[j]);
+          if (val > max) max = val;
+        }
+        if (max > 0.3) peaks.push(i);
+      }
+
+      // Calculate average interval between peaks
+      let intervals = [];
+      for (let i = 1; i < peaks.length; i++) {
+        intervals.push(peaks[i] - peaks[i - 1]);
+      }
+
+      if (intervals.length > 0) {
+        const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const secondsPerBeat = avgInterval / sampleRate;
+        let estimatedBpm = Math.round(60 / secondsPerBeat);
+        
+        // Clamp to plausible musical range
+        while (estimatedBpm < 70) estimatedBpm *= 2;
+        while (estimatedBpm > 170) estimatedBpm /= 2;
+
+        bpmInput.value = Math.round(estimatedBpm);
+        sheetBpm.innerText = Math.round(estimatedBpm);
+      }
+
+      // Auto-populate title if missing
+      if (songTitleInput.value === 'Untitled Track' && fileName.innerText) {
+        const cleanName = fileName.innerText.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        songTitleInput.value = cleanName;
+        sheetTitle.innerText = cleanName;
+      }
+    }
+
+    // Draw audio waveform on canvas
+    function drawWaveform(buffer) {
+      const ctx = waveformCanvas.getContext('2d');
+      const width = waveformCanvas.width;
+      const height = waveformCanvas.height;
+      const data = buffer.getChannelData(0);
+      const step = Math.ceil(data.length / width);
+      const amp = height / 2;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.beginPath();
+      ctx.moveTo(0, amp);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+
+      for (let i = 0; i < width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = data[(i * step) + j];
+          if (datum < min) min = datum;
+          if (datum > max) max = datum;
+        }
+        ctx.lineTo(i, (1 + min) * amp);
+        ctx.lineTo(i, (1 + max) * amp);
+      }
+      ctx.stroke();
+    }
+
+    // Render Graphical Tablature Canvas (Graphical lines, frets, and string markers)
+    function renderGraphicalTab() {
+      const ctx = tabCanvas.getContext('2d');
+      const width = tabCanvas.width;
+      const height = tabCanvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Background
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, width, height);
+
+      const strings = ['e', 'B', 'G', 'D', 'A', 'E'];
+      const topPadding = 20;
+      const lineSpacing = 20;
+      const startX = 40;
+      const endX = width - 20;
+
+      // Draw 6 guitar staff lines
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1;
+
+      strings.forEach((str, idx) => {
+        const y = topPadding + (idx * lineSpacing);
+        
+        // Label
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(str, 15, y + 4);
+
+        // Staff line
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+      });
+
+      // Parse and draw notes
+      const notesRaw = tabNotesInput.value.split(',');
+      let currentX = startX + 30;
+      const stepX = Math.min(50, (endX - startX - 40) / Math.max(notesRaw.length, 1));
+
+      notesRaw.forEach(noteStr => {
+        const trimmed = noteStr.trim();
+        if (!trimmed) return;
+
+        let stringIdx = -1;
+        let fretVal = '';
+
+        if (trimmed.includes(':')) {
+          const parts = trimmed.split(':');
+          const strName = parts[0].trim();
+          fretVal = parts[1].trim();
+
+          // Match string name or index
+          if (!isNaN(strName)) {
+            stringIdx = parseInt(strName) - 1;
+          } else {
+            stringIdx = strings.findIndex(s => s.toLowerCase() === strName.toLowerCase());
+          }
+        }
+
+        if (stringIdx >= 0 && stringIdx < 6) {
+          const y = topPadding + (stringIdx * lineSpacing);
+
+          // Clear area behind note for clarity
+          ctx.fillStyle = '#020617';
+          ctx.beginPath();
+          ctx.arc(currentX, y, 9, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw fret marker node
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(currentX, y, 8, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw fret number text
+          ctx.fillStyle = '#020617';
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(fretVal, currentX, y);
+        }
+
+        currentX += stepX;
+      });
+    }
+
+    // Export styled PDF Fake Sheet using html2pdf
+    exportPdfBtn.addEventListener('click', () => {
+      const element = document.getElementById('fakeSheetCard');
+
+      // Temporarily adapt element for print styling
+      element.classList.add('pdf-page');
+
+      const opt = {
+        margin:       [0.3, 0.3, 0.3, 0.3],
+        filename:     `${songTitleInput.value.replace(/\s+/g, '_')}_Fake_Sheet.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.classList.remove('pdf-page');
+      });
+    });
+
+    // Initial render
+    renderGraphicalTab();
+    // Blank waveform placeholder
+    const wCtx = waveformCanvas.getContext('2d');
+    wCtx.fillStyle = '#020617';
+    wCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+    wCtx.fillStyle = '#334155';
+    wCtx.font = '12px sans-serif';
+    wCtx.textAlign = 'center';
+    wCtx.fillText('Upload an audio file to generate waveform & auto-analyze', waveformCanvas.width / 2, waveformCanvas.height / 2 + 4);
+  </script>
+</body>
+</html>
