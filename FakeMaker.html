@@ -19,24 +19,22 @@
     .accent-glow {
       box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
     }
-    /* Styles specifically optimized for PDF render */
-    .pdf-page {
+    /* PDF Print Optimization Styles */
+    .pdf-mode {
       background-color: #ffffff !important;
       color: #0f172a !important;
-      font-family: Arial, sans-serif;
+      border-color: #cbd5e1 !important;
     }
-    .pdf-page .pdf-card {
-      border: 1px solid #e2e8f0;
+    .pdf-mode .pdf-card {
+      border: 1px solid #e2e8f0 !important;
       background: #f8fafc !important;
       color: #0f172a !important;
     }
-    .pdf-page .pdf-text-muted {
+    .pdf-mode .pdf-text-muted {
       color: #64748b !important;
     }
-    .pdf-page .pdf-badge {
-      background-color: #e0f2fe !important;
-      color: #0369a1 !important;
-      border: 1px solid #bae6fd !important;
+    .pdf-mode canvas {
+      background-color: #f8fafc !important;
     }
   </style>
 </head>
@@ -55,7 +53,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="exportPdfBtn" disabled class="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-lg text-sm flex items-center gap-2 transition">
+        <button id="exportPdfBtn" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold rounded-lg text-sm flex items-center gap-2 transition cursor-pointer">
           <i data-lucide="download" class="w-4 h-4"></i> Download PDF Fake Sheet
         </button>
       </div>
@@ -74,7 +72,6 @@
           <i data-lucide="upload-cloud" class="text-amber-400 w-5 h-5"></i> Load Audio
         </h2>
         <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 text-center cursor-pointer transition bg-slate-950/50">
-          <!-- Expanded accept attribute for broad compatibility across macOS/Windows file dialogs -->
           <input type="file" id="audioFileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.wma" class="hidden" />
           <i data-lucide="music" class="w-10 h-10 text-slate-500 mx-auto mb-2"></i>
           <p class="text-sm text-slate-300 font-medium">Click to upload or drag & drop</p>
@@ -124,7 +121,7 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Lyrics & Notes</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Lyrics & Notes (Leave blank for "No Lyrics")</label>
           <textarea id="lyricsInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500" placeholder="Enter lyrics or performance cues...">[Verse]
 Walkin' down the line in the evening shade
 Got my finger on the string and the plan is made
@@ -146,7 +143,7 @@ Watch the tempo steady go</textarea>
     <!-- Right Live Preview Sheet Column -->
     <div class="lg:col-span-8">
       
-      <div id="fakeSheetCard" class="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-2xl relative">
+      <div id="fakeSheetCard" class="bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8 shadow-2xl relative transition-colors duration-200">
         
         <!-- Header Sheet Banner -->
         <div class="border-b-2 border-amber-500/30 pb-4 mb-6 flex justify-between items-start">
@@ -158,7 +155,7 @@ Watch the tempo steady go</textarea>
             <p id="sheetArtist" class="text-sm font-medium text-slate-400 mt-0.5">Original Artist</p>
           </div>
           <div class="text-right">
-            <div class="inline-block bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-center">
+            <div class="inline-block bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-center pdf-card">
               <span class="block text-[10px] text-slate-500 uppercase tracking-wider font-semibold">TEMPO</span>
               <span id="sheetBpm" class="text-2xl font-bold font-mono text-amber-400">120</span>
               <span class="text-xs text-slate-400 font-mono">BPM</span>
@@ -187,7 +184,7 @@ Watch the tempo steady go</textarea>
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i> Analyzed Audio Profile & Waveform
           </h3>
-          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-2 pdf-card">
             <canvas id="waveformCanvas" width="700" height="70" class="w-full h-[70px] block"></canvas>
           </div>
         </div>
@@ -207,7 +204,7 @@ Watch the tempo steady go</textarea>
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <i data-lucide="git-commit" class="w-4 h-4 text-amber-400"></i> Main Lick (Graphical Tablature)
           </h3>
-          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto">
+          <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto pdf-card">
             <canvas id="tabCanvas" width="700" height="150" class="w-full min-w-[600px] block"></canvas>
           </div>
         </div>
@@ -281,13 +278,20 @@ Watch the tempo steady go
 
     // Sync input fields with live sheet display
     function syncSheetDisplay() {
-      sheetTitle.innerText = songTitleInput.value || 'Untitled Track';
-      sheetArtist.innerText = artistInput.value || 'Original Artist';
+      sheetTitle.innerText = songTitleInput.value.trim() || 'Untitled Track';
+      sheetArtist.innerText = artistInput.value.trim() || 'Original Artist';
       sheetBpm.innerText = bpmInput.value || '120';
-      sheetKey.innerText = keyInput.value || 'A Minor';
-      sheetChords.innerText = progressionInput.value || 'Am - F - C - G';
-      sheetStructure.innerText = structureInput.value || 'Intro -> Verse -> Chorus';
-      sheetLyrics.innerText = lyricsInput.value || '';
+      sheetKey.innerText = keyInput.value.trim() || 'A Minor';
+      sheetChords.innerText = progressionInput.value.trim() || 'Am - F - C - G';
+      sheetStructure.innerText = structureInput.value.trim() || 'Intro -> Verse -> Chorus';
+      
+      const lyricsVal = lyricsInput.value.trim();
+      if (!lyricsVal) {
+        sheetLyrics.innerHTML = '<span class="italic text-slate-500">No Lyrics</span>';
+      } else {
+        sheetLyrics.innerText = lyricsVal;
+      }
+
       renderGraphicalTab();
     }
 
@@ -336,10 +340,8 @@ Watch the tempo steady go
           audioBuffer = buffer;
           analyzeAudio(buffer);
           drawWaveform(buffer);
-          exportPdfBtn.disabled = false;
         }, (err) => {
-          console.warn('Decoding error via Web Audio, allowing manual sheet override:', err);
-          exportPdfBtn.disabled = false; // still allow PDF generation even if codec decode hits a snag
+          console.warn('Decoding error via Web Audio:', err);
         });
       } catch (err) {
         console.error('File read error:', err);
@@ -397,7 +399,7 @@ Watch the tempo steady go
       const amp = height / 2;
 
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#020617';
+      ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
 
       ctx.beginPath();
@@ -427,7 +429,7 @@ Watch the tempo steady go
 
       ctx.clearRect(0, 0, width, height);
 
-      ctx.fillStyle = '#020617';
+      ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, width, height);
 
       const strings = ['e', 'B', 'G', 'D', 'A', 'E'];
@@ -478,7 +480,7 @@ Watch the tempo steady go
         if (stringIdx >= 0 && stringIdx < 6) {
           const y = topPadding + (stringIdx * lineSpacing);
 
-          ctx.fillStyle = '#020617';
+          ctx.fillStyle = '#0f172a';
           ctx.beginPath();
           ctx.arc(currentX, y, 9, 0, Math.PI * 2);
           ctx.fill();
@@ -488,7 +490,7 @@ Watch the tempo steady go
           ctx.arc(currentX, y, 8, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.fillStyle = '#020617';
+          ctx.fillStyle = '#0f172a';
           ctx.font = 'bold 10px monospace';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -499,31 +501,32 @@ Watch the tempo steady go
       });
     }
 
-    // Export styled PDF Fake Sheet using html2pdf
+    // Export styled PDF Fake Sheet using html2pdf with complete capture
     exportPdfBtn.addEventListener('click', () => {
       const element = document.getElementById('fakeSheetCard');
 
-      element.classList.add('pdf-page');
+      // Add print class for high-contrast white PDF styling
+      element.classList.add('pdf-mode');
 
       const opt = {
-        margin:       [0.3, 0.3, 0.3, 0.3],
-        filename:     `${songTitleInput.value.replace(/\s+/g, '_')}_Fake_Sheet.pdf`,
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     `${(songTitleInput.value.trim() || 'Song').replace(/\s+/g, '_')}_Fake_Sheet.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        html2canvas:  { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
       html2pdf().set(opt).from(element).save().then(() => {
-        element.classList.remove('pdf-page');
+        element.classList.remove('pdf-mode');
       });
     });
 
     // Initial render
-    renderGraphicalTab();
+    syncSheetDisplay();
     const wCtx = waveformCanvas.getContext('2d');
-    wCtx.fillStyle = '#020617';
+    wCtx.fillStyle = '#0f172a';
     wCtx.fillRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-    wCtx.fillStyle = '#334155';
+    wCtx.fillStyle = '#64748b';
     wCtx.font = '12px sans-serif';
     wCtx.textAlign = 'center';
     wCtx.fillText('Upload an audio file to generate waveform & auto-analyze', waveformCanvas.width / 2, waveformCanvas.height / 2 + 4);
