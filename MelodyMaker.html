@@ -1,0 +1,810 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atomic Forge — Note Studio</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #10131b;
+  --panel: #191e2a;
+  --line: #30394b;
+  --text: #edf2fc;
+  --muted: #9ca9bd;
+  --accent: #70e1c0;
+  --blue: #7da8ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+header {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #141823;
+}
+header h1 { margin: 0; font-size: 24px; }
+header p { margin: 5px 0 0; color: var(--muted); }
+main { max-width: 1050px; margin: auto; padding: 18px; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+h2 { font-size: 17px; margin: 0 0 12px; }
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+button, select, input {
+  font: inherit;
+  color: var(--text);
+  background: #252c3b;
+  border: 1px solid #414c62;
+  border-radius: 9px;
+  padding: 10px 12px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: #185d50; border-color: #328f7a; }
+button:disabled { opacity: .45; cursor: default; }
+select { max-width: 100%; }
+.status {
+  margin-top: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.status.good { color: var(--accent); }
+.status.error { color: #ff9999; }
+.note-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  margin-top: 14px;
+}
+.big-note { font-size: 42px; font-weight: 750; color: var(--accent); }
+.small-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.value { font-size: 19px; }
+.staff-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: #f8f8f4;
+  border-radius: 10px;
+  padding: 8px;
+}
+#staff { display: block; min-width: 550px; width: 100%; }
+#piano {
+  display: flex;
+  position: relative;
+  height: 170px;
+  overflow-x: auto;
+  padding: 0 2px 4px;
+  user-select: none;
+  touch-action: manipulation;
+}
+.key {
+  flex: 0 0 38px;
+  height: 155px;
+  background: #fff;
+  color: #171923;
+  border: 1px solid #777;
+  border-radius: 0 0 5px 5px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  font-size: 11px;
+  position: relative;
+  z-index: 1;
+}
+.key.black {
+  flex-basis: 25px;
+  height: 98px;
+  margin-left: -12.5px;
+  margin-right: -12.5px;
+  background: #171923;
+  color: white;
+  border-color: #080a10;
+  z-index: 2;
+}
+.key.active { background: var(--accent); color: #10131b; }
+.key.black.active { background: #47c6a3; }
+.muted { color: var(--muted); }
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.chip {
+  border: 1px solid var(--line);
+  background: #202635;
+  border-radius: 7px;
+  padding: 5px 9px;
+}
+footer { color: var(--muted); font-size: 12px; padding: 0 2px 25px; }
+@media (max-width: 600px) {
+  main { padding: 10px; }
+  header { padding: 17px 14px; }
+  .panel { padding: 12px; }
+  .big-note { font-size: 34px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎸 Atomic Forge · Note Studio</h1>
+  <p>Play a note. See it on the staff. Capture your ideas.</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>1. Live guitar or instrument input</h2>
+    <div class="row">
+      <button id="startAudio" class="primary">Start audio input</button>
+      <button id="stopAudio" disabled>Stop input</button>
+      <label for="device">Input</label>
+      <select id="device"><option value="">Default input</option></select>
+    </div>
+    <div id="audioStatus" class="status">Connect your guitar interface, then start audio input.</div>
+    <div class="note-display">
+      <div>
+        <div class="small-label">Detected note</div>
+        <div id="detectedNote" class="big-note">—</div>
+      </div>
+      <div>
+        <div class="small-label">Frequency</div>
+        <div id="frequency" class="value">— Hz</div>
+      </div>
+      <div>
+        <div class="small-label">MIDI note</div>
+        <div id="midiNumber" class="value">—</div>
+      </div>
+      <div>
+        <div class="small-label">Input level</div>
+        <div id="level" class="value">—</div>
+      </div>
+    </div>
+    <p class="muted">Best results: play one clean note at a time. Turn off heavy distortion, delay, and reverb while detecting notes.</p>
+  </section>
+
+  <section class="panel">
+    <h2>2. Music staff</h2>
+    <div class="staff-wrap">
+      <svg id="staff" viewBox="0 0 760 205" role="img" aria-label="Treble clef music staff"></svg>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="addNote" class="primary">Add detected note</button>
+      <button id="undoNote">Undo</button>
+      <button id="clearNotes">Clear staff</button>
+      <button id="exportXml">Export MusicXML</button>
+    </div>
+    <div id="noteCount" class="status">No notes recorded yet.</div>
+    <div id="noteHistory" class="list"></div>
+  </section>
+
+  <section class="panel">
+    <h2>3. Instrument sound</h2>
+    <div class="row">
+      <label for="instrument">Sound</label>
+      <select id="instrument">
+        <option value="acoustic_grand_piano">Grand piano</option>
+        <option value="electric_piano_1">Electric piano</option>
+        <option value="acoustic_guitar_nylon">Nylon guitar</option>
+        <option value="acoustic_guitar_steel">Steel-string guitar</option>
+        <option value="electric_guitar_clean">Clean electric guitar</option>
+        <option value="electric_guitar_jazz">Jazz guitar</option>
+        <option value="electric_bass_finger">Finger bass</option>
+        <option value="violin">Violin</option>
+        <option value="cello">Cello</option>
+        <option value="flute">Flute</option>
+        <option value="church_organ">Church organ</option>
+        <option value="synth_strings_1">Synth strings</option>
+      </select>
+      <label for="volume">Volume</label>
+      <input id="volume" type="range" min="0" max="1" step="0.05" value="0.7">
+    </div>
+    <div id="soundStatus" class="status">Instrument samples load when you play the first note. An internet connection is required for sampled sounds.</div>
+  </section>
+
+  <section class="panel">
+    <h2>4. Playable piano</h2>
+    <div class="row" style="margin-bottom:12px">
+      <button id="lowerOctave">− Octave</button>
+      <span id="octaveLabel">Octave 4</span>
+      <button id="higherOctave">+ Octave</button>
+      <span class="muted">Tap or click keys to play and add notes.</span>
+    </div>
+    <div id="piano"></div>
+  </section>
+
+  <section class="panel">
+    <h2>5. MIDI keyboard</h2>
+    <div class="row">
+      <button id="connectMidi" class="primary">Connect MIDI keyboard</button>
+    </div>
+    <div id="midiStatus" class="status">Connect a USB or supported wireless MIDI keyboard to your Mac.</div>
+  </section>
+
+  <footer>
+    Note Studio is a browser-based prototype. Use a current version of Chrome or Edge for the broadest Web MIDI support. Microphone access normally requires HTTPS or localhost. Sampled instruments are provided by a remote soundfont library.
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  let audioContext = null;
+  let masterGain = null;
+  let mediaStream = null;
+  let sourceNode = null;
+  let analyser = null;
+  let audioData = null;
+  let detectionTimer = null;
+  let currentFrequency = 0;
+  let currentMidi = null;
+  let lastAddedMidi = null;
+  let midiAccess = null;
+  let soundfontInstrument = null;
+  let soundfontName = "";
+  let loadPromise = null;
+  let pianoOctave = 4;
+  let notes = [];
+  let activeVoices = new Map();
+
+  const noteNames = ["C", "C♯", "D", "D♯", "E", "F",
+    "F♯", "G", "G♯", "A", "A♯", "B"];
+
+  function midiToName(midi) {
+    const n = Math.round(midi);
+    return noteNames[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1);
+  }
+
+  function midiToFrequency(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  function frequencyToMidi(freq) {
+    return Math.round(69 + 12 * Math.log2(freq / 440));
+  }
+
+  function frequencyToNote(freq) {
+    if (!Number.isFinite(freq) || freq <= 0) return null;
+    const midi = frequencyToMidi(freq);
+    return { midi, name: midiToName(midi), frequency: freq };
+  }
+
+  async function ensureAudio() {
+    if (!audioContext) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error("Web Audio is not supported by this browser.");
+      audioContext = new AudioContextClass();
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = Number($("volume").value);
+      masterGain.connect(audioContext.destination);
+    }
+    if (audioContext.state === "suspended") await audioContext.resume();
+  }
+
+  async function loadInstrument() {
+    await ensureAudio();
+    const requested = $("instrument").value;
+    if (soundfontInstrument && soundfontName === requested) return soundfontInstrument;
+    if (loadPromise) await loadPromise;
+    if (soundfontInstrument && soundfontName === requested) return soundfontInstrument;
+
+    soundfontInstrument = null;
+    soundfontName = "";
+    $("soundStatus").textContent = "Loading sampled instrument…";
+
+    if (typeof Soundfont === "undefined") {
+      $("soundStatus").textContent = "Sample library unavailable. Using a synthesized fallback sound.";
+      return null;
+    }
+
+    loadPromise = Soundfont.instrument(audioContext, requested, {
+      soundfont: "FluidR3_GM",
+      format: "mp3",
+      destination: masterGain
+    }).then(inst => {
+      soundfontInstrument = inst;
+      soundfontName = requested;
+      $("soundStatus").textContent = "Sampled instrument ready: " + requested.replaceAll("_", " ") + ".";
+      return inst;
+    }).catch(err => {
+      console.warn("Soundfont load failed:", err);
+      $("soundStatus").textContent = "Sample download failed. Using a synthesized fallback sound.";
+      return null;
+    }).finally(() => {
+      loadPromise = null;
+    });
+    return await loadPromise;
+  }
+
+  async function playNote(midi, velocity = 0.8) {
+    try {
+      await ensureAudio();
+      const inst = await loadInstrument();
+      if (inst) {
+        const voice = inst.play(midi, audioContext.currentTime, {
+          gain: Math.max(0.01, velocity)
+        });
+        return { stop: () => { try { if (voice && voice.stop) voice.stop(); } catch (_) {} } };
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+
+    // Fallback oscillator if sampled instruments cannot load.
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = midiToFrequency(midi);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.02, velocity * 0.2), audioContext.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1.2);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start();
+    osc.stop(audioContext.currentTime + 1.25);
+    return { stop: () => { try { osc.stop(); } catch (_) {} } };
+  }
+
+  async function startAudio() {
+    try {
+      await ensureAudio();
+      stopAudio();
+
+      const deviceId = $("device").value;
+      const audioConstraints = {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      };
+      if (deviceId) audioConstraints.deviceId = { exact: deviceId };
+
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+      sourceNode = audioContext.createMediaStreamSource(mediaStream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 8192;
+      analyser.smoothingTimeConstant = 0;
+      sourceNode.connect(analyser);
+      audioData = new Float32Array(analyser.fftSize);
+
+      $("audioStatus").textContent = "Listening. Play a single note.";
+      $("audioStatus").className = "status good";
+      $("startAudio").disabled = true;
+      $("stopAudio").disabled = false;
+
+      detectionTimer = setInterval(detectPitch, 70);
+      await refreshDevices();
+    } catch (err) {
+      $("audioStatus").textContent = "Could not start audio: " + err.message +
+        ". Check microphone permission and select your interface.";
+      $("audioStatus").className = "status error";
+    }
+  }
+
+  function stopAudio() {
+    if (detectionTimer) clearInterval(detectionTimer);
+    detectionTimer = null;
+    if (sourceNode) {
+      try { sourceNode.disconnect(); } catch (_) {}
+    }
+    sourceNode = null;
+    analyser = null;
+    if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+    $("startAudio").disabled = false;
+    $("stopAudio").disabled = true;
+    $("audioStatus").textContent = "Audio input stopped.";
+    $("audioStatus").className = "status";
+  }
+
+  async function refreshDevices() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const current = $("device").value;
+      $("device").innerHTML = '<option value="">Default input</option>';
+      devices.filter(d => d.kind === "audioinput").forEach((d, i) => {
+        const option = document.createElement("option");
+        option.value = d.deviceId;
+        option.textContent = d.label || ("Audio input " + (i + 1));
+        $("device").appendChild(option);
+      });
+      if (current) $("device").value = current;
+    } catch (_) {}
+  }
+
+  function detectPitch() {
+    if (!analyser || !audioData || !audioContext) return;
+    analyser.getFloatTimeDomainData(audioData);
+
+    let sum = 0;
+    for (let i = 0; i < audioData.length; i++) sum += audioData[i] * audioData[i];
+    const rms = Math.sqrt(sum / audioData.length);
+    $("level").textContent = (20 * Math.log10(Math.max(rms, 0.000001))).toFixed(1) + " dB";
+
+    if (rms < 0.008) {
+      $("detectedNote").textContent = "—";
+      $("frequency").textContent = "— Hz";
+      $("midiNumber").textContent = "—";
+      currentFrequency = 0;
+      currentMidi = null;
+      return;
+    }
+
+    const freq = autoCorrelate(audioData, audioContext.sampleRate);
+    if (!freq || freq < 45 || freq > 1400) return;
+
+    // Reject unstable jumps and harmonics where possible.
+    const detected = frequencyToNote(freq);
+    if (!detected) return;
+    currentFrequency = freq;
+    currentMidi = detected.midi;
+    $("detectedNote").textContent = detected.name;
+    $("frequency").textContent = freq.toFixed(1) + " Hz";
+    $("midiNumber").textContent = detected.midi;
+  }
+
+  function autoCorrelate(buffer, sampleRate) {
+    const size = buffer.length;
+    let rms = 0;
+    for (let i = 0; i < size; i++) rms += buffer[i] * buffer[i];
+    rms = Math.sqrt(rms / size);
+    if (rms < 0.008) return -1;
+
+    // Trim quiet edges to make period estimation more reliable.
+    let start = 0;
+    let end = size - 1;
+    const threshold = 0.2;
+    while (start < size / 2 && Math.abs(buffer[start]) < threshold) start++;
+    while (end > size / 2 && Math.abs(buffer[end]) < threshold) end--;
+    const trimmed = buffer.slice(start, end + 1);
+    if (trimmed.length < 100) return -1;
+
+    const minLag = Math.floor(sampleRate / 1400);
+    const maxLag = Math.min(Math.floor(sampleRate / 45), trimmed.length - 2);
+    let bestLag = -1;
+    let bestCorrelation = 0;
+
+    // Normalized difference function: smaller is better.
+    for (let lag = minLag; lag <= maxLag; lag++) {
+      let diff = 0;
+      let norm = 0;
+      const limit = trimmed.length - lag;
+      for (let i = 0; i < limit; i++) {
+        const delta = trimmed[i] - trimmed[i + lag];
+        diff += delta * delta;
+        norm += trimmed[i] * trimmed[i] + trimmed[i + lag] * trimmed[i + lag];
+      }
+      const correlation = norm > 0 ? 1 - diff / norm : 0;
+      if (correlation > bestCorrelation) {
+        bestCorrelation = correlation;
+        bestLag = lag;
+      }
+    }
+    if (bestLag < 0 || bestCorrelation < 0.45) return -1;
+
+    // Refine peak with neighboring lag interpolation.
+    const lag = bestLag;
+    const correlationAt = l => {
+      let diff = 0, norm = 0;
+      for (let i = 0; i < trimmed.length - l; i++) {
+        const delta = trimmed[i] - trimmed[i + l];
+        diff += delta * delta;
+        norm += trimmed[i] * trimmed[i] + trimmed[i + l] * trimmed[i + l];
+      }
+      return norm > 0 ? 1 - diff / norm : 0;
+    };
+    const left = lag > minLag ? correlationAt(lag - 1) : bestCorrelation;
+    const right = lag < maxLag ? correlationAt(lag + 1) : bestCorrelation;
+    const denominator = left - 2 * bestCorrelation + right;
+    const shift = Math.abs(denominator) > 0.000001
+      ? 0.5 * (left - right) / denominator : 0;
+    return sampleRate / (lag + shift);
+  }
+
+  function staffStepForMidi(midi) {
+    // Treble staff: bottom line E4, then one diatonic step per half-space.
+    const naturalMidi = [
+      { name: "C", midi: 60 }, { name: "D", midi: 62 },
+      { name: "E", midi: 64 }, { name: "F", midi: 65 },
+      { name: "G", midi: 67 }, { name: "A", midi: 69 },
+      { name: "B", midi: 71 }
+    ];
+    const names = ["C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"];
+    const semitones = ((midi % 12) + 12) % 12;
+    const letter = names[semitones];
+    const octave = Math.floor(midi / 12) - 1;
+    const diatonic = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+    return (octave - 4) * 7 + diatonic[letter] - 2; // E4 is the bottom line
+  }
+
+  function drawStaff() {
+    const svg = $("staff");
+    const NS = "http://www.w3.org/2000/svg";
+    svg.innerHTML = "";
+
+    const add = (tag, attrs, text) => {
+      const el = document.createElementNS(NS, tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, v));
+      if (text !== undefined) el.textContent = text;
+      svg.appendChild(el);
+      return el;
+    };
+
+    add("rect", { x: 0, y: 0, width: 760, height: 205, fill: "#f8f8f4" });
+    const lineYs = [58, 76, 94, 112, 130];
+    lineYs.forEach(y => add("line", {
+      x1: 20, y1: y, x2: 740, y2: y, stroke: "#343943", "stroke-width": 1.4
+    }));
+    add("text", {
+      x: 26, y: 127, fill: "#20242b", "font-size": 78,
+      "font-family": "serif"
+    }, "𝄞");
+
+    const shown = notes.slice(-28);
+    const spacing = 24;
+    shown.forEach((note, i) => {
+      const x = 110 + i * spacing;
+      const step = staffStepForMidi(note.midi);
+      const y = 130 - step * 9;
+
+      // Ledger lines above/below the staff.
+      if (y < 58) {
+        for (let ly = 49; ly >= y; ly -= 18) {
+          add("line", { x1: x - 10, y1: ly, x2: x + 10, y2: ly,
+            stroke: "#343943", "stroke-width": 1.3 });
+        }
+      }
+      if (y > 130) {
+        for (let ly = 148; ly <= y; ly += 18) {
+          add("line", { x1: x - 10, y1: ly, x2: x + 10, y2: ly,
+            stroke: "#343943", "stroke-width": 1.3 });
+        }
+      }
+
+      const pc = ((note.midi % 12) + 12) % 12;
+      if ([1, 3, 6, 8, 10].includes(pc)) {
+        add("text", { x: x - 16, y: y + 5, fill: "#20242b",
+          "font-size": 17, "text-anchor": "middle" }, "♯");
+      }
+      add("ellipse", {
+        cx: x, cy: y, rx: 7.2, ry: 5.2,
+        fill: "#20242b", transform: `rotate(-20 ${x} ${y})`
+      });
+      add("line", {
+        x1: x + 6, y1: y, x2: x + 6, y2: y - 32,
+        stroke: "#20242b", "stroke-width": 1.7
+      });
+      if (i === shown.length - 1) {
+        add("circle", { cx: x, cy: y, r: 12, fill: "none",
+          stroke: "#1c9b7d", "stroke-width": 2 });
+      }
+    });
+
+    if (!notes.length) {
+      add("text", { x: 380, y: 175, fill: "#777", "font-size": 14,
+        "text-anchor": "middle" }, "Your notes will appear here");
+    }
+  }
+
+  function renderHistory() {
+    $("noteCount").textContent = notes.length
+      ? notes.length + " note" + (notes.length === 1 ? "" : "s") + " recorded."
+      : "No notes recorded yet.";
+    const history = $("noteHistory");
+    history.innerHTML = "";
+    notes.slice(-32).forEach((note, i) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = note.name;
+      chip.title = "MIDI " + note.midi;
+      history.appendChild(chip);
+    });
+    drawStaff();
+  }
+
+  function addMidiNote(midi) {
+    if (!Number.isFinite(midi) || midi < 0 || midi > 127) return;
+    const rounded = Math.round(midi);
+    const note = { midi: rounded, name: midiToName(rounded), time: Date.now() };
+    notes.push(note);
+    renderHistory();
+  }
+
+  function addDetectedNote() {
+    if (currentMidi === null) {
+      $("audioStatus").textContent = "No note detected yet. Play a clear single note first.";
+      $("audioStatus").className = "status error";
+      return;
+    }
+    addMidiNote(currentMidi);
+    lastAddedMidi = currentMidi;
+    $("audioStatus").textContent = "Added " + midiToName(currentMidi) + " to the staff.";
+    $("audioStatus").className = "status good";
+  }
+
+  function buildPiano() {
+    const piano = $("piano");
+    piano.innerHTML = "";
+    const startMidi = pianoOctave * 12;
+    const endMidi = startMidi + 24;
+
+    for (let midi = startMidi; midi <= endMidi; midi++) {
+      const pc = midi % 12;
+      const isBlack = [1, 3, 6, 8, 10].includes(pc);
+      const key = document.createElement("button");
+      key.className = "key" + (isBlack ? " black" : "");
+      key.type = "button";
+      key.textContent = isBlack ? "" : midiToName(midi);
+      key.setAttribute("aria-label", midiToName(midi));
+      key.dataset.midi = midi;
+
+      const down = async ev => {
+        ev.preventDefault();
+        key.classList.add("active");
+        addMidiNote(midi);
+        const voice = await playNote(midi);
+        activeVoices.set(midi, voice);
+      };
+      const up = () => {
+        key.classList.remove("active");
+        const voice = activeVoices.get(midi);
+        if (voice && voice.stop) voice.stop();
+        activeVoices.delete(midi);
+      };
+
+      key.addEventListener("pointerdown", down);
+      key.addEventListener("pointerup", up);
+      key.addEventListener("pointercancel", up);
+      key.addEventListener("pointerleave", ev => { if (ev.buttons) up(); });
+      piano.appendChild(key);
+    }
+    $("octaveLabel").textContent = "Octave " + pianoOctave;
+  }
+
+  async function connectMidi() {
+    if (!navigator.requestMIDIAccess) {
+      $("midiStatus").textContent = "Web MIDI is not supported in this browser. Try Chrome or Edge on your Mac.";
+      $("midiStatus").className = "status error";
+      return;
+    }
+    try {
+      midiAccess = await navigator.requestMIDIAccess();
+      midiAccess.onstatechange = setupMidiInputs;
+      setupMidiInputs();
+    } catch (err) {
+      $("midiStatus").textContent = "MIDI connection failed: " + err.message;
+      $("midiStatus").className = "status error";
+    }
+  }
+
+  function setupMidiInputs() {
+    if (!midiAccess) return;
+    let count = 0;
+    for (const input of midiAccess.inputs.values()) {
+      input.onmidimessage = event => {
+        const [status, data1, data2] = event.data;
+        const command = status & 0xf0;
+        if (command === 0x90 && data2 > 0) {
+          const midi = data1;
+          addMidiNote(midi);
+          playNote(midi, data2 / 127);
+          $("midiStatus").textContent = "MIDI note received: " + midiToName(midi) + " (" + input.name + ").";
+          $("midiStatus").className = "status good";
+        }
+      };
+      count++;
+    }
+    $("midiStatus").textContent = count
+      ? count + " MIDI input device(s) connected. Play a key to record notes."
+      : "MIDI access enabled, but no keyboard is detected. Connect your keyboard and try again.";
+    $("midiStatus").className = count ? "status good" : "status";
+  }
+
+  function exportMusicXML() {
+    if (!notes.length) {
+      alert("Add some notes before exporting.");
+      return;
+    }
+    const xmlEscape = s => String(s).replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    const pitchParts = note => {
+      const pc = ((note.midi % 12) + 12) % 12;
+      const octave = Math.floor(note.midi / 12) - 1;
+      const map = {
+        0: ["C", 0], 1: ["C", 1], 2: ["D", 0], 3: ["D", 1],
+        4: ["E", 0], 5: ["F", 0], 6: ["F", 1], 7: ["G", 0],
+        8: ["G", 1], 9: ["A", 0], 10: ["A", 1], 11: ["B", 0]
+      };
+      return { step: map[pc][0], alter: map[pc][1], octave };
+    };
+
+    const measures = [];
+    for (let i = 0; i < notes.length; i += 4) {
+      const batch = notes.slice(i, i + 4);
+      const body = batch.map(note => {
+        const p = pitchParts(note);
+        return `<note><pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ""}<octave>${p.octave}</octave></pitch><duration>1</duration><type>quarter</type></note>`;
+      }).join("");
+      measures.push(`<measure number="${measures.length + 1}">${measures.length === 0
+        ? '<attributes><divisions>1</divisions><key><fifths>0</fifths><mode>major</mode></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>'
+        : ""}${body}</measure>`);
+    }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="3.1">
+<work><work-title>Atomic Forge Note Studio</work-title></work>
+<part-list><score-part id="P1"><part-name>Melody</part-name></score-part></part-list>
+<part id="P1">${measures.join("")}</part>
+</score-partwise>`;
+
+    const blob = new Blob([xml], { type: "application/vnd.recordare.musicxml+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "atomic-forge-notes.musicxml";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  $("startAudio").addEventListener("click", startAudio);
+  $("stopAudio").addEventListener("click", stopAudio);
+  $("device").addEventListener("change", () => {
+    if (mediaStream) startAudio();
+  });
+  $("addNote").addEventListener("click", addDetectedNote);
+  $("undoNote").addEventListener("click", () => {
+    notes.pop();
+    renderHistory();
+  });
+  $("clearNotes").addEventListener("click", () => {
+    notes = [];
+    renderHistory();
+  });
+  $("exportXml").addEventListener("click", exportMusicXML);
+  $("connectMidi").addEventListener("click", connectMidi);
+  $("lowerOctave").addEventListener("click", () => {
+    pianoOctave = Math.max(1, pianoOctave - 1);
+    buildPiano();
+  });
+  $("higherOctave").addEventListener("click", () => {
+    pianoOctave = Math.min(7, pianoOctave + 1);
+    buildPiano();
+  });
+  $("instrument").addEventListener("change", async () => {
+    soundfontInstrument = null;
+    soundfontName = "";
+    $("soundStatus").textContent = "Instrument changed. The new samples will load when you play.";
+  });
+  $("volume").addEventListener("input", () => {
+    if (masterGain) masterGain.gain.value = Number($("volume").value);
+  });
+
+  if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+    refreshDevices();
+  }
+  buildPiano();
+  renderHistory();
+})();
+</script>
+</body>
+</html>
