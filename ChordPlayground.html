@@ -242,7 +242,7 @@
     /* Animated Visualizer Banner */
     .visualizer-container {
       position: relative;
-      z-Index: 1;
+      z-index: 1;
       width: 100%;
       height: 60px;
       background: rgba(15, 23, 42, 0.6);
@@ -555,6 +555,96 @@
     .piano-key.black.active {
       background: var(--accent-amber);
       box-shadow: 0 0 10px var(--accent-amber);
+    }
+
+    /* Guitar Chord Box Styles */
+    .guitar-chord-box-wrapper {
+      background: rgba(10, 15, 29, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .chord-box-grid {
+      display: flex;
+      flex-direction: column;
+      width: 190px;
+    }
+
+    .chord-box-header {
+      display: flex;
+      justify-content: space-around;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--accent);
+      padding-bottom: 6px;
+      font-family: monospace;
+    }
+
+    .chord-box-frets {
+      display: flex;
+      flex-direction: column;
+      border-left: 2px solid #64748b;
+      border-right: 2px solid #64748b;
+      background: #111827;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .chord-fret-row {
+      display: flex;
+      height: 30px;
+      border-bottom: 2px solid #334155;
+      position: relative;
+    }
+
+    .chord-fret-row:first-child {
+      border-top: 4px solid #94a3b8; /* Nut */
+    }
+
+    .chord-string-slot {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-right: 1px solid #1f2937;
+    }
+
+    .chord-string-slot:last-child {
+      border-right: none;
+    }
+
+    .chord-string-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: #64748b;
+      z-index: 1;
+    }
+
+    .chord-finger-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.6rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+    }
+
+    .chord-finger-dot.root {
+      background: var(--accent-amber);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.9);
     }
 
     .favourites-bar {
@@ -1017,7 +1107,7 @@
           <i data-lucide="archive"></i> Archived Versions <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
         </button>
         <div class="archive-dropdown-menu" id="archive-dropdown-menu">
-          <a href="ChordCraft/"><i data-lucide="music" style="width:14px; height:14px;"></i> Chord Craft</a>
+          <a href="ChordCraft.html"><i data-lucide="music" style="width:14px; height:14px;"></i> Chord Craft</a>
           <a href="ProgressionStudio.html"><i data-lucide="layers" style="width:14px; height:14px;"></i> Progression Studio</a>
         </div>
       </div>
@@ -1129,18 +1219,29 @@
             <button class="btn" onclick="playBuilderChord()"><i data-lucide="play"></i> Test Chord</button>
           </div>
 
-          <div>
-            <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
-            <div class="piano-roll-preview" id="piano-roll"></div>
-          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+            <!-- Guitar Chord Fretboard Diagram Box -->
+            <div class="guitar-chord-box-wrapper">
+              <label style="display: block; font-size: 0.75rem;"><i data-lucide="music"></i> Guitar Chord Box:</label>
+              <div id="guitar-chord-box" class="chord-box-grid"></div>
+            </div>
 
-          <div>
-            <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
-            <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
-              <div class="card-title" id="drag-card-title">C</div>
-              <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
+            <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 14px;">
+              <div>
+                <label style="margin-bottom: 6px; display: block;">Keyboard Voicing Preview:</label>
+                <div class="piano-roll-preview" id="piano-roll"></div>
+              </div>
+
+              <div>
+                <label style="margin-bottom: 6px; display: block;">Drag To Progression Canvas Below:</label>
+                <div id="builder-draggable-card" class="chord-card" draggable="true" style="display: inline-block; width: 160px; border-color: var(--accent);">
+                  <div class="card-title" id="drag-card-title">C</div>
+                  <div class="card-notes" id="drag-card-notes">C4, E4, G4</div>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -1449,8 +1550,8 @@
        2. 100+ SCALES LIST & POPULAR HIGHLIGHTS
        ========================================================================== */
     const popularScaleNames = [
-      "major", "minor", "major pentatonic", "minor pentatonic",
-      "blues", "dorian", "mixolydian", "harmonic minor",
+      "major", "minor", "major pentatonic", "minor pentatonic", 
+      "blues", "dorian", "mixolydian", "harmonic minor", 
       "melodic minor", "lydian"
     ];
 
@@ -1655,7 +1756,121 @@
     }
 
     /* ==========================================================================
-       5. SCALE VISUALIZER & ENHARMONIC-SAFE PIANO & FRETBOARD RENDERING
+       5. GUITAR CHORD BOX DIAGRAM GENERATOR
+       ========================================================================== */
+    const standardGuitarStrings = ["E", "A", "D", "G", "B", "E"]; // Low E to High E
+
+    // Curated dictionary of clean, accurate open & root guitar chord shapes [Low E -> High E strings, fret: -1=muted, 0=open, 1-4=fret]
+    const chordShapeLibrary = {
+      "C":    [ {s:0, f:-1}, {s:1, f:3}, {s:2, f:2}, {s:3, f:0}, {s:4, f:1}, {s:5, f:0} ],
+      "Cm":   [ {s:0, f:3},  {s:1, f:5}, {s:2, f:5}, {s:3, f:4}, {s:4, f:3}, {s:5, f:3} ],
+      "C7":   [ {s:0, f:3},  {s:1, f:3}, {s:2, f:2}, {s:3, f:3}, {s:4, f:1}, {s:5, f:0} ],
+      "Cmaj7":[ {s:0, f:-1}, {s:1, f:3}, {s:2, f:2}, {s:3, f:0}, {s:4, f:0}, {s:5, f:0} ],
+      "Cm7":  [ {s:0, f:3},  {s:1, f:3}, {s:2, f:3}, {s:3, f:3}, {s:4, f:4}, {s:5, f:3} ],
+      
+      "D":    [ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:0}, {s:3, f:2}, {s:4, f:3}, {s:5, f:2} ],
+      "Dm":   [ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:0}, {s:3, f:2}, {s:4, f:3}, {s:5, f:1} ],
+      "D7":   [ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:0}, {s:3, f:2}, {s:4, f:1}, {s:5, f:2} ],
+      "Dmaj7":[ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:0}, {s:3, f:2}, {s:4, f:2}, {s:5, f:2} ],
+      "Dm7":  [ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:0}, {s:3, f:2}, {s:4, f:1}, {s:5, f:1} ],
+
+      "E":    [ {s:0, f:0},  {s:1, f:2}, {s:2, f:2}, {s:3, f:1}, {s:4, f:0}, {s:5, f:0} ],
+      "Em":   [ {s:0, f:0},  {s:1, f:2}, {s:2, f:2}, {s:3, f:0}, {s:4, f:0}, {s:5, f:0} ],
+      "E7":   [ {s:0, f:0},  {s:1, f:2}, {s:2, f:0}, {s:3, f:1}, {s:4, f:0}, {s:5, f:0} ],
+      "Emaj7":[ {s:0, f:0},  {s:1, f:2}, {s:2, f:1}, {s:3, f:1}, {s:4, f:0}, {s:5, f:0} ],
+
+      "F":    [ {s:0, f:1},  {s:1, f:3}, {s:2, f:3}, {s:3, f:2}, {s:4, f:1}, {s:5, f:1} ],
+      "Fm":   [ {s:0, f:1},  {s:1, f:3}, {s:2, f:3}, {s:3, f:1}, {s:4, f:1}, {s:5, f:1} ],
+      "Fmaj7":[ {s:0, f:-1}, {s:1, f:-1}, {s:2, f:3}, {s:3, f:2}, {s:4, f:1}, {s:5, f:0} ],
+
+      "G":    [ {s:0, f:3},  {s:1, f:2}, {s:2, f:0}, {s:3, f:0}, {s:4, f:0}, {s:5, f:3} ],
+      "Gm":   [ {s:0, f:3},  {s:1, f:5}, {s:2, f:5}, {s:3, f:3}, {s:4, f:3}, {s:5, f:3} ],
+      "G7":   [ {s:0, f:3},  {s:1, f:2}, {s:2, f:0}, {s:3, f:0}, {s:4, f:0}, {s:5, f:1} ],
+
+      "A":    [ {s:0, f:-1}, {s:1, f:0}, {s:2, f:2}, {s:3, f:2}, {s:4, f:2}, {s:5, f:0} ],
+      "Am":   [ {s:0, f:-1}, {s:1, f:0}, {s:2, f:2}, {s:3, f:2}, {s:4, f:1}, {s:5, f:0} ],
+      "A7":   [ {s:0, f:-1}, {s:1, f:0}, {s:2, f:2}, {s:3, f:0}, {s:4, f:2}, {s:5, f:0} ],
+      "Amaj7":[ {s:0, f:-1}, {s:1, f:0}, {s:2, f:2}, {s:3, f:1}, {s:4, f:2}, {s:5, f:0} ],
+      "Am7":  [ {s:0, f:-1}, {s:1, f:0}, {s:2, f:2}, {s:3, f:0}, {s:4, f:1}, {s:5, f:0} ],
+
+      "B":    [ {s:0, f:-1}, {s:1, f:2}, {s:2, f:4}, {s:3, f:4}, {s:4, f:4}, {s:5, f:2} ],
+      "Bm":   [ {s:0, f:-1}, {s:1, f:2}, {s:2, f:4}, {s:3, f:4}, {s:4, f:3}, {s:5, f:2} ],
+      "B7":   [ {s:0, f:-1}, {s:1, f:2}, {s:2, f:1}, {s:3, f:2}, {s:4, f:0}, {s:5, f:2} ]
+    };
+
+    function renderGuitarChordBox(rootNote, chordSymbol, chordNotes) {
+      const container = document.getElementById("guitar-chord-box");
+      container.innerHTML = "";
+
+      let voicing = chordShapeLibrary[chordSymbol];
+
+      // Intelligent transposition fallback if exact chord symbol isn't in library
+      if (!voicing) {
+        // Try matching base root + modifier family or fallback to C shape transposed
+        let baseKey = rootNote;
+        let modType = chordSymbol.substring(rootNote.length);
+        if (modType.includes("m") && !modType.includes("maj")) baseKey += "m";
+        else if (modType.includes("7")) baseKey += "7";
+
+        voicing = chordShapeLibrary[baseKey] || chordShapeLibrary["C"];
+      }
+
+      // Header row with string indicators (O / X)
+      const headerRow = document.createElement("div");
+      headerRow.className = "chord-box-header";
+      voicing.forEach(v => {
+        const span = document.createElement("span");
+        if (v.f === -1) span.textContent = "×";
+        else if (v.f === 0) span.textContent = "o";
+        else span.textContent = "";
+        headerRow.appendChild(span);
+      });
+      container.appendChild(headerRow);
+
+      // Frets container (Frets 1 to 4)
+      const fretsContainer = document.createElement("div");
+      fretsContainer.className = "chord-box-frets";
+
+      for (let fret = 1; fret <= 4; fret++) {
+        const fretRow = document.createElement("div");
+        fretRow.className = "chord-fret-row";
+
+        voicing.forEach((v, sIdx) => {
+          const slot = document.createElement("div");
+          slot.className = "chord-string-slot";
+
+          const stringLine = document.createElement("div");
+          stringLine.className = "chord-string-line";
+          slot.appendChild(stringLine);
+
+          if (v.f === fret) {
+            const dot = document.createElement("div");
+            dot.className = "chord-finger-dot";
+            const openMidi = [40, 45, 50, 55, 59, 64][sIdx]; // E2, A2, D3, G3, B3, E4
+            const noteOnFret = Tonal.Note.fromMidi(openMidi + fret);
+            const pc = Tonal.Note.pitchClass(noteOnFret);
+            dot.textContent = pc;
+            
+            if (Tonal.Note.chroma(pc) === Tonal.Note.chroma(rootNote)) {
+              dot.classList.add("root");
+              dot.title = `${pc} (Root)`;
+            } else {
+              dot.title = `${pc} (Chord Tone)`;
+            }
+            slot.appendChild(dot);
+          }
+
+          fretRow.appendChild(slot);
+        });
+
+        fretsContainer.appendChild(fretRow);
+      }
+
+      container.appendChild(fretsContainer);
+    }
+
+    /* ==========================================================================
+       6. SCALE VISUALIZER & ENHARMONIC-SAFE PIANO & FRETBOARD RENDERING
        ========================================================================== */
     const guitarStrings = [
       { note: "E", octave: 4, strIdx: 0 }, // High E (Physical Bottom)
@@ -1971,7 +2186,7 @@
     }
 
     /* ==========================================================================
-       6. SCALE PLAYBACK & SCALE FAVOURITES
+       7. SCALE PLAYBACK & SCALE FAVOURITES
        ========================================================================== */
     function toggleScaleLoop() {
       isScaleLooping = !isScaleLooping;
@@ -2075,7 +2290,7 @@
     }
 
     /* ==========================================================================
-       7. CHORD BUILDER & CANVAS & PDF EXPORT
+       8. CHORD BUILDER & CANVAS & PDF EXPORT
        ========================================================================== */
     function updateChordBuilder() {
       const root = document.getElementById("build-root").value;
@@ -2101,6 +2316,7 @@
       dragCard.dataset.chordNotes = JSON.stringify(octaveNotes);
 
       renderPianoRoll(notes);
+      renderGuitarChordBox(root, chordSymbol, notes);
     }
 
     function renderPianoRoll(activeNotes) {
@@ -2348,7 +2564,7 @@
     }
 
     /* ==========================================================================
-       8. SECTION 3 & MODALS
+       9. SECTION 3 & MODALS
        ========================================================================== */
     function promptImportPreset() {
       document.getElementById("import-choice-modal").style.display = "flex";
@@ -2449,7 +2665,7 @@
     }
 
     /* ==========================================================================
-       9. SEQUENCER & PRESETS
+       10. SEQUENCER & PRESETS
        ========================================================================== */
     function updateBPM(val) { bpm = parseInt(val); }
 
@@ -2578,7 +2794,7 @@
         return { name: chName, notes: octaveNotes };
       });
 
-      document.getElementById("preset-notes-display").textContent =
+      document.getElementById("preset-notes-display").textContent = 
         "Selected Sequence Notes: " + currentPresetChords.map(c => `${c.name} (${c.notes.join(",")})`).join("  |  ");
     }
 
@@ -2587,7 +2803,7 @@
     }
 
     /* ==========================================================================
-       10. INITIALIZATION
+       11. INITIALIZATION
        ========================================================================== */
     window.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -2605,4 +2821,3 @@
   </script>
 </body>
 </html>
-
