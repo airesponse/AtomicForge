@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Forge — LyricAlly Melody Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        daw: {
+                            bg: '#0c0d10',
+                            panel: '#13151b',
+                            card: '#1a1d26',
+                            border: '#2a2e3d',
+                            accent: '#6366f1',
+                            accentGlow: 'rgba(99, 102, 241, 0.25)',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            emerald: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Sampled General MIDI instruments for realistic melody playback -->
+    <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0c0d10; }
+        ::-webkit-scrollbar-thumb { background: #2a2e3d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .drop-zone {
+            position: relative;
+            min-height: 70px;
+            width: 100%;
+            background: rgba(19, 21, 27, 0.6);
+            border: 1px dashed #2a2e3d;
+            border-radius: 8px;
+            overflow-x: hidden;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .drop-zone.drag-over {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.08);
+        }
+        .draggable-card-wrapper, .draggable-suggestion {
+            position: absolute;
+            top: 4px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: box-shadow 0.15s ease;
+            z-index: 10;
+        }
+        .draggable-card-wrapper:active, .draggable-suggestion:active {
+            cursor: grabbing;
+            z-index: 20;
+        }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            header, aside, .no-print, button { display: none !important; }
+            main { overflow: visible !important; }
+            .bg-daw-card { background: white !important; border: none !important; box-shadow: none !important; }
+            .drop-zone { border: none !important; background: transparent !important; min-height: 60px !important; }
+            .border-daw-border { border-color: #ccc !important; }
+            input { border: none !important; background: transparent !important; color: black !important; font-weight: bold; }
+        }
+
+        /* Integrated Melody Studio: compact, responsive, and per lyric line */
+        .melody-toggle{padding:5px 8px;border-radius:6px;background:#102b32;color:#70e1c0;border:1px solid #27635d;font-size:11px;white-space:nowrap}
+        .melody-panel{display:none;border:1px solid #28584f;background:rgba(10,24,27,.72);border-radius:9px;padding:9px;gap:8px}
+        .melody-panel.open{display:grid}
+        .melody-toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+        .melody-toolbar button,.melody-toolbar select{font-size:11px;padding:5px 7px;border-radius:6px}
+        .melody-status{font-size:11px;color:#9ca9bd;min-height:16px}
+        .melody-staff-wrap{background:#f8f8f4;border-radius:7px;overflow-x:auto}
+        .melody-staff{display:block;min-width:420px;width:100%;touch-action:pan-x pan-y}
+        .melody-piano{display:flex;position:relative;overflow-x:auto;height:86px;padding:0 2px;user-select:none}
+        .melody-key{flex:0 0 26px;height:80px;background:#fff;color:#171923;border:1px solid #888;border-radius:0 0 3px 3px;font-size:8px;display:flex;align-items:flex-end;justify-content:center;padding:0 0 4px;position:relative;z-index:1;touch-action:none}
+        .melody-key.black{flex-basis:17px;height:50px;margin-left:-8.5px;margin-right:-8.5px;background:#171923;color:white;border-color:#080a10;z-index:2}
+        .melody-key.active{background:#70e1c0!important;color:#10131b!important}
+        .melody-notechips{display:flex;gap:4px;flex-wrap:wrap}
+        .melody-chip{font-size:10px;padding:3px 6px;background:#202635;border:1px solid #30394b;border-radius:5px;color:#dbe8f5}
+        .melody-chip.selected{border-color:#70e1c0;color:#70e1c0}
+        .melody-small{font-size:10px;color:#9ca9bd}
+        .line-entry{min-width:0}
+        @media(max-width:700px){.melody-panel{padding:7px}.melody-toolbar button{padding:5px}.melody-key{flex-basis:23px}.melody-key.black{flex-basis:15px;margin-left:-7.5px;margin-right:-7.5px}}
+    </style>
+</head>
+<body class="bg-daw-bg text-gray-200 font-sans min-h-screen flex flex-col antialiased selection:bg-daw-accent selection:text-white">
+
+    <!-- DAW Navbar Header -->
+    <header class="h-16 border-b border-daw-border bg-daw-panel flex items-center justify-between px-4 sticky top-0 z-50">
+        <!-- Invisible Return to Atomic Forge Link -->
+        <a href="index.html" class="flex items-center gap-3 hover:opacity-90 transition-opacity" title="Return to Atomic Forge Index">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg shrink-0">
+                <i class="fa-solid fa-compact-disc fa-spin-pulse" style="--fa-animation-duration: 12s;"></i>
+            </div>
+            <span class="font-bold tracking-tight text-white text-base flex items-center gap-2 leading-tight">
+                LyricAlly + Note Studio <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v4.0</span>
+            </span>
+        </a>
+
+        <!-- Song Metadata & BPM Bar -->
+        <div class="hidden md:flex items-center gap-6 text-sm">
+            <div class="flex items-center gap-2 bg-daw-bg/80 border border-daw-border px-3 py-1 rounded-md">
+                <i class="fa-solid fa-music text-indigo-400 text-xs"></i>
+                <input type="text" id="songTitleInput" value="Untitled Masterpiece" class="bg-transparent text-white font-medium focus:outline-none w-44 text-sm" placeholder="Song Title...">
+            </div>
+
+            <div class="flex items-center gap-3 bg-daw-card px-3 py-1 rounded-md border border-daw-border">
+                <button id="playBpmBtn" onclick="toggleMetronome()" class="text-gray-400 hover:text-cyan-400 transition-colors" title="Toggle Metronome Pulse">
+                    <i class="fa-solid fa-play text-xs" id="metronomeIcon"></i>
+                </button>
+                <div class="flex items-center gap-1.5 font-mono text-xs">
+                    <span class="text-gray-400">BPM:</span>
+                    <input type="number" id="bpmInput" value="120" min="40" max="240" class="w-12 bg-daw-bg border border-daw-border rounded text-center text-cyan-400 font-bold focus:outline-none" onchange="updateBpm(this.value)">
+                </div>
+                <button onclick="tapBpm()" class="px-2 py-0.5 text-xs bg-daw-border hover:bg-slate-700 text-gray-300 rounded font-mono active:bg-cyan-600 transition-all">TAP</button>
+                <div id="beatIndicator" class="w-2.5 h-2.5 rounded-full bg-gray-600"></div>
+            </div>
+
+            <div class="flex items-center gap-4 text-xs font-mono text-gray-400 bg-daw-bg px-3 py-1 rounded-md border border-daw-border">
+                <span>WORDS: <strong id="totalWordsCount" class="text-white">0</strong></span>
+                <span>SYLLABLES: <strong id="totalSyllablesCount" class="text-white">0</strong></span>
+                <span>EST: <strong id="totalEstTime" class="text-indigo-400">0:00</strong></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="exportSongAsPdf()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all shadow" title="Download Song Sheet as PDF">
+                <i class="fa-solid fa-file-pdf text-emerald-400"></i>
+                <span class="hidden sm:inline">Download PDF</span>
+            </button>
+            <button onclick="openVisualTabModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition-all shadow">
+                <i class="fa-solid fa-guitar text-indigo-400"></i>
+                <span class="hidden sm:inline">Chord & Tab Studio</span>
+            </button>
+            <button onclick="openScratchpadModal()" class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-all">
+                <i class="fa-solid fa-microphone"></i>
+                <span class="hidden sm:inline">Scratchpad</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="no-print flex flex-wrap items-center gap-2 px-3 py-2 bg-[#10131b] border-b border-daw-border text-xs">
+        <span class="text-emerald-300 font-semibold">MELODY INPUT</span>
+        <button onclick="startMelodyInput()" id="globalMelodyStart" class="px-2 py-1 rounded bg-emerald-700/50 border border-emerald-500/40">Start guitar/audio</button>
+        <button onclick="stopMelodyInput()" id="globalMelodyStop" disabled class="px-2 py-1 rounded bg-daw-card border border-daw-border opacity-50">Stop input</button>
+        <select id="melodyInputDevice" aria-label="Melody audio input" class="max-w-[190px] bg-daw-card border border-daw-border rounded px-2 py-1"><option value="">Default input</option></select>
+        <button onclick="connectMelodyMidi()" class="px-2 py-1 rounded bg-indigo-700/40 border border-indigo-500/40">Connect MIDI</button>
+        <span id="globalMelodyStatus" class="text-gray-400">Open Melody on a lyric line to record notes for that line.</span>
+    </div>
+
+    <!-- DAW Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Project Manager & Backup/Restore -->
+        <aside class="w-64 bg-daw-panel border-r border-daw-border flex flex-col hidden lg:flex select-none">
+            <div class="p-3 border-b border-daw-border flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fa-solid fa-folder-tree text-indigo-400"></i> Project Drafts
+                </span>
+                <button onclick="createNewSong()" class="p-1 text-gray-400 hover:text-white hover:bg-daw-card rounded" title="Create New Song Draft"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div id="songProjectList" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+
+            <div class="p-3 border-t border-daw-border bg-daw-bg/50 space-y-2">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 block">Offline Backup & Restore</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="backupActiveSong()" class="py-1 bg-daw-card hover:bg-slate-800 text-indigo-400 border border-indigo-500/30 rounded text-[11px] font-medium flex items-center justify-center gap-1" title="Export Active Song JSON">
+                        <i class="fa-solid fa-file-arrow-down"></i> Export Song
+                    </button>
+                    <button onclick="backupAllSongs()" class="py-1 bg-daw-card hover:bg-slate-800 text-cyan-400 border border-cyan-500/30 rounded text-[11px] font-medium flex items-center justify-center gap-1" title="Export All Songs Suite JSON">
+                        <i class="fa-solid fa-database"></i> Export All
+                    </button>
+                </div>
+                <label class="w-full py-1.5 bg-daw-card hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-all">
+                    <i class="fa-solid fa-file-arrow-up"></i> Restore from Backup JSON
+                    <input type="file" id="importBackupInput" accept=".json" class="hidden" onchange="importBackupFile(event)">
+                </label>
+            </div>
+        </aside>
+
+        <!-- Center Stage: Lyric Editor Workspace -->
+        <main class="flex-1 flex flex-col bg-daw-bg overflow-hidden relative">
+            <div class="p-2 bg-daw-panel/60 border-b border-daw-border flex flex-wrap items-center justify-between gap-2 px-4 no-print">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs text-gray-400 font-medium mr-1">Add Stanza:</span>
+                    <button onclick="addStanza('Verse')" class="px-2.5 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 text-xs transition-all">+ Verse</button>
+                    <button onclick="addStanza('Chorus')" class="px-2.5 py-1 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 text-xs transition-all">+ Chorus</button>
+                    <button onclick="addStanza('Pre-Chorus')" class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 text-xs transition-all">+ Pre-Chorus</button>
+                    <button onclick="addStanza('Bridge')" class="px-2.5 py-1 rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 text-xs transition-all">+ Bridge</button>
+                    <button onclick="addStanza('Outro')" class="px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-xs transition-all">+ Outro</button>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-400">
+                    <span><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Drag AI suggestions or chord cards directly onto any line drop-zone</span>
+                </div>
+            </div>
+
+            <div id="stanzasContainer" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6"></div>
+        </main>
+
+        <!-- Right Sidebar: AI Studio & Rhymes -->
+        <aside class="w-80 md:w-96 bg-daw-panel border-l border-daw-border flex flex-col h-full overflow-hidden select-none no-print">
+            <div class="flex border-b border-daw-border bg-daw-bg/80">
+                <button onclick="switchTab('rhymes')" id="tabBtn-rhymes" class="flex-1 py-2.5 text-xs font-semibold text-center text-indigo-400 border-b-2 border-indigo-500 transition-all flex items-center justify-center gap-1.5"><i class="fa-solid fa-quote-right"></i> Rhymes</button>
+                <button onclick="switchTab('aiAssist')" id="tabBtn-aiAssist" class="flex-1 py-2.5 text-xs font-semibold text-center text-gray-400 border-b-2 border-transparent hover:text-white transition-all flex items-center justify-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> AI Studio</button>
+                <button onclick="switchTab('concept')" id="tabBtn-concept" class="flex-1 py-2.5 text-xs font-semibold text-center text-gray-400 border-b-2 border-transparent hover:text-white transition-all flex items-center justify-center gap-1.5"><i class="fa-solid fa-lightbulb text-yellow-400"></i> Concepts</button>
+            </div>
+
+            <!-- Rhymes Tab -->
+            <div id="tabContent-rhymes" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 block mb-1">Target Word:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="rhymeTargetWord" class="flex-1 bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. time, soul, dark, gold...">
+                        <button onclick="triggerRhymeLookup()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md text-xs font-medium">Find</button>
+                    </div>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-cyan-400 tracking-wider uppercase">Phonetic Rhymes</span>
+                        <button onclick="triggerRhymeLookup()" class="text-[11px] text-gray-400 hover:text-white flex items-center gap-1 bg-daw-card px-2 py-0.5 rounded border border-daw-border"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                    </div>
+                    <div id="perfectRhymesList" class="flex flex-wrap gap-1.5"><span class="text-xs text-gray-500 italic">Enter a word above and click Find.</span></div>
+                    <div><span class="text-[11px] font-semibold text-amber-400 tracking-wider uppercase block mb-1">Slant / Near Rhymes</span><div id="slantRhymesList" class="flex flex-wrap gap-1.5"></div></div>
+                </div>
+            </div>
+
+            <!-- AI Assist Tab -->
+            <div id="tabContent-aiAssist" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="bg-daw-card border border-daw-border rounded-lg p-3 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5"><i class="fa-solid fa-angles-right text-cyan-400"></i> Line Continuation</span>
+                        <div class="flex gap-1">
+                            <button onclick="aiSuggestNextLine()" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-medium" title="Generate New Ideas">Generate</button>
+                            <button onclick="resetAiAssist()" class="px-2 py-1 bg-daw-bg border border-daw-border hover:border-rose-500 text-gray-400 hover:text-rose-400 rounded text-[11px]" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Drag any suggestion box or click (+) to insert into active lyric row.</p>
+                    <div id="aiNextLineResults" class="space-y-2 pt-1">
+                        <p class="text-xs text-gray-500 italic">Click Generate to get rhythmic line suggestions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Concepts Tab -->
+            <div id="tabContent-concept" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-gray-300 block">Describe a Vibe or Concept:</label>
+                    <textarea id="conceptInput" rows="2" class="w-full bg-daw-bg border border-daw-border rounded-md p-2.5 text-xs text-white resize-none" placeholder="e.g. Midnight highway rain..."></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="aiSearchConcept()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded-md text-xs">Generate Metaphors</button>
+                        <button onclick="resetConcepts()" class="px-3 py-1.5 bg-daw-bg border border-daw-border hover:border-rose-500 text-gray-400 hover:text-rose-400 rounded text-xs" title="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+                    </div>
+                </div>
+                <div id="conceptResults" class="space-y-2 mt-2">
+                    <p class="text-xs text-gray-500 italic">Click Generate Metaphors for imagery ideas.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Visual Studio Modal -->
+    <div id="visualTabModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-daw-panel border border-daw-border rounded-2xl p-6 w-full max-w-3xl shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-daw-border pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-guitar text-indigo-400"></i> Chord & Tablature Image Studio
+                </h3>
+                <button onclick="closeVisualTabModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex gap-2 bg-daw-bg p-1 rounded-lg border border-daw-border">
+                <button onclick="switchStudioMode('auto')" id="studioBtn-auto" class="flex-1 py-1.5 text-xs font-semibold rounded bg-indigo-600 text-white transition-all">1. Auto Chord Generator</button>
+                <button onclick="switchStudioMode('custom')" id="studioBtn-custom" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">2. Custom Fretboard Studio</button>
+                <button onclick="switchStudioMode('tab')" id="studioBtn-tab" class="flex-1 py-1.5 text-xs font-semibold rounded text-gray-400 hover:text-white transition-all">3. Tablature Riff Builder</button>
+            </div>
+
+            <div id="studioMode-auto" class="space-y-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Root Note:</label>
+                        <select id="autoChordRoot" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono font-bold" onchange="updateAutoChordPreview()">
+                            <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option><option value="D#">D# / Eb</option>
+                            <option value="E">E</option><option value="F">F</option><option value="F#">F# / Gb</option><option value="G">G</option>
+                            <option value="G#">G# / Ab</option><option value="A" selected>A</option><option value="A#">A# / Bb</option><option value="B">B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Type / Quality:</label>
+                        <select id="autoChordType" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-indigo-300 font-mono font-bold" onchange="updateAutoChordPreview()">
+                            <option value="maj">Major</option>
+                            <option value="m" selected>Minor (m)</option>
+                            <option value="7">Dominant 7th</option>
+                            <option value="maj7">Major 7th (maj7)</option>
+                            <option value="m7">Minor 7th (m7)</option>
+                            <option value="sus2">Sus2</option>
+                            <option value="sus4">Sus4</option>
+                            <option value="dim">Diminished (dim)</option>
+                            <option value="aug">Augmented (aug)</option>
+                            <option value="5">Power Chord (5)</option>
+                            <option value="9">9th</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Voicing Position:</label>
+                        <select id="autoChordPosition" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-cyan-400 font-mono" onchange="updateAutoChordPreview()">
+                            <option value="open">Open / Standard</option>
+                            <option value="pos3">Position 3</option>
+                            <option value="pos5">Position 5</option>
+                            <option value="pos7">Position 7</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-daw-card border border-daw-border p-4 rounded-xl flex flex-col items-center justify-center space-y-3">
+                    <div class="flex items-center justify-between w-full px-2">
+                        <span class="text-xs text-gray-400 font-mono">Auto-Rendered Vector Diagram:</span>
+                        <button onclick="refreshAutoChordVoicing()" class="px-2.5 py-1 bg-daw-bg border border-daw-border hover:border-indigo-500 text-indigo-300 rounded text-xs flex items-center gap-1.5 transition-all">
+                            <i class="fa-solid fa-rotate-right text-xs"></i> Refresh / Alternate Voicing
+                        </button>
+                    </div>
+                    <div id="autoChordPreviewContainer" class="p-2"></div>
+                </div>
+
+                <button onclick="insertAutoChordCard()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
+                    Insert Auto-Generated Chord Image
+                </button>
+            </div>
+
+            <div id="studioMode-custom" class="space-y-4 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Custom Chord Name:</label>
+                        <input type="text" id="builderChordName" value="Am(add9)" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Starting Fret Marker:</label>
+                        <select id="builderStartFret" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
+                            <option value="1">Fret 1 (Default)</option>
+                            <option value="2">Fret 2</option>
+                            <option value="3">Fret 3</option>
+                            <option value="5">Fret 5</option>
+                            <option value="7">Fret 7</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 block mb-1">Click Frets to Place Finger Dots (6 Strings: E A D G B e):</label>
+                    <div class="bg-daw-card border border-daw-border p-4 rounded-xl flex justify-center">
+                        <svg id="fretboardSvg" width="280" height="180" class="select-none cursor-pointer"></svg>
+                    </div>
+                </div>
+
+                <button onclick="insertVisualChordCard()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
+                    Insert Custom Fretboard Diagram Image
+                </button>
+            </div>
+
+            <div id="studioMode-tab" class="space-y-4 hidden">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Riff / Section Title:</label>
+                        <input type="text" id="builderRiffTitle" value="Intro Fingerstyle Riff" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Tuning / Key:</label>
+                        <input type="text" id="builderTuning" value="C# Standard" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-1">Tool:</label>
+                        <select id="tabToolSelect" class="w-full bg-daw-bg border border-daw-border rounded-md px-3 py-1.5 text-xs text-cyan-400 font-mono">
+                            <option value="number">Fret Number (0-16)</option>
+                            <option value="h">Hammer-on (h)</option>
+                            <option value="p">Pull-off (p)</option>
+                            <option value="/">Slide Up (/)</option>
+                            <option value="b">Bend (b)</option>
+                            <option value="x">Mute (x)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-daw-card border border-daw-border p-3 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <span>Click grid cells to place notes (12 Beats):</span>
+                        <button onclick="clearTabGrid()" class="px-2 py-0.5 bg-daw-bg border border-daw-border hover:border-rose-500 text-rose-400 rounded text-[10px]">Clear Grid</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <div id="tabGridContainer" class="inline-block min-w-full"></div>
+                    </div>
+                </div>
+
+                <button onclick="insertAdvancedTabCard()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2 rounded-lg text-xs transition-all shadow">
+                    Insert Tablature Riff Image Card
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Scratchpad Modal -->
+    <div id="scratchpadModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-daw-panel border border-daw-border rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div class="flex justify-between items-center"><h3 class="text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-microphone-lines text-rose-400"></i> Song Voice Scratchpad</h3><button onclick="closeScratchpadModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button></div>
+            
+            <div class="text-center py-5 space-y-3 bg-daw-card border border-daw-border rounded-lg">
+                <div id="recordVisualizer" class="w-14 h-14 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-microphone"></i></div>
+                <div id="recordTimer" class="font-mono text-lg font-bold text-white">00:00</div>
+                <div class="flex justify-center gap-3">
+                    <button id="startRecBtn" onclick="startRecording()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-md text-xs font-semibold shadow">Record Take</button>
+                    <button id="stopRecBtn" onclick="stopRecording()" disabled class="px-4 py-1.5 bg-gray-700 text-gray-400 rounded-md text-xs font-semibold opacity-50">Stop</button>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Recorded Voice Takes for Song:</span>
+                <div id="audioMemosList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            songs: [],
+            currentSongId: null,
+            activeStanzaId: null,
+            activeLineIndex: 0,
+            bpm: 120,
+            isPlayingMetronome: false
+        };
+
+        let currentChordFingers = [0, 2, 2, 1, 0, 0];
+        const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
+        let tabMatrix = Array(6).fill(0).map(() => Array(12).fill(''));
+
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordStartTime = 0;
+        let recordInterval = null;
+
+        const AUTO_CHORD_DB = {
+            "C_maj": [ -1, 3, 2, 0, 1, 0 ], "C_m": [ -1, 3, 5, 5, 4, 3 ], "C_7": [ -1, 3, 2, 3, 1, 0 ], "C_maj7": [ -1, 3, 2, 0, 0, 0 ], "C_m7": [ -1, 3, 5, 3, 4, 3 ], "C_sus2": [ -1, 3, 0, 0, 1, 0 ], "C_sus4": [ -1, 3, 3, 0, 1, 1 ], "C_5": [ -1, 3, 5, 5, -1, -1 ],
+            "G_maj": [ 3, 2, 0, 0, 0, 3 ], "G_m": [ 3, 5, 5, 3, 3, 3 ], "G_7": [ 3, 2, 0, 0, 0, 1 ], "G_maj7": [ 3, 2, 0, 0, 0, 2 ], "G_m7": [ 3, 5, 3, 3, 3, 3 ],
+            "A_maj": [ -1, 0, 2, 2, 2, 0 ], "A_m": [ -1, 0, 2, 2, 1, 0 ], "A_7": [ -1, 0, 2, 0, 2, 0 ], "A_maj7": [ -1, 0, 2, 1, 2, 0 ], "A_m7": [ -1, 0, 2, 0, 1, 0 ], "A_sus2": [ -1, 0, 2, 2, 0, 0 ], "A_sus4": [ -1, 0, 2, 2, 3, 0 ],
+            "D_maj": [ -1, -1, 0, 2, 3, 2 ], "D_m": [ -1, -1, 0, 2, 3, 1 ], "D_7": [ -1, -1, 0, 2, 1, 2 ], "D_m7": [ -1, -1, 0, 2, 1, 1 ],
+            "E_maj": [ 0, 2, 2, 1, 0, 0 ], "E_m": [ 0, 2, 2, 0, 0, 0 ], "E_7": [ 0, 2, 0, 1, 0, 0 ], "E_m7": [ 0, 2, 0, 0, 0, 0 ],
+            "F_maj": [ 1, 3, 3, 2, 1, 1 ], "F_m": [ 1, 3, 3, 1, 1, 1 ], "F_maj7": [ -1, -1, 3, 2, 1, 0 ]
+        };
+
+        const SAMPLE_SONG = {
+            id: 'song_' + Date.now(),
+            title: 'Neon Skyline',
+            bpm: 120,
+            recordings: [],
+            stanzas: [
+                {
+                    id: 'stz_1',
+                    type: 'Verse',
+                    lines: [
+                        { text: "Walking under neon shadows through the midnight rain", cards: [] },
+                        { text: "Counting every footstep echo down the silent lane", cards: [] }
+                    ]
+                }
+            ]
+        };
+
+        window.onload = function() {
+            loadSavedSongs();
+            renderSongList();
+            renderCurrentSong();
+            renderInteractiveFretboard();
+            renderTabGrid();
+            updateAutoChordPreview();
+        };
+
+        function loadSavedSongs() {
+            const saved = localStorage.getItem('lyrically_songs');
+            try {
+                state.songs = saved ? JSON.parse(saved) : [SAMPLE_SONG];
+                state.songs.forEach(song => {
+                    if (!song.recordings) song.recordings = [];
+                    song.stanzas.forEach(stz => {
+                        stz.lines = stz.lines.map(l => typeof l === 'string' ? { text: l, cards: [], melody: { notes: [], recording: null } } : ({ cards: [], melody: { notes: [], recording: null }, ...l, cards: l.cards || [], melody: l.melody || { notes: [], recording: null } }));
+                    });
+                });
+            } catch (e) {
+                state.songs = [SAMPLE_SONG];
+            }
+            if (state.songs.length > 0) {
+                state.currentSongId = state.songs[0].id;
+                state.bpm = state.songs[0].bpm || 120;
+                document.getElementById('bpmInput').value = state.bpm;
+            }
+        }
+
+        function saveState() {
+            try { localStorage.setItem('lyrically_songs', JSON.stringify(state.songs)); } catch(e) { console.warn(e); const g=document.getElementById('globalMelodyStatus'); if(g)g.textContent='Browser storage is full. Download a song backup and shorten/remove large recordings.'; }
+            renderSongList();
+            updateTotalStats();
+        }
+
+        function getCurrentSong() { return state.songs.find(s => s.id === state.currentSongId) || state.songs[0]; }
+
+        function renderSongList() {
+            const container = document.getElementById('songProjectList');
+            container.innerHTML = '';
+            state.songs.forEach(song => {
+                const isActive = song.id === state.currentSongId;
+                const div = document.createElement('div');
+                div.className = `p-2 rounded-md cursor-pointer flex items-center justify-between text-xs transition-all ${isActive ? 'bg-indigo-600/20 text-white border border-indigo-500/30 font-medium' : 'text-gray-400 hover:bg-daw-card hover:text-gray-200'}`;
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 truncate flex-1" onclick="switchSong('${song.id}')">
+                        <i class="fa-solid fa-compact-disc ${isActive ? 'text-indigo-400' : 'text-gray-500'}"></i>
+                        <span class="truncate">${escapeHtml(song.title)}</span>
+                    </div>
+                    ${state.songs.length > 1 ? `<button onclick="deleteSong('${song.id}', event)" class="p-1 text-gray-500 hover:text-rose-400 transition-colors" title="Delete Song Draft"><i class="fa-solid fa-trash-can text-[10px]"></i></button>` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteSong(songId, event) {
+            event.stopPropagation();
+            if (state.songs.length <= 1) return;
+            state.songs = state.songs.filter(s => s.id !== songId);
+            if (state.currentSongId === songId) state.currentSongId = state.songs[0].id;
+            saveState();
+            renderSongList();
+            renderCurrentSong();
+        }
+
+        function countSyllables(text) {
+            if (!text || text.trim() === '') return 0;
+            const words = text.toLowerCase().trim().split(/\s+/);
+            let total = 0;
+            words.forEach(word => {
+                word = word.replace(/(?:[^laeiouy]|ed|es|e)$/, '');
+                word = word.replace(/^y/, '');
+                const matches = word.match(/[aeiouy]{1,2}/g);
+                total += matches ? matches.length : 1;
+            });
+            return Math.max(1, total);
+        }
+
+        function renderCurrentSong() {
+            const song = getCurrentSong();
+            if (!song) return;
+            document.getElementById('songTitleInput').value = song.title;
+            const container = document.getElementById('stanzasContainer');
+            container.innerHTML = '';
+
+            song.stanzas.forEach((stanza, stzIdx) => {
+                const stanzaCard = document.createElement('div');
+                stanzaCard.className = 'bg-daw-card border border-daw-border rounded-xl p-4 shadow-lg transition-all relative group';
+
+                let badgeStyle = 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30';
+                if (stanza.type === 'Chorus') badgeStyle = 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+
+                stanzaCard.innerHTML = `
+                    <div class="flex items-center justify-between pb-3 border-b border-daw-border mb-3 select-none">
+                        <span class="px-2.5 py-0.5 rounded-full border text-xs font-semibold ${badgeStyle}">${stanza.type}</span>
+                        <div class="flex items-center gap-1 no-print">
+                            <button onclick="moveStanza('${stanza.id}', -1)" class="p-1 text-gray-500 hover:text-white" title="Move Stanza Up"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+                            <button onclick="moveStanza('${stanza.id}', 1)" class="p-1 text-gray-500 hover:text-white" title="Move Stanza Down"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+                            <button onclick="deleteStanza('${stanza.id}')" class="p-1 text-gray-500 hover:text-rose-400 ml-2" title="Delete Stanza"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+                    <div class="space-y-4" id="stanzaLines-${stanza.id}">
+                        ${stanza.lines.map((lineObj, lineIdx) => renderLineRow(stanza.id, stanza.lines, lineIdx)).join('')}
+                    </div>
+                    <button onclick="addLineToStanza('${stanza.id}')" class="mt-3 w-full py-1.5 border border-dashed border-daw-border hover:border-indigo-500/50 rounded-lg text-xs text-gray-400 hover:text-indigo-300 transition-all flex items-center justify-center gap-1.5 no-print">
+                        <i class="fa-solid fa-plus text-[10px]"></i> Add Line
+                    </button>
+                `;
+                container.appendChild(stanzaCard);
+            });
+            updateTotalStats();
+        }
+
+        function generateMiniChordSvg(name, fingers) {
+            let svg = `<svg width="56" height="64" viewBox="0 0 56 64" class="inline-block bg-[#13151b] border border-[#2a2e3d] rounded p-1 shadow-md">`;
+            svg += `<text x="28" y="10" font-size="9" font-family="monospace" fill="#818cf8" text-anchor="middle" font-weight="bold">${name}</text>`;
+            svg += `<rect x="10" y="14" width="36" height="3" fill="#6366f1"/>`;
+            for (let f = 0; f <= 4; f++) {
+                let y = 17 + f * 9;
+                svg += `<line x1="10" y1="${y}" x2="46" y2="${y}" stroke="#2a2e3d" stroke-width="1"/>`;
+            }
+            for (let s = 0; s < 6; s++) {
+                let x = 10 + s * 7.2;
+                svg += `<line x1="${x}" y1="14" x2="${x}" y2="53" stroke="#475569" stroke-width="1"/>`;
+            }
+            fingers.forEach((fret, stringIdx) => {
+                let x = 10 + stringIdx * 7.2;
+                if (fret === -1) {
+                    svg += `<text x="${x}" y="12" font-size="7" fill="#f43f5e" text-anchor="middle" font-family="monospace">x</text>`;
+                } else if (fret === 0) {
+                    svg += `<circle cx="${x}" cy="11" r="2" stroke="#06b6d4" stroke-width="1" fill="none"/>`;
+                } else {
+                    let y = 14 + (fret - 0.5) * 9;
+                    svg += `<circle cx="${x}" cy="${y}" r="2.5" fill="#6366f1"/>`;
+                }
+            });
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function generateVectorTabSvg(title, tuning, matrix) {
+            let width = 360;
+            let height = 110;
+            let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="font-mono bg-[#13151b] border border-[#2a2e3d] rounded p-1 shadow-md">`;
+            svg += `<text x="10" y="16" font-size="10" fill="#06b6d4" font-weight="bold">${title}</text>`;
+            svg += `<text x="${width - 10}" y="16" font-size="9" fill="#94a3b8" text-anchor="end">${tuning}</text>`;
+            svg += `<line x1="10" y1="22" x2="${width - 10}" y2="22" stroke="#2a2e3d" stroke-width="1"/>`;
+
+            stringNames.forEach((sName, sIdx) => {
+                let y = 36 + sIdx * 12;
+                svg += `<text x="14" y="${y + 3}" font-size="9" fill="#818cf8" font-weight="bold">${sName}</text>`;
+                svg += `<line x1="28" y1="${y}" x2="${width - 10}" y2="${y}" stroke="#475569" stroke-width="1"/>`;
+
+                for (let b = 0; b < 12; b++) {
+                    let noteVal = matrix[sIdx]?.[b] || '';
+                    if (noteVal !== '') {
+                        let x = 44 + b * 24;
+                        svg += `<rect x="${x - 6}" y="${y - 7}" width="12" height="14" fill="#1e1b4b" rx="2" stroke="#6366f1" stroke-width="0.8"/>`;
+                        svg += `<text x="${x}" y="${y + 3}" font-size="9" fill="#38bdf8" text-anchor="middle" font-weight="bold">${noteVal}</text>`;
+                    }
+                }
+            });
+            svg += `</svg>`;
+            return svg;
+        }
+
+        function renderLineRow(stanzaId, linesArray, lineIdx) {
+            const lineObj = linesArray[lineIdx];
+            const beatsCount = countSyllables(lineObj.text);
+
+            return `
+                <div class="flex flex-col gap-2 p-2 rounded-lg bg-daw-bg/40 border border-daw-border/50 group/line" id="lineRow-${stanzaId}-${lineIdx}">
+                    <div class="drop-zone"
+                         id="dropZone-${stanzaId}-${lineIdx}"
+                         ondragover="allowDrop(event)" 
+                         ondragleave="removeDropStyle(event)"
+                         ondrop="dropCard(event, '${stanzaId}', ${lineIdx})">
+                        ${lineObj.cards && lineObj.cards.length > 0 ? lineObj.cards.map((card, cIdx) => `
+                            <div draggable="true"
+                                 id="cardElem-${stanzaId}-${lineIdx}-${cIdx}"
+                                 ondragstart="dragCardStart(event, '${stanzaId}', ${lineIdx},${cIdx})"
+                                 style="left: ${card.leftPercent || 0}%;"
+                                 class="draggable-card-wrapper group/card">
+                                <div>${card.svgHtml}</div>
+                                <button onclick="removeCard('${stanzaId}', ${lineIdx},${cIdx})" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover/card:opacity-100 shadow no-print"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        `).join('') : '<span class="text-[11px] text-gray-500 italic p-2 block pointer-events-none no-print">Drag chord, tab, or AI suggestion cards along this bar...</span>'}
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1 px-2 py-1 bg-daw-card border border-daw-border rounded text-[11px] font-mono text-cyan-400 shrink-0" title="Calculated Beats">
+                            <i class="fa-solid fa-clock text-[9px] text-indigo-400"></i>
+                            <span>BEATS: <strong>${beatsCount}</strong></span>
+                        </div>
+                        <input type="text" 
+                               value="${escapeHtml(lineObj.text)}" 
+                               onfocus="setActiveLine('${stanzaId}', ${lineIdx})"
+                               oninput="updateLineText('${stanzaId}', ${lineIdx}, this.value)"
+                               class="flex-1 bg-daw-bg border border-daw-border text-sm text-gray-100 focus:outline-none focus:border-indigo-500 font-sans px-3 py-1.5 rounded" 
+                               placeholder="Type lyrics here...">
+                        
+                        <div class="flex items-center gap-1 no-print">
+                            <button onclick="moveLine('${stanzaId}', ${lineIdx}, -1)" ${lineIdx === 0 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Up"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button onclick="moveLine('${stanzaId}', ${lineIdx}, 1)" ${lineIdx === linesArray.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed"' : ''} class="p-1 bg-daw-card border border-daw-border text-gray-400 hover:text-white rounded text-xs" title="Move Line Down"><i class="fa-solid fa-chevron-down"></i></button>
+                            <button onclick="deleteLine('${stanzaId}', ${lineIdx})" class="p-1 text-gray-400 hover:text-rose-400 ml-1" title="Delete Line"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        </div>
+                    </div>
+                    <div class="flex justify-end no-print"><button class="melody-toggle" onclick="toggleLineMelody('${stanzaId}', ${lineIdx})"><i class="fa-solid fa-music"></i> Melody & staff <span id="melodyCount-${stanzaId}-${lineIdx}"></span></button></div>
+                    <div class="melody-panel" id="melodyPanel-${stanzaId}-${lineIdx}">
+                        <div class="flex flex-wrap items-center justify-between gap-2"><strong class="text-xs text-emerald-300">Melody for this lyric line</strong><span class="melody-small">Notes and recording belong to this line and move with it.</span></div>
+                        <div class="melody-toolbar">
+                            <label class="melody-small">Playback instrument <select id="melodyInstrument-${stanzaId}-${lineIdx}" class="bg-daw-card border border-daw-border" onchange="setMelodyInstrument('${stanzaId}',${lineIdx},this.value)"><option value="acoustic_grand_piano">Concert piano</option><option value="electric_piano_1">Electric piano</option><option value="acoustic_guitar_nylon">Nylon guitar</option><option value="acoustic_guitar_steel">Steel-string guitar</option><option value="electric_guitar_clean">Clean electric guitar</option><option value="electric_guitar_jazz">Jazz guitar</option><option value="overdriven_guitar">Overdriven guitar</option><option value="distortion_guitar">Distortion guitar</option><option value="electric_bass_finger">Finger bass</option><option value="violin">Violin</option><option value="cello">Cello</option><option value="string_ensemble_1">Orchestral strings</option><option value="slow_string_ensemble">Slow strings</option><option value="flute">Flute</option><option value="clarinet">Clarinet</option><option value="trumpet">Trumpet</option><option value="alto_sax">Alto sax</option><option value="choir_aahs">Choir</option><option value="church_organ">Church organ</option><option value="drawbar_organ">Rock organ</option><option value="vibraphone">Vibraphone</option><option value="music_box">Music box</option></select></label>
+                            <button onclick="preloadMelodyInstrument('${stanzaId}',${lineIdx})" class="bg-indigo-700/30 border border-indigo-500/40 text-indigo-200">Load sound</button>
+                            <label class="melody-small">New note length <select id="melodyDur-${stanzaId}-${lineIdx}" class="bg-daw-card border border-daw-border"><option value="16">Whole</option><option value="8">Half</option><option value="4" selected>Quarter</option><option value="2">Eighth</option><option value="1">16th</option></select></label>
+                            <button onclick="addMelodyRest('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border">＋ Rest</button>
+                            <button onclick="undoMelody('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border">Undo</button>
+                            <button onclick="deleteMelodyItem('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border">Delete selected</button>
+                            <button onclick="clearLineMelody('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border text-rose-300">Clear staff</button>
+                            <button onclick="exportLineMusicXML('${stanzaId}',${lineIdx})" class="bg-emerald-700/40 border border-emerald-500/40 text-emerald-200">Export MusicXML</button>
+                        </div>
+                        <div class="melody-staff-wrap"><svg class="melody-staff" id="melodyStaff-${stanzaId}-${lineIdx}" viewBox="0 0 600 135" aria-label="Melody staff"></svg></div>
+                        <div id="melodyChips-${stanzaId}-${lineIdx}" class="melody-notechips"></div>
+                        <div class="melody-toolbar">
+                            <button onclick="startLineRecording('${stanzaId}',${lineIdx})" class="bg-rose-700/40 border border-rose-500/40 text-rose-200">● Record line audio</button>
+                            <button onclick="stopLineRecording('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border">■ Stop</button>
+                            <button onclick="playLineMelody('${stanzaId}',${lineIdx})" class="bg-emerald-700/40 border border-emerald-500/40 text-emerald-200">▶ Play notes</button>
+                            <button onclick="downloadLineRecording('${stanzaId}',${lineIdx})" class="bg-daw-card border border-daw-border">↓ Download take</button>
+                            <label class="melody-small">Octave <select id="melodyOct-${stanzaId}-${lineIdx}" class="bg-daw-card border border-daw-border" onchange="buildLinePiano('${stanzaId}',${lineIdx})"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+                        </div>
+                        <div class="melody-piano" id="melodyPiano-${stanzaId}-${lineIdx}"></div>
+                        <div id="melodyStatus-${stanzaId}-${lineIdx}" class="melody-status">Choose a sampled instrument, then press Load sound or Play notes. The first load needs an internet connection.</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function moveLine(stanzaId, lineIdx, direction) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (!stanza) return;
+            const newIdx = lineIdx + direction;
+            if (newIdx >= 0 && newIdx < stanza.lines.length) {
+                const temp = stanza.lines[lineIdx];
+                stanza.lines[lineIdx] = stanza.lines[newIdx];
+                stanza.lines[newIdx] = temp;
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function dragCardStart(event, stanzaId, lineIdx, cardIdx) {
+            const rect = event.target.getBoundingClientRect();
+            const offsetX = event.clientX - rect.left;
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'existing', stanzaId, lineIdx, cardIdx, offsetX }));
+        }
+
+        function dragSuggestionStart(event, text) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({ type: 'suggestion', text }));
+        }
+
+        function allowDrop(event) { event.preventDefault(); event.currentTarget.classList.add('drag-over'); }
+        function removeDropStyle(event) { event.currentTarget.classList.remove('drag-over'); }
+
+        function dropCard(event, targetStanzaId, targetLineIdx) {
+            event.preventDefault();
+            const zone = event.currentTarget;
+            zone.classList.remove('drag-over');
+
+            const dataStr = event.dataTransfer.getData('text/plain');
+            if (!dataStr) return;
+
+            try {
+                const payload = JSON.parse(dataStr);
+                const zoneRect = zone.getBoundingClientRect();
+                let clickX = event.clientX - zoneRect.left - (payload.offsetX || 20);
+                let leftPercent = Math.max(0, Math.min(92, (clickX / zoneRect.width) * 100));
+
+                const song = getCurrentSong();
+                const targetStanza = song.stanzas.find(s => s.id === targetStanzaId);
+
+                if (payload.type === 'existing') {
+                    const sourceStanza = song.stanzas.find(s => s.id === payload.stanzaId);
+                    if (sourceStanza && targetStanza) {
+                        const card = sourceStanza.lines[payload.lineIdx].cards.splice(payload.cardIdx, 1)[0];
+                        if (card) {
+                            card.leftPercent = Math.round(leftPercent);
+                            if (!targetStanza.lines[targetLineIdx].cards) targetStanza.lines[targetLineIdx].cards = [];
+                            targetStanza.lines[targetLineIdx].cards.push(card);
+                            saveState();
+                            renderCurrentSong();
+                        }
+                    }
+                } else if (payload.type === 'suggestion') {
+                    // Drop suggestion as text or set line text
+                    if (targetStanza) {
+                        targetStanza.lines[targetLineIdx].text = payload.text;
+                        saveState();
+                        renderCurrentSong();
+                    }
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function removeCard(stanzaId, lineIdx, cardIdx) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza && stanza.lines[lineIdx].cards) {
+                stanza.lines[lineIdx].cards.splice(cardIdx, 1);
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function setActiveLine(stanzaId, lineIdx) { state.activeStanzaId = stanzaId; state.activeLineIndex = lineIdx; }
+
+        function updateLineText(stanzaId, lineIdx, text) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza) { stanza.lines[lineIdx].text = text; saveState(); updateTotalStats(); }
+        }
+
+        function addLineToStanza(stanzaId) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza) { stanza.lines.push({ text: '', cards: [], melody: { notes: [], recording: null } }); saveState(); renderCurrentSong(); }
+        }
+
+        function deleteLine(stanzaId, lineIdx) {
+            const song = getCurrentSong();
+            const stanza = song.stanzas.find(s => s.id === stanzaId);
+            if (stanza && stanza.lines.length > 1) { stanza.lines.splice(lineIdx, 1); saveState(); renderCurrentSong(); }
+        }
+
+        function addStanza(type) {
+            const song = getCurrentSong();
+            song.stanzas.push({ id: 'stz_' + Date.now(), type: type, lines: [{ text: '', cards: [], melody: { notes: [], recording: null } }] });
+            saveState();
+            renderCurrentSong();
+        }
+
+        function deleteStanza(stanzaId) {
+            const song = getCurrentSong();
+            if (song.stanzas.length > 1) { song.stanzas = song.stanzas.filter(s => s.id !== stanzaId); saveState(); renderCurrentSong(); }
+        }
+
+        function moveStanza(stanzaId, direction) {
+            const song = getCurrentSong();
+            const idx = song.stanzas.findIndex(s => s.id === stanzaId);
+            if (idx < 0) return;
+            const newIdx = idx + direction;
+            if (newIdx >= 0 && newIdx < song.stanzas.length) {
+                const temp = song.stanzas[idx];
+                song.stanzas[idx] = song.stanzas[newIdx];
+                song.stanzas[newIdx] = temp;
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        function createNewSong() {
+            const newSong = { id: 'song_' + Date.now(), title: 'New Song Draft', bpm: 120, recordings: [], stanzas: [{ id: 'stz_1', type: 'Verse', lines: [{ text: '', cards: [], melody: { notes: [], recording: null } }] }] };
+            state.songs.push(newSong);
+            state.currentSongId = newSong.id;
+            saveState();
+            renderCurrentSong();
+        }
+
+        function switchSong(songId) { state.currentSongId = songId; renderSongList(); renderCurrentSong(); }
+
+        // Offline Backup & Restore
+        function backupActiveSong() {
+            const song = getCurrentSong();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(song, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `${song.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_backup.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function backupAllSongs() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.songs, null, 2));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `lyrically_all_songs_suite_backup.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function importBackupFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        state.songs = imported;
+                    } else if (imported && imported.id && imported.stanzas) {
+                        const idx = state.songs.findIndex(s => s.id === imported.id);
+                        if (idx >= 0) { state.songs[idx] = imported; } else { state.songs.push(imported); }
+                        state.currentSongId = imported.id;
+                    }
+                    saveState();
+                    renderSongList();
+                    renderCurrentSong();
+                    alert("Backup successfully restored!");
+                } catch (err) {
+                    alert("Invalid JSON backup file format.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportSongAsPdf() { window.print(); }
+
+        // Voice Scratchpad Recording Logic (Fixed Blob & Playback)
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                let options = { mimeType: 'audio/webm;codecs=opus' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = { mimeType: 'audio/webm' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options = {};
+                    }
+                }
+                mediaRecorder = new MediaRecorder(stream, options);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data && event.data.size > 0) audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = saveVoiceTake;
+
+                mediaRecorder.start();
+                recordStartTime = Date.now();
+                document.getElementById('startRecBtn').disabled = true;
+                document.getElementById('stopRecBtn').disabled = false;
+                document.getElementById('stopRecBtn').classList.remove('opacity-50');
+
+                recordInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+                    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                    const secs = String(elapsed % 60).padStart(2, '0');
+                    document.getElementById('recordTimer').innerText = `${mins}:${secs}`;
+                }, 1000);
+            } catch (err) {
+                alert("Microphone access is required to record voice scratchpad takes.");
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                clearInterval(recordInterval);
+                document.getElementById('startRecBtn').disabled = false;
+                document.getElementById('stopRecBtn').disabled = true;
+                document.getElementById('stopRecBtn').classList.add('opacity-50');
+                document.getElementById('recordTimer').innerText = '00:00';
+            }
+        }
+
+        function saveVoiceTake() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = function() {
+                const base64Audio = reader.result;
+                const song = getCurrentSong();
+                const takeNum = (song.recordings ? song.recordings.length : 0) + 1;
+                
+                if (!song.recordings) song.recordings = [];
+                song.recordings.push({ id: 'rec_' + Date.now(), title: `Take #${takeNum}`, data: base64Audio });
+                saveState();
+                renderScratchpadList();
+            };
+        }
+
+        function renderScratchpadList() {
+            const list = document.getElementById('audioMemosList');
+            const song = getCurrentSong();
+            if (!song.recordings || song.recordings.length === 0) {
+                list.innerHTML = `<p class="text-xs text-gray-500 italic">No voice takes recorded for this song yet.</p>`;
+                return;
+            }
+            list.innerHTML = song.recordings.map((rec, idx) => `
+                <div class="p-2 bg-daw-bg border border-daw-border rounded-lg flex items-center justify-between gap-2">
+                    <span class="text-xs font-mono text-cyan-400 font-bold">${rec.title}</span>
+                    <audio src="${rec.data}" controls class="h-7 w-40"></audio>
+                    <a href="${rec.data}" download="${song.title}_${rec.title}.webm" class="p-1 text-emerald-400 hover:text-white text-xs" title="Download Audio"><i class="fa-solid fa-download"></i></a>
+                    <button onclick="deleteTake(${idx})" class="p-1 text-gray-500 hover:text-rose-400 text-xs" title="Delete Take"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function deleteTake(idx) {
+            const song = getCurrentSong();
+            if (song.recordings) { song.recordings.splice(idx, 1); saveState(); renderScratchpadList(); }
+        }
+
+        function openScratchpadModal() { document.getElementById('scratchpadModal').classList.remove('hidden'); renderScratchpadList(); }
+        function closeScratchpadModal() { document.getElementById('scratchpadModal').classList.add('hidden'); }
+
+        // Robust Phonetic Rhyming Engine
+        function triggerRhymeLookup() {
+            const wordInput = document.getElementById('rhymeTargetWord').value.trim().toLowerCase();
+            const word = wordInput || 'time';
+            const perfectList = document.getElementById('perfectRhymesList');
+            const slantList = document.getElementById('slantRhymesList');
+
+            const phoneticRhymesDB = {
+                'time': { perfect: ['prime', 'rhyme', 'crime', 'climb', 'mime', 'chime', 'dime', 'lime'], slant: ['line', 'shine', 'mind', 'find', 'sign'] },
+                'soul': { perfect: ['roll', 'toll', 'goal', 'hole', 'pole', 'bowl', 'control'], slant: ['fall', 'cold', 'road', 'whole', 'song'] },
+                'dark': { perfect: ['park', 'spark', 'mark', 'bark', 'shark', 'embark'], slant: ['heart', 'tart', 'bar', 'night', 'deep'] },
+                'gold': { perfect: ['hold', 'cold', 'sold', 'told', 'fold', 'bold'], slant: ['roll', 'goal', 'road', 'stone'] },
+                'rain': { perfect: ['pain', 'train', 'lane', 'gain', 'brain', 'stain', 'chain', 'plane'], slant: ['reign', 'game', 'name', 'change', 'same'] },
+                'night': { perfect: ['light', 'fight', 'sight', 'flight', 'white', 'bright', 'tight'], slant: ['mind', 'time', 'line', 'drive', 'wide'] },
+                'heart': { perfect: ['start', 'part', 'art', 'smart', 'chart', 'dart'], slant: ['hark', 'hurt', 'hard', 'spark'] },
+                'dream': { perfect: ['stream', 'beam', 'gleam', 'team', 'cream', 'scream'], slant: ['green', 'deep', 'sleep', 'seen', 'leap'] }
+            };
+
+            let data = phoneticRhymesDB[word];
+            if (!data) {
+                let suffix = word.slice(-2);
+                data = {
+                    perfect: [word.slice(0, -2) + 'ight', word.slice(0, -2) + 'ore', word.slice(0, -2) + 'ine', word.slice(0, -2) + 'ake'],
+                    slant: [word.slice(0, -1) + 'ed', word.slice(0, -2) + 'ing', word + 's']
+                };
+            }
+
+            perfectList.innerHTML = data.perfect.map(w => `<span class="px-2 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded text-xs cursor-pointer hover:bg-indigo-500/40" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
+            slantList.innerHTML = data.slant.map(w => `<span class="px-2 py-1 bg-daw-card text-gray-300 border border-daw-border rounded text-xs cursor-pointer hover:border-indigo-500" onclick="navigator.clipboard.writeText('${w}')" title="Click to copy">${w}</span>`).join('');
+        }
+
+        // AI Studio & Concepts (Non-Repeating & Draggable)
+        let aiIdeasBank = [
+            `Tracing echoes down the boulevard tonight`,
+            `Fading out before the morning breaks the dawn`,
+            `Holding onto moments that we left behind`,
+            `Whispering secrets to the midnight wind`,
+            `Burning bridges underneath a crimson sky`,
+            `Chasing shadows through the quiet street`,
+            `Breathing in the silence of an empty room`,
+            `Walking through the ruins of our yesterday`
+        ];
+
+        let lastAiIndex = -1;
+        function aiSuggestNextLine() {
+            const resultsDiv = document.getElementById('aiNextLineResults');
+            let shuffled = [...aiIdeasBank].sort(() => 0.5 - Math.random()).slice(0, 3);
+            
+            resultsDiv.innerHTML = shuffled.map(s => `
+                <div draggable="true" ondragstart="dragSuggestionStart(event, '${escapeHtml(s)}')" class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-gray-200 hover:border-cyan-500 cursor-grab active:cursor-grabbing flex items-center justify-between group transition-all">
+                    <span class="truncate pr-2">${s}</span>
+                    <button onclick="insertAiLine('${escapeHtml(s)}')" class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors shrink-0" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function resetAiAssist() {
+            document.getElementById('aiNextLineResults').innerHTML = `<p class="text-xs text-gray-500 italic">Click Generate to get rhythmic line suggestions.</p>`;
+        }
+
+        function insertAiLine(lineText) {
+            const song = getCurrentSong();
+            if (state.activeStanzaId !== null) {
+                const stz = song.stanzas.find(s => s.id === state.activeStanzaId);
+                if (stz) {
+                    stz.lines[state.activeLineIndex].text = lineText;
+                    saveState();
+                    renderCurrentSong();
+                }
+            } else if (song.stanzas.length > 0 && song.stanzas[0].lines.length > 0) {
+                song.stanzas[0].lines[0].text = lineText;
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        let metaphorsBank = [
+            `The sky is weeping silver tears across the glass`,
+            `Neon veins pulsing through the urban concrete labyrinth`,
+            `A slow-motion film reel spinning in the downpour`,
+            `Electric ghosts dancing in puddles of light`,
+            `A quiet thunderstorm brewing in the back of your mind`,
+            `The horizon bleeding gold into the asphalt`,
+            `An ocean of static humming in the dark`,
+            `Glass castles shattering in slow motion`
+        ];
+
+        function aiSearchConcept() {
+            const resultsDiv = document.getElementById('conceptResults');
+            let shuffled = [...metaphorsBank].sort(() => 0.5 - Math.random()).slice(0, 3);
+            resultsDiv.innerHTML = shuffled.map(m => `
+                <div draggable="true" ondragstart="dragSuggestionStart(event, '${escapeHtml(m)}')" class="p-2 bg-daw-bg border border-daw-border rounded text-xs text-cyan-300 hover:border-indigo-500 cursor-grab active:cursor-grabbing flex items-center justify-between group transition-all">
+                    <span class="truncate pr-2">"${m}"</span>
+                    <button onclick="insertAiLine('${escapeHtml(m)}')" class="w-5 h-5 bg-cyan-500/20 text-cyan-300 rounded flex items-center justify-center hover:bg-cyan-500 hover:text-white transition-colors shrink-0" title="Insert into active lyric line"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function resetConcepts() {
+            document.getElementById('conceptInput').value = '';
+            document.getElementById('conceptResults').innerHTML = `<p class="text-xs text-gray-500 italic">Click Generate Metaphors for imagery ideas.</p>`;
+        }
+
+        // Auto Chord & Studio Functions
+        function updateAutoChordPreview() {
+            const root = document.getElementById('autoChordRoot').value;
+            const type = document.getElementById('autoChordType').value;
+            const name = `${root}${type === 'maj' ? '' : type}`;
+            const key = `${root}_${type}`;
+            let fingers = AUTO_CHORD_DB[key] || [0, 2, 2, 1, 0, 0];
+            document.getElementById('autoChordPreviewContainer').innerHTML = generateMiniChordSvg(name, fingers);
+        }
+
+        function refreshAutoChordVoicing() { updateAutoChordPreview(); }
+
+        function insertAutoChordCard() {
+            const root = document.getElementById('autoChordRoot').value;
+            const type = document.getElementById('autoChordType').value;
+            const name = `${root}${type === 'maj' ? '' : type}`;
+            const key = `${root}_${type}`;
+            let fingers = AUTO_CHORD_DB[key] || [0, 2, 2, 1, 0, 0];
+            const svgHtml = generateMiniChordSvg(name, fingers);
+            insertCardIntoActiveLine({ type: 'chord', name: name, svgHtml, leftPercent: 0 });
+            closeVisualTabModal();
+        }
+
+        function renderInteractiveFretboard() {
+            const svg = document.getElementById('fretboardSvg');
+            let html = '';
+            const startFret = parseInt(document.getElementById('builderStartFret').value) || 1;
+
+            html += `<rect x="30" y="20" width="220" height="130" fill="#13151b" rx="8"/><rect x="50" y="25" width="180" height="6" fill="#6366f1"/>`;
+            for (let f = 0; f <= 5; f++) {
+                let y = 31 + f * 22;
+                html += `<line x1="50" y1="${y}" x2="230" y2="${y}" stroke="#2a2e3d" stroke-width="2"/>`;
+                if (f > 0) html += `<text x="38" y="${y - 8}" font-size="10" font-family="monospace" fill="#64748b" text-anchor="middle">${startFret + f - 1}</text>`;
+            }
+            for (let s = 0; s < 6; s++) {
+                let x = 50 + s * 36;
+                html += `<line x1="${x}" y1="25" x2="${x}" y2="141" stroke="#475569" stroke-width="${1.5 + s * 0.3}"/>`;
+                let stateVal = currentChordFingers[s];
+                let label = stateVal === -1 ? 'X' : (stateVal === 0 ? 'O' : stateVal);
+                let color = stateVal === -1 ? '#f43f5e' : (stateVal === 0 ? '#06b6d4' : '#818cf8');
+                html += `<g onclick="handleStringHeaderClick(${s})" class="cursor-pointer"><circle cx="${x}" cy="13" r="8" fill="#1a1d26" stroke="${color}" stroke-width="1.5"/><text x="${x}" y="16" font-size="9" font-family="monospace" fill="${color}" text-anchor="middle" font-weight="bold">${label}</text></g>`;
+            }
+            for (let s = 0; s < 6; s++) {
+                for (let f = 1; f <= 5; f++) {
+                    let x = 50 + s * 36;
+                    let y = 25 + (f - 0.5) * 22;
+                    let isPressed = currentChordFingers[s] === f;
+                    html += `<circle cx="${x}" cy="${y}" r="8" fill="transparent" onclick="handleFretClick(${s}, ${f})" class="cursor-pointer hover:fill-indigo-500/20"/>`;
+                    if (isPressed) html += `<circle cx="${x}" cy="${y}" r="7" fill="#6366f1" pointer-events="none"/><text x="${x}" y="${y + 3}" font-size="9" font-family="monospace" fill="#fff" text-anchor="middle" font-weight="bold">${f}</text>`;
+                }
+            }
+            svg.innerHTML = html;
+        }
+
+        function handleStringHeaderClick(stringIdx) { currentChordFingers[stringIdx] = currentChordFingers[stringIdx] >= 0 ? -1 : 0; renderInteractiveFretboard(); }
+        function handleFretClick(stringIdx, fretNum) { currentChordFingers[stringIdx] = currentChordFingers[stringIdx] === fretNum ? 0 : fretNum; renderInteractiveFretboard(); }
+
+        function renderTabGrid() {
+            const container = document.getElementById('tabGridContainer');
+            let html = `<table class="border-collapse text-center font-mono text-xs">`;
+            stringNames.forEach((sName, sIdx) => {
+                html += `<tr><td class="p-1 font-bold text-indigo-400 bg-daw-bg border border-daw-border w-8">${sName}</td>`;
+                for (let b = 0; b < 12; b++) {
+                    let val = tabMatrix[sIdx][b];
+                    html += `<td class="border border-daw-border p-1 w-9 h-8 cursor-pointer hover:bg-cyan-500/10 text-cyan-300 font-bold" onclick="handleTabGridClick(${sIdx}, ${b})">${val}</td>`;
+                }
+                html += `</tr>`;
+            });
+            html += `</table>`;
+            container.innerHTML = html;
+        }
+
+        function handleTabGridClick(stringIdx, beatIdx) {
+            const tool = document.getElementById('tabToolSelect').value;
+            if (tool === 'number') {
+                let current = tabMatrix[stringIdx][beatIdx];
+                tabMatrix[stringIdx][beatIdx] = current === '' ? '0' : (parseInt(current) < 12 ? String(parseInt(current) + 1) : '');
+            } else {
+                tabMatrix[stringIdx][beatIdx] = tool;
+            }
+            renderTabGrid();
+        }
+
+        function clearTabGrid() { tabMatrix = Array(6).fill(0).map(() => Array(12).fill('')); renderTabGrid(); }
+        function openVisualTabModal() { document.getElementById('visualTabModal').classList.remove('hidden'); renderInteractiveFretboard(); renderTabGrid(); updateAutoChordPreview(); }
+        function closeVisualTabModal() { document.getElementById('visualTabModal').classList.add('hidden'); }
+
+        function switchStudioMode(mode) {
+            ['auto', 'custom', 'tab'].forEach(m => {
+                document.getElementById(`studioBtn-${m}`).className = `flex-1 py-1.5 text-xs font-semibold rounded ${m === mode ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`;
+                document.getElementById(`studioMode-${m}`).classList.toggle('hidden', m !== mode);
+            });
+        }
+
+        function insertVisualChordCard() {
+            const chordName = document.getElementById('builderChordName').value.trim() || 'Chord';
+            const svgHtml = generateMiniChordSvg(chordName, [...currentChordFingers]);
+            insertCardIntoActiveLine({ type: 'chord', name: chordName, svgHtml, leftPercent: 0 });
+            closeVisualTabModal();
+        }
+
+        function insertAdvancedTabCard() {
+            const title = document.getElementById('builderRiffTitle').value.trim() || 'Riff';
+            const tuning = document.getElementById('builderTuning').value.trim() || 'Standard';
+            const svgHtml = generateVectorTabSvg(title, tuning, tabMatrix.map(row => [...row]));
+            insertCardIntoActiveLine({ type: 'tab', title, svgHtml, leftPercent: 0 });
+            closeVisualTabModal();
+        }
+
+        function insertCardIntoActiveLine(cardObj) {
+            const song = getCurrentSong();
+            if (state.activeStanzaId !== null) {
+                const stanza = song.stanzas.find(s => s.id === state.activeStanzaId);
+                if (stanza) {
+                    if (!stanza.lines[state.activeLineIndex].cards) stanza.lines[state.activeLineIndex].cards = [];
+                    stanza.lines[state.activeLineIndex].cards.push(cardObj);
+                    saveState();
+                    renderCurrentSong();
+                }
+            } else if (song.stanzas.length > 0 && song.stanzas[0].lines.length > 0) {
+                if (!song.stanzas[0].lines[0].cards) song.stanzas[0].lines[0].cards = [];
+                song.stanzas[0].lines[0].cards.push(cardObj);
+                saveState();
+                renderCurrentSong();
+            }
+        }
+
+        // Per-line melody engine: notes, staff, piano, audio pitch detection, MIDI and take recording.
+        const MELODY_NOTE_NAMES = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+        let melodyAudioContext = null, melodyStream = null, melodyAnalyser = null, melodySource = null, melodySamples = null, melodyDetectTimer = null, melodyCurrentMidi = null, melodyLastAdded = null, melodyMidiAccess = null;
+        let melodyRecorder = null, melodyRecordChunks = [], melodyRecordTarget = null, melodyRecordStream = null, melodyRecordStarted = 0;
+        const melodyUndo = new Map();
+        function melodyName(m){return MELODY_NOTE_NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);}
+        function melodyLine(stanzaId,lineIdx){const song=getCurrentSong();const st=song?.stanzas.find(x=>x.id===stanzaId);const line=st?.lines[lineIdx];if(!line)return null;if(!line.melody)line.melody={notes:[],recording:null,instrument:'acoustic_grand_piano'};if(!Array.isArray(line.melody.notes))line.melody.notes=[];if(!line.melody.instrument)line.melody.instrument='acoustic_grand_piano';return line;}
+        function melodyStatus(stanzaId,lineIdx,msg,good=false){const el=document.getElementById(`melodyStatus-${stanzaId}-${lineIdx}`);if(el){el.textContent=msg;el.style.color=good?'#70e1c0':'#9ca9bd';}const global=document.getElementById('globalMelodyStatus');if(global)global.textContent=msg;}
+        function rememberMelody(line){const k=line;const m=melodyLine(...k);if(!m)return;const key=k.join('|');if(!melodyUndo.has(key))melodyUndo.set(key,[]);melodyUndo.get(key).push(JSON.stringify(m.melody.notes));if(melodyUndo.get(key).length>60)melodyUndo.get(key).shift();}
+        function toggleLineMelody(stanzaId,lineIdx){const p=document.getElementById(`melodyPanel-${stanzaId}-${lineIdx}`);if(!p)return;const open=!p.classList.contains('open');p.classList.toggle('open',open);if(open){state.activeStanzaId=stanzaId;state.activeLineIndex=lineIdx;renderMelodyLine(stanzaId,lineIdx);const inst=document.getElementById(`melodyInstrument-${stanzaId}-${lineIdx}`);if(inst)inst.value=melodyLine(stanzaId,lineIdx).melody.instrument||'acoustic_grand_piano';buildLinePiano(stanzaId,lineIdx);}}
+        function addMelodyNote(stanzaId,lineIdx,midi,duration){const line=melodyLine(stanzaId,lineIdx);if(!line)return;rememberMelody([stanzaId,lineIdx]);line.melody.notes.push({type:'note',midi:Math.max(0,Math.min(127,Math.round(midi))),duration:duration||+(document.getElementById(`melodyDur-${stanzaId}-${lineIdx}`)?.value||4)});line.melody.selected=line.melody.notes.length-1;saveState();renderMelodyLine(stanzaId,lineIdx);}
+        function addMelodyRest(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line)return;rememberMelody([stanzaId,lineIdx]);line.melody.notes.push({type:'rest',duration:+(document.getElementById(`melodyDur-${stanzaId}-${lineIdx}`)?.value||4)});line.melody.selected=line.melody.notes.length-1;saveState();renderMelodyLine(stanzaId,lineIdx);}
+        function undoMelody(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx),stack=melodyUndo.get([stanzaId,lineIdx].join('|'));if(!line||!stack?.length)return;line.melody.notes=JSON.parse(stack.pop());saveState();renderMelodyLine(stanzaId,lineIdx);}
+        function deleteMelodyItem(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line||line.melody.selected==null)return;rememberMelody([stanzaId,lineIdx]);line.melody.notes.splice(line.melody.selected,1);line.melody.selected=null;saveState();renderMelodyLine(stanzaId,lineIdx);}
+        function clearLineMelody(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line||!line.melody.notes.length)return;if(!confirm('Clear the notes on this lyric line? The audio take will be kept.'))return;rememberMelody([stanzaId,lineIdx]);line.melody.notes=[];line.melody.selected=null;saveState();renderMelodyLine(stanzaId,lineIdx);}
+        function renderMelodyLine(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line)return;const notes=line.melody.notes;const svg=document.getElementById(`melodyStaff-${stanzaId}-${lineIdx}`);if(!svg)return;const NS='http://www.w3.org/2000/svg';const add=(tag,attrs,text)=>{const e=document.createElementNS(NS,tag);Object.entries(attrs||{}).forEach(([k,v])=>e.setAttribute(k,v));if(text!==undefined)e.textContent=text;svg.appendChild(e);return e;};svg.innerHTML='';const width=Math.max(600,notes.length*34+95);svg.setAttribute('viewBox',`0 0 ${width} 135`);add('rect',{x:0,y:0,width,height:135,fill:'#f8f8f4'});[35,48,61,74,87].forEach(y=>add('line',{x1:10,y1:y,x2:width-8,y2:y,stroke:'#333943','stroke-width':1.2}));add('text',{x:12,y:84,fill:'#222','font-size':60,'font-family':'serif'},'𝄞');
+          notes.forEach((it,i)=>{const x=76+i*32,y=it.type==='rest'?61:87-(melodyDiatonic(it.midi)-melodyDiatonic(64))*6.5;const g=add('g',{role:'button',tabindex:0,style:'cursor:ns-resize'});if(line.melody.selected===i){const r=document.createElementNS(NS,'rect');Object.entries({x:x-12,y:20,width:24,height:92,rx:4,fill:'#70e1c0',opacity:.25,stroke:'#168b70'}).forEach(([k,v])=>r.setAttribute(k,v));g.appendChild(r);}if(it.type==='rest'){const t=document.createElementNS(NS,'text');t.setAttribute('x',x);t.setAttribute('y',y+5);t.setAttribute('text-anchor','middle');t.setAttribute('fill','#222');t.setAttribute('font-size','18');t.textContent=it.duration>=8?'𝄻':'𝄽';g.appendChild(t);}else{const hollow=it.duration>=8;const e=document.createElementNS(NS,'ellipse');Object.entries({cx:x,cy:y,rx:5.5,ry:4,fill:hollow?'#f8f8f4':'#222',stroke:'#222','stroke-width':1.4,transform:`rotate(-20 ${x} ${y})`}).forEach(([k,v])=>e.setAttribute(k,v));g.appendChild(e);if(it.duration!==16){const stem=document.createElementNS(NS,'line');Object.entries({x1:x+5,y1:y,x2:x+5,y2:y-24,stroke:'#222','stroke-width':1.4}).forEach(([k,v])=>stem.setAttribute(k,v));g.appendChild(stem);if(it.duration<=2){const flag=document.createElementNS(NS,'path');Object.entries({d:`M ${x+5} ${y-24} q 11 5 3 14`,fill:'none',stroke:'#222','stroke-width':1.5}).forEach(([k,v])=>flag.setAttribute(k,v));g.appendChild(flag);}}const label=document.createElementNS(NS,'text');Object.entries({x,y:Math.min(127,y+17),fill:'#555','font-size':8,'text-anchor':'middle'}).forEach(([k,v])=>label.setAttribute(k,v));label.textContent=melodyName(it.midi);g.appendChild(label);}g.addEventListener('click',()=>{line.melody.selected=i;renderMelodyLine(stanzaId,lineIdx);});if(it.type==='note'){let sy=0,sm=it.midi,drag=false,moved=false;g.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();line.melody.selected=i;sy=e.clientY;sm=it.midi;drag=true;moved=false;try{g.setPointerCapture(e.pointerId)}catch(_){}});g.addEventListener('pointermove',e=>{if(!drag)return;const d=Math.round((sy-e.clientY)/6.5);if(d){moved=true;it.midi=Math.max(0,Math.min(127,melodyNatural(melodyDiatonic(sm)+d)+(sm-melodyNatural(melodyDiatonic(sm)))));}});const end=()=>{if(!drag)return;drag=false;if(moved){saveState();renderMelodyLine(stanzaId,lineIdx);}};g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);}});
+          if(!notes.length)add('text',{x:Math.min(350,width/2),y:117,fill:'#777','font-size':11,'text-anchor':'middle'},'Play notes or use the piano below to build this melody');
+          const chips=document.getElementById(`melodyChips-${stanzaId}-${lineIdx}`);if(chips){chips.innerHTML='';notes.forEach((it,i)=>{const b=document.createElement('button');b.className='melody-chip'+(line.melody.selected===i?' selected':'');b.textContent=(it.type==='rest'?'Rest':melodyName(it.midi))+' · '+({16:'Whole',8:'Half',4:'Quarter',2:'Eighth',1:'16th'}[it.duration]||'Quarter');b.onclick=()=>{line.melody.selected=i;renderMelodyLine(stanzaId,lineIdx);};chips.appendChild(b);});if(line.melody.recording?.data){const a=document.createElement('audio');a.controls=true;a.src=line.melody.recording.data;a.style.width='100%';a.style.height='30px';chips.appendChild(a);}}const count=document.getElementById(`melodyCount-${stanzaId}-${lineIdx}`);if(count)count.textContent=notes.length?`(${notes.length})`:'';
+        }
+        function melodyDiatonic(m){const pc=((m%12)+12)%12,letter=['C','C','D','D','E','F','F','G','G','A','A','B'][pc];return (Math.floor(m/12)-1)*7+({C:0,D:1,E:2,F:3,G:4,A:5,B:6}[letter]);}
+        function melodyNatural(d){const octave=Math.floor(d/7),letters=['C','D','E','F','G','A','B'],semitones={C:0,D:2,E:4,F:5,G:7,A:9,B:11};return (octave+1)*12+semitones[letters[((d%7)+7)%7]];}
+        function buildLinePiano(stanzaId,lineIdx){const box=document.getElementById(`melodyPiano-${stanzaId}-${lineIdx}`);if(!box)return;box.innerHTML='';const oct=+(document.getElementById(`melodyOct-${stanzaId}-${lineIdx}`)?.value||4);for(let m=oct*12;m<=oct*12+24;m++){const b=document.createElement('button');b.type='button';b.className='melody-key'+([1,3,6,8,10].includes(m%12)?' black':'');b.textContent=b.classList.contains('black')?'':melodyName(m);b.title=melodyName(m);let held=false,voice=null;b.onpointerdown=async e=>{e.preventDefault();if(held)return;held=true;b.classList.add('active');try{b.setPointerCapture(e.pointerId)}catch(_){}addMelodyNote(stanzaId,lineIdx,m);voice=await playMelodyTone(m,.45,melodyInstrumentForLine(stanzaId,lineIdx));};const release=()=>{held=false;b.classList.remove('active');if(voice){try{voice.stop()}catch(_){}}voice=null;};b.onpointerup=release;b.onpointercancel=release;b.onlostpointercapture=release;b.onpointerleave=e=>{if(held&&e.buttons===0)release()};b.oncontextmenu=e=>e.preventDefault();box.appendChild(b);}}
+        async function ensureMelodyAudio(){if(!melodyAudioContext){const A=window.AudioContext||window.webkitAudioContext;if(!A)throw Error('Web Audio is not supported');melodyAudioContext=new A();}if(melodyAudioContext.state==='suspended')await melodyAudioContext.resume();return melodyAudioContext;}
+        // Realistic playback uses sampled General MIDI soundfonts (FluidR3_GM), cached per instrument.
+        const melodyInstrumentPlayers = new Map();
+        const MELODY_INSTRUMENT_LABELS = {acoustic_grand_piano:'Concert piano',electric_piano_1:'Electric piano',acoustic_guitar_nylon:'Nylon guitar',acoustic_guitar_steel:'Steel-string guitar',electric_guitar_clean:'Clean electric guitar',electric_guitar_jazz:'Jazz guitar',overdriven_guitar:'Overdriven guitar',distortion_guitar:'Distortion guitar',electric_bass_finger:'Finger bass',violin:'Violin',cello:'Cello',string_ensemble_1:'Orchestral strings',slow_string_ensemble:'Slow strings',flute:'Flute',clarinet:'Clarinet',trumpet:'Trumpet',alto_sax:'Alto sax',choir_aahs:'Choir',church_organ:'Church organ',drawbar_organ:'Rock organ',vibraphone:'Vibraphone',music_box:'Music box'};
+        function melodyInstrumentForLine(stanzaId,lineIdx){const sel=document.getElementById(`melodyInstrument-${stanzaId}-${lineIdx}`);return sel?.value||melodyLine(stanzaId,lineIdx)?.melody.instrument||'acoustic_grand_piano';}
+        function setMelodyInstrument(stanzaId,lineIdx,name){const line=melodyLine(stanzaId,lineIdx);if(!line)return;line.melody.instrument=name;saveState();melodyStatus(stanzaId,lineIdx,`Playback instrument set to ${MELODY_INSTRUMENT_LABELS[name]||name}. Press Load sound or Play notes.`,true);}
+        async function loadMelodyInstrument(name){const c=await ensureMelodyAudio();if(!window.Soundfont||typeof window.Soundfont.instrument!=='function')throw Error('The sampled-instrument library did not load. Check your internet connection and reload the app.');if(!melodyInstrumentPlayers.has(name)){const promise=window.Soundfont.instrument(c,name,{soundfont:'FluidR3_GM',format:'mp3',gain:0.8});melodyInstrumentPlayers.set(name,promise);promise.catch(()=>melodyInstrumentPlayers.delete(name));}return await melodyInstrumentPlayers.get(name);}
+        async function preloadMelodyInstrument(stanzaId,lineIdx){const name=melodyInstrumentForLine(stanzaId,lineIdx);melodyStatus(stanzaId,lineIdx,`Loading sampled ${MELODY_INSTRUMENT_LABELS[name]||name}… this may take a moment.`,true);try{await loadMelodyInstrument(name);melodyStatus(stanzaId,lineIdx,`${MELODY_INSTRUMENT_LABELS[name]||name} is loaded and ready for playback.`,true);}catch(e){melodyStatus(stanzaId,lineIdx,`Could not load sampled instrument: ${e.message}. The simple tone fallback will still work.`);}}
+        function soundfontNoteName(m){const names=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];return names[((m%12)+12)%12]+(Math.floor(m/12)-1);}
+        async function playMelodyTone(m,seconds=.45,instrumentName='acoustic_grand_piano'){const c=await ensureMelodyAudio();try{const player=await loadMelodyInstrument(instrumentName);const src=player.play(soundfontNoteName(m),c.currentTime,{gain:0.8});if(src&&typeof src.stop==='function'){const stopAt=Math.max(.08,seconds);setTimeout(()=>{try{src.stop()}catch(_){}},stopAt*1000);}return{stop:()=>{try{src?.stop?.()}catch(_){}}};}catch(err){console.warn('Sampled instrument unavailable; using tone fallback.',err);const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=440*Math.pow(2,(m-69)/12);g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.13,c.currentTime+.015);g.gain.setTargetAtTime(.0001,c.currentTime+Math.max(.08,seconds-.06),.025);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+seconds+.1);return{stop:()=>{try{g.gain.setTargetAtTime(.0001,c.currentTime,.01);o.stop(c.currentTime+.04)}catch(_){}}};}}
+        async function startMelodyInput(){try{await ensureMelodyAudio();stopMelodyInput(false);const opts={echoCancellation:false,noiseSuppression:false,autoGainControl:false};const dev=document.getElementById('melodyInputDevice').value;if(dev)opts.deviceId={exact:dev};melodyStream=await navigator.mediaDevices.getUserMedia({audio:opts});melodySource=melodyAudioContext.createMediaStreamSource(melodyStream);melodyAnalyser=melodyAudioContext.createAnalyser();melodyAnalyser.fftSize=8192;melodySource.connect(melodyAnalyser);melodySamples=new Float32Array(melodyAnalyser.fftSize);document.getElementById('globalMelodyStart').disabled=true;document.getElementById('globalMelodyStop').disabled=false;document.getElementById('globalMelodyStop').classList.remove('opacity-50');document.getElementById('globalMelodyStatus').textContent='Listening. Open a lyric line and play one note at a time.';const ds=await navigator.mediaDevices.enumerateDevices();const sel=document.getElementById('melodyInputDevice'),old=sel.value;sel.innerHTML='<option value="">Default input</option>';ds.filter(d=>d.kind==='audioinput').forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||`Audio input ${i+1}`;sel.appendChild(o)});if(old)sel.value=old;melodyDetectTimer=setInterval(detectMelodyPitch,90);}catch(e){document.getElementById('globalMelodyStatus').textContent='Audio input failed: '+e.message+' (check microphone permission and use HTTPS/localhost).';}}
+        function stopMelodyInput(update=true){if(melodyDetectTimer)clearInterval(melodyDetectTimer);melodyDetectTimer=null;if(melodySource){try{melodySource.disconnect()}catch(_){}}melodySource=null;if(melodyStream)melodyStream.getTracks().forEach(t=>t.stop());melodyStream=null;melodyAnalyser=null;document.getElementById('globalMelodyStart').disabled=false;document.getElementById('globalMelodyStop').disabled=true;document.getElementById('globalMelodyStop').classList.add('opacity-50');if(update)document.getElementById('globalMelodyStatus').textContent='Audio input stopped.';}
+        function detectMelodyPitch(){if(!melodyAnalyser||!melodySamples)return;melodyAnalyser.getFloatTimeDomainData(melodySamples);let rms=0;for(const x of melodySamples)rms+=x*x;rms=Math.sqrt(rms/melodySamples.length);if(rms<.012){melodyCurrentMidi=null;melodyLastAdded=null;return;}const f=melodyAutocorrelation(melodySamples,melodyAudioContext.sampleRate);if(!f||f<45||f>1400)return;const m=Math.round(69+12*Math.log2(f/440));melodyCurrentMidi=m;const sid=state.activeStanzaId,idx=state.activeLineIndex;if(sid==null)return;const line=melodyLine(sid,idx);if(!line)return;const panel=document.getElementById(`melodyPanel-${sid}-${idx}`);if(!panel?.classList.contains('open'))return;if(m!==melodyLastAdded){addMelodyNote(sid,idx,m);melodyLastAdded=m;melodyStatus(sid,idx,'Detected '+melodyName(m)+' — added to this line. Pause briefly between notes.',true);}}
+        function melodyAutocorrelation(buf,sr){const n=buf.length;let energy=0;for(let i=0;i<n;i++)energy+=buf[i]*buf[i];if(Math.sqrt(energy/n)<.012)return -1;let best=-1,bestCorr=0;const min=Math.floor(sr/1400),max=Math.min(Math.floor(sr/45),n/2);for(let lag=min;lag<=max;lag++){let diff=0,norm=0;for(let i=0;i<n-lag;i++){const d=buf[i]-buf[i+lag];diff+=d*d;norm+=buf[i]*buf[i]+buf[i+lag]*buf[i+lag];}const corr=norm?1-diff/norm:0;if(corr>bestCorr){bestCorr=corr;best=lag;}}return best>=0&&bestCorr>.35?sr/best:-1;}
+        async function connectMelodyMidi(){if(!navigator.requestMIDIAccess){document.getElementById('globalMelodyStatus').textContent='Web MIDI is not available in this browser. Try Chrome or Edge on your Mac.';return;}try{melodyMidiAccess=await navigator.requestMIDIAccess();const setup=()=>{let count=0;for(const input of melodyMidiAccess.inputs.values()){input.onmidimessage=e=>{const [st,n,v]=e.data;if((st&240)===144&&v>0){const sid=state.activeStanzaId,idx=state.activeLineIndex;if(sid!=null){addMelodyNote(sid,idx,n);melodyStatus(sid,idx,'MIDI input: '+melodyName(n),true);}playMelodyTone(n,.45,melodyInstrumentForLine(sid,idx));}};count++;}document.getElementById('globalMelodyStatus').textContent=count?`${count} MIDI input(s) connected. Open a line's Melody & staff panel, then play.`:'MIDI enabled, but no keyboard detected.';};melodyMidiAccess.onstatechange=setup;setup();}catch(e){document.getElementById('globalMelodyStatus').textContent='MIDI connection failed: '+e.message;}}
+        async function startLineRecording(stanzaId,lineIdx){if(melodyRecorder&&melodyRecorder.state!=='inactive'){alert('A melody recording is already in progress. Stop it first.');return;}try{let stream=melodyStream;if(!stream){melodyRecordStream=await navigator.mediaDevices.getUserMedia({audio:true});stream=melodyRecordStream;}let opt={};for(const mt of ['audio/webm;codecs=opus','audio/webm','audio/mp4']){if(MediaRecorder.isTypeSupported(mt)){opt={mimeType:mt};break;}}melodyRecordTarget=[stanzaId,lineIdx];melodyRecordChunks=[];melodyRecorder=new MediaRecorder(stream,opt);melodyRecorder.ondataavailable=e=>{if(e.data?.size)melodyRecordChunks.push(e.data)};melodyRecorder.onstop=()=>{const blob=new Blob(melodyRecordChunks,{type:melodyRecorder.mimeType||'audio/webm'});const reader=new FileReader();reader.onloadend=()=>{const line=melodyLine(stanzaId,lineIdx);if(line){line.melody.recording={data:reader.result,type:blob.type,name:`${getCurrentSong().title}_line_${lineIdx+1}_${Date.now()}`};saveState();renderMelodyLine(stanzaId,lineIdx);melodyStatus(stanzaId,lineIdx,'Audio take saved with this lyric line. Use the player or Download take.',true);}if(melodyRecordStream){melodyRecordStream.getTracks().forEach(t=>t.stop());melodyRecordStream=null;}};reader.readAsDataURL(blob);};melodyRecorder.start();melodyRecordStarted=Date.now();melodyStatus(stanzaId,lineIdx,'Recording audio for this lyric line… play/sing the melody now.',true);}catch(e){melodyStatus(stanzaId,lineIdx,'Recording failed: '+e.message+' (check microphone permission).');}}
+        function stopLineRecording(stanzaId,lineIdx){if(melodyRecorder&&melodyRecorder.state!=='inactive'){melodyRecorder.stop();melodyStatus(stanzaId,lineIdx,'Saving audio take…');}else melodyStatus(stanzaId,lineIdx,'No recording is currently running.');}
+        function downloadLineRecording(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line?.melody.recording?.data){melodyStatus(stanzaId,lineIdx,'Record a take first.');return;}const a=document.createElement('a');a.href=line.melody.recording.data;a.download=(line.melody.recording.name||'melody-take')+((line.melody.recording.type||'audio/webm').includes('mp4')?'.m4a':'.webm');a.click();}
+        async function playLineMelody(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line)return;const instrument=line.melody.instrument||'acoustic_grand_piano';try{await loadMelodyInstrument(instrument);}catch(e){melodyStatus(stanzaId,lineIdx,'Sampled instrument could not load; playing the fallback tone. '+e.message);}melodyStatus(stanzaId,lineIdx,'Playing melody with '+(MELODY_INSTRUMENT_LABELS[instrument]||instrument)+'.',true);for(const n of line.melody.notes){if(n.type==='note'){const sec=n.duration===16?1.6:n.duration===8?.8:n.duration===2?.2:n.duration===1?.1:.4;await playMelodyTone(n.midi,sec,instrument);await new Promise(r=>setTimeout(r,n.duration===16?1650:n.duration===8?850:n.duration===2?250:n.duration===1?130:450));}else await new Promise(r=>setTimeout(r,n.duration===16?1600:n.duration===8?800:n.duration===2?200:n.duration===1?100:400));}}
+        function exportLineMusicXML(stanzaId,lineIdx){const line=melodyLine(stanzaId,lineIdx);if(!line?.melody.notes.length){alert('Add melody notes first.');return;}const type={16:'whole',8:'half',4:'quarter',2:'eighth',1:'16th'};const xmlNotes=line.melody.notes.map(n=>{if(n.type==='rest')return `<note><rest/><duration>${n.duration}</duration><type>${type[n.duration]}</type></note>`;const pc=((n.midi%12)+12)%12,oct=Math.floor(n.midi/12)-1,steps=['C','C','D','D','E','F','F','G','G','A','A','B'],alts=[0,1,0,1,0,0,1,0,1,0,1,0];return `<note><pitch><step>${steps[pc]}</step>${alts[pc]?'<alter>1</alter>':''}<octave>${oct}</octave></pitch><duration>${n.duration}</duration><type>${type[n.duration]}</type></note>`;}).join('');const xml=`<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"><work><work-title>${escapeHtml(getCurrentSong().title)} — ${escapeHtml(line.text||'Melody')}</work-title></work><part-list><score-part id="P1"><part-name>Melody</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>4</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>${xmlNotes}</measure></part></score-partwise>`;downloadTextFile(xml,`${getCurrentSong().title.replace(/[^a-z0-9]/gi,'_')}_line_${lineIdx+1}.musicxml`,'application/vnd.recordare.musicxml+xml');}
+        function downloadTextFile(text,name,type){const u=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+
+        function updateTotalStats() {
+            const song = getCurrentSong();
+            let totalWords = 0; let totalSyllables = 0;
+            song.stanzas.forEach(s => {
+                s.lines.forEach(l => {
+                    const words = l.text.trim().split(/\s+/).filter(w => w.length > 0);
+                    totalWords += words.length;
+                    totalSyllables += countSyllables(l.text);
+                });
+            });
+            document.getElementById('totalWordsCount').innerText = totalWords;
+            document.getElementById('totalSyllablesCount').innerText = totalSyllables;
+            const seconds = Math.round(((totalSyllables / 2) / state.bpm) * 60);
+            document.getElementById('totalEstTime').innerText = `${Math.floor(seconds / 60)}:${seconds % 60 < 10 ? '0' : ''}${seconds % 60}`;
+        }
+
+        function updateBpm(val) { state.bpm = parseInt(val) || 120; getCurrentSong().bpm = state.bpm; updateTotalStats(); }
+        function tapBpm() {}
+        function toggleMetronome() {}
+        function switchTab(tabName) {
+            ['rhymes', 'aiAssist', 'concept'].forEach(t => {
+                document.getElementById(`tabBtn-${t}`).className = `flex-1 py-2.5 text-xs font-semibold text-center ${t === tabName ? 'text-indigo-400 border-b-2 border-indigo-500' : 'text-gray-400 border-b-2 border-transparent'}`;
+                document.getElementById(`tabContent-${t}`).classList.toggle('hidden', t !== tabName);
+            });
+        }
+        document.getElementById('songTitleInput')?.addEventListener('change', e => { const song=getCurrentSong(); if(song){song.title=e.target.value.trim()||'Untitled Song';saveState();} });
+        document.getElementById('melodyInputDevice')?.addEventListener('change',()=>{if(melodyStream)startMelodyInput();});
+
+        function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    </script>
+</body>
+</html>
+
