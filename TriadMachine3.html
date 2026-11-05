@@ -940,6 +940,11 @@
     // the 8 triads flow UP the neck in a logical, teachable order.
     function voiceLeadCost(prevVoicing, candVoicing, prevAvg) {
       const prevByString = new Map(prevVoicing.notes.map(n => [n.string, n.fret]));
+      // With the range filter ON, moving between 3-string groups across the
+      // full 6-string neck is expected, so string hops are cheap. With the
+      // filter OFF, the run is locked to one 3-consecutive-string group and
+      // any hop is a big detour.
+      const stringHopPenalty = state.enableFretRange ? 1 : 4;
       let cost = 0;
       let heldTones = 0;
 
@@ -950,7 +955,7 @@
           cost += move;
           if (move === 0) heldTones++; // a common tone physically held in place
         } else {
-          cost += 4; // note jumped to a different string
+          cost += stringHopPenalty; // note jumped to a different string
         }
       });
 
@@ -968,17 +973,25 @@
     }
 
     // --- GENERATE ALL 8 DIATONIC TRIADS (I THROUGH VIII) WITH TRUE VOICE LEADING ---
-    // Teaching logic: all 8 chords stay on the SAME 3 consecutive strings,
-    // each chord connects to the previous one with minimal finger movement,
-    // common tones are held in place, the run climbs the neck, and the VIII
-    // (octave I) lands roughly one octave above the starting I chord.
+    // Teaching logic: each chord connects to the previous one with minimal
+    // finger movement, common tones are held in place, the run climbs the
+    // neck, and the VIII (octave I) lands roughly one octave above the
+    // starting I chord.
+    //
+    // STRING COVERAGE:
+    //  - Range filter OFF: all 8 triads are locked to the SAME 3 consecutive
+    //    strings, so the student sees the vertical connections on one group.
+    //  - Range filter ON: the lock is released and the triads roam across
+    //    ALL 6 STRINGS inside the selected fret window, always as 3-note
+    //    triads on 3 consecutive strings, spreading the whole neck.
     function getEightDiatonicTriads(activeVoicing) {
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
-      // 1. Collect candidate voicings for each degree, locked to the active
-      //    string set whenever possible (all 6 strings available, but each
-      //    triad always uses 3 consecutive strings).
-      const activeSetKey = activeVoicing ? stringSetKeyOf(activeVoicing) : null;
+      // 1. Collect candidate voicings for each degree. When the range
+      //    filter is ON, every string group inside the window is fair game
+      //    (all 6 strings). When OFF, lock to the active string set.
+      const lockStringSet = !state.enableFretRange;
+      const activeSetKey = (lockStringSet && activeVoicing) ? stringSetKeyOf(activeVoicing) : null;
       const perDegree = [];
       for (let d = 0; d < 8; d++) {
         const degIndex = d % 7;
