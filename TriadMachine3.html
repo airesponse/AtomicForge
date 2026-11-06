@@ -1079,6 +1079,13 @@
       // slight reward for held common tones (smooth, connected sound)
       cost -= heldTones * 0.5;
 
+      // Placed Free Notes are strong anchors: any chord that physically
+      // holds a placed note in place is preferred, so the run keeps
+      // returning to the user's chosen position.
+      state.freeNotes.forEach(p => {
+        if (candVoicing.notes.some(n => n.string === p.string && n.fret === p.fret)) cost -= 2.5;
+      });
+
       // keep each individual shape compact
       cost += candVoicing.span * 0.4;
 
@@ -1127,6 +1134,13 @@
       return (keyIdx + scale[degree % 7]) % 12;
     }
 
+    // All pitch classes of the diatonic chord built on `degree`
+    function chordPcsOf(degree) {
+      const rootPc = chordRootPcOf(degree);
+      return getChordIntervals(degree, state.mode, state.chordType)
+        .map(i => (rootPc + i.semitones) % 12);
+    }
+
     // Bass note (lowest-sounding string = highest string index) decides inversion
     function voicingInversion(voicing, degree) {
       const rootPc = chordRootPcOf(degree);
@@ -1144,6 +1158,77 @@
       circle: [0, 5, 1, 4, 2, 6, 3, 7] // I - vi - ii - V - iii - vii° - IV - VIII
     };
 
+    // Build a voicing for `degree` that physically includes the given anchor
+    // notes, choosing the remaining chord tones on adjacent strings as close
+    // as possible to the anchor's fret region. Used as the hard anchor for
+    // the first triad of a Free Notes run when no generated voicing happens
+    // to sit exactly on the placed positions (e.g. the note is outside the
+    // range-filter window or an unusual string).
+    function synthesizeAnchorVoicing(degree, anchors) {
+      if (!anchors || anchors.length === 0) return null;
+
+      const targetPcs = chordPcsOf(degree);
+      const is4 = ['dom7', 'maj7', '9th', '6th'].includes(state.chordType);
+      const size = is4 ? 4 : 3;
+      const anchorFret = anchors.reduce((m, p) => Math.max(m, p.fret), 0);
+
+      let best = null;
+
+      for (let s0 = 0; s0 + size - 1 <= 5; s0++) {
+        const set = [];
+        for (let i = 0; i < size; i++) set.push(s0 + i);
+
+        // every anchor must live on its own string inside this set
+        const anchorStrings = anchors.map(p => p.string);
+        if (anchors.some(p => !set.includes(p.string))) continue;
+        if (new Set(anchorStrings).size !== anchorStrings.length) continue;
+
+        // remaining chord tones go on the remaining strings
+        const pool = [...targetPcs];
+        anchors.forEach(p => {
+          const idx = pool.indexOf(p.pc);
+          if (idx >= 0) pool.splice(idx, 1);
+        });
+        if (pool.length !== set.length - anchors.length) continue;
+
+        const freeStrings = set.filter(s => !anchorStrings.includes(s));
+
+        const assign = (si, acc) => {
+          if (si === freeStrings.length) {
+            const notes = [...anchors, ...acc];
+            const frets = notes.map(n => n.fret).filter(f => f > 0);
+            const minF = frets.length ? Math.min(...frets) : 0;
+            const maxF = frets.length ? Math.max(...frets) : 0;
+            const span = maxF - minF;
+            if (span > 5) return;
+            const near = notes.reduce((s, n) => s + Math.abs(n.fret - anchorFret), 0);
+            const score = span * 1.5 + near * 0.4;
+            if (!best || score < best.score) {
+              best = { score, notes, span, minFret: minF, maxFret: maxF };
+            }
+            return;
+          }
+          const s = freeStrings[si];
+          for (let pi = 0; pi < pool.length; pi++) {
+            const pc = pool[pi];
+            let bf = null;
+            for (let f = 0; f <= 15; f++) {
+              if ((TUNING[s] + f) % 12 === pc) {
+                if (bf === null || Math.abs(f - anchorFret) < Math.abs(bf - anchorFret)) bf = f;
+              }
+            }
+            if (bf === null) continue;
+            pool.splice(pi, 1);
+            assign(si + 1, acc.concat([{ string: s, fret: bf, pc }]));
+            pool.splice(pi, 0, pc);
+          }
+        };
+        assign(0, []);
+      }
+
+      return best;
+    }
+
     // --- GENERATE ALL 8 DIATONIC TRIADS WITH TRUE VOICE LEADING ---
     // Teaching logic: each chord connects to the previous one with minimal
     // finger movement, common tones are held in place, the run flows along
@@ -1155,21 +1240,25 @@
     //  - Otherwise, range filter OFF: locked to the active 3-string group.
     //    Range filter ON: triads roam across ALL 6 STRINGS in the window.
     //
-    // FREE NOTES:
-    //  - 1 placed note = the tonic; the key follows it and the run starts
-    //    on the I (or i) chord anchored at that exact position.
-    //  - 2 placed notes = tonic + a second seed; the run is rotated to
-    //    start on the diatonic degree whose chord contains the second
-    //    note, anchored so both notes are physically inside the first
-    //    triad whenever possible.
+    // FREE NOTES (HARD ANCHOR):
+    //  - The FIRST triad of the run always physically includes the placed
+    //    note(s). If no generated voicing sits exactly there, a shape is
+    //    synthesized around the placed position.
+    //  - 1 placed note = the tonic; the key follows it and the run is 8
+    //    consecutive diatonic triads starting from the I (or i) chord.
+    //  - 2 placed notes = the run starts on the degree whose chord contains
+    //    BOTH notes (or the second note if no single triad holds both),
+    //    and every later chord is voice-led from that exact anchor, with a
+    //    strong bonus for chords that keep holding the placed notes.
     function getEightDiatonicTriads(activeVoicing) {
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
-      // 1. Build the slot order. With two placed Free Notes the run is
-      //    rotated to start on the degree whose chord contains the second
-      //    note; otherwise the selected Run Order template is used.
+      // 1. Slot order. With Free Notes placed the run is always 8
+      //    CONSECUTIVE diatonic degrees starting from the anchor degree,
+      //    with slot 8 as its octave. Without Free Notes the selected Run
+      //    Order template applies.
       let order;
-      if (state.freeNotes.length >= 2) {
+      if (state.freeNotes.length > 0) {
         order = [];
         for (let i = 0; i < 8; i++) {
           order.push({ deg: (state.degreeIndex + i) % 7, octave: i === 7 });
@@ -1178,7 +1267,7 @@
         const tpl = RUN_ORDER_TEMPLATES[state.runOrder] || RUN_ORDER_TEMPLATES.ascending;
         order = tpl.map(t => ({ deg: t % 7, octave: t === 7 }));
       }
-      const wantAscend = state.runOrder !== 'descending';
+      const wantAscend = state.freeNotes.length > 0 ? true : state.runOrder !== 'descending';
 
       // 2. Collect candidate voicings per degree, with string-set lock,
       //    inversion constraint, and range filter respected.
@@ -1202,35 +1291,42 @@
       const triadsRun = [];
       if (perDegree.some(p => p.length === 0)) return triadsRun;
 
-      // 3. Anchor pool for the first chord. Prefer voicings that physically
-      //    contain the placed Free Notes (same string and fret), then by
-      //    pitch class, then the default best-position choice.
-      let anchorPool = perDegree[order[0].deg];
-      if (state.freeNotes.length > 0) {
-        const exact = anchorPool.filter(v =>
-          state.freeNotes.every(p => v.notes.some(n => n.string === p.string && n.fret === p.fret)));
-        if (exact.length > 0) anchorPool = exact;
-        else {
-          const byPc = anchorPool.filter(v =>
-            state.freeNotes.every(p => v.notes.some(n => n.pc === p.pc)));
-          if (byPc.length > 0) anchorPool = byPc;
-        }
-      }
+      // 3. HARD ANCHOR for the first chord: it must physically include the
+      //    placed notes that are chord tones of the anchor degree. Use a
+      //    generated voicing at that exact position if one exists, otherwise
+      //    synthesize a shape around the placed notes.
+      const anchorDeg = order[0].deg;
+      const anchorPcs = chordPcsOf(anchorDeg);
+      const anchors = state.freeNotes.filter(p => anchorPcs.includes(p.pc));
 
       let currentVoicing;
-      if (activeVoicing) {
+      if (anchors.length > 0) {
+        const exact = perDegree[anchorDeg].filter(v =>
+          anchors.every(p => v.notes.some(n => n.string === p.string && n.fret === p.fret)));
+        if (exact.length > 0) {
+          // pick the exact-match shape closest to the placed notes' region
+          const targetAvg = anchors.reduce((s, p) => s + p.fret, 0) / anchors.length;
+          currentVoicing = exact.reduce((best, v) =>
+            Math.abs(avgFretOf(v) - targetAvg) < Math.abs(avgFretOf(best) - targetAvg) ? v : best);
+        } else {
+          const synth = synthesizeAnchorVoicing(anchorDeg, anchors);
+          currentVoicing = synth || perDegree[anchorDeg][0];
+        }
+      } else if (activeVoicing) {
         const activeAvg = avgFretOf(activeVoicing);
-        currentVoicing = anchorPool.reduce((best, v) =>
+        currentVoicing = perDegree[anchorDeg].reduce((best, v) =>
           Math.abs(avgFretOf(v) - activeAvg) < Math.abs(avgFretOf(best) - activeAvg) ? v : best
         );
       } else {
-        currentVoicing = anchorPool[0]; // lowest, easiest shape
+        currentVoicing = perDegree[anchorDeg][0]; // lowest, easiest shape
       }
 
       let prevAvg = avgFretOf(currentVoicing);
       const firstAvg = prevAvg;
 
-      // 4. Walk the order, chaining the best voice-leading choice
+      // 4. Walk the order, chaining the best voice-leading choice. Every
+      //    later chord is chosen relative to the anchored first triad, so
+      //    the whole run grows directly out of the placed note.
       order.forEach((slot, i) => {
         let chosen = currentVoicing;
 
@@ -1454,8 +1550,11 @@
           const tRoot = (keyIdx + tScale[triad.degree % 7]) % 12;
 
           triad.notes.forEach(n => {
-            if (state.enableFretRange && (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
-              return; // Enforce hard strict range bound
+            // Hard range bound only applies when no Free Notes are placed:
+            // the anchored run always stays fully visible.
+            if (state.enableFretRange && state.freeNotes.length === 0 &&
+                (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
+              return;
             }
 
             const key = `${n.string}:${n.fret}`;
@@ -1626,7 +1725,11 @@
       applyFreeNotes();
     }
 
-    // Derive key + starting degree from the placed notes, then render the run
+    // Derive key + starting degree from the placed notes, then render the run.
+    // The first note is the tonic; the run then starts on the degree whose
+    // chord contains the second note (preferring a degree that contains
+    // BOTH notes), and the first triad is hard-anchored on the placed
+    // positions by getEightDiatonicTriads.
     function applyFreeNotes() {
       if (state.freeNotes.length === 0) { updateApp(); return; }
 
@@ -1640,16 +1743,23 @@
       document.getElementById('diatonicOnBtn').classList.add('active');
       document.getElementById('diatonicOffBtn').classList.remove('active');
 
-      // Second placed note: rotate the run to start on the diatonic
-      // degree whose chord contains that pitch class.
+      // Second placed note: pick the starting degree of the consecutive run.
+      // Prefer a degree whose chord contains BOTH notes; otherwise the
+      // first degree whose chord contains the second note.
       if (state.freeNotes.length >= 2) {
+        const pc1 = state.freeNotes[0].pc;
         const pc2 = state.freeNotes[1].pc;
+        let found = -1;
         for (let d = 0; d < 7; d++) {
-          const rootPc = chordRootPcOf(d);
-          const ivs = getChordIntervals(d, state.mode, state.chordType);
-          const pcs = ivs.map(i => (rootPc + i.semitones) % 12);
-          if (pcs.includes(pc2)) { state.degreeIndex = d; break; }
+          const pcs = chordPcsOf(d);
+          if (pcs.includes(pc1) && pcs.includes(pc2)) { found = d; break; }
         }
+        if (found < 0) {
+          for (let d = 0; d < 7; d++) {
+            if (chordPcsOf(d).includes(pc2)) { found = d; break; }
+          }
+        }
+        if (found >= 0) state.degreeIndex = found;
       }
 
       updateApp();
