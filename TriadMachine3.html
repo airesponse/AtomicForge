@@ -714,6 +714,30 @@
         </select>
       </div>
 
+      <div class="divider"></div>
+
+      <!-- FREE NOTES / RESET / STRING GROUP -->
+      <div class="ctrl-item">
+        <label>Free Notes:</label>
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="freeOffBtn">Off</button>
+          <button class="btn-toggle" id="freeOnBtn">On</button>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-hdr" id="resetBoardBtn"><i class="fa-solid fa-eraser"></i> Reset Board</button>
+
+      <div class="ctrl-item">
+        <label>String Group:</label>
+        <select id="stringSetSelect">
+          <option value="auto" selected>Auto</option>
+          <option value="0,1,2">e-B-G</option>
+          <option value="1,2,3">B-G-D</option>
+          <option value="2,3,4">G-D-A</option>
+          <option value="3,4,5">D-A-E</option>
+        </select>
+      </div>
+
     </div>
 
     <!-- MAIN FRETBOARD AREA -->
@@ -797,7 +821,7 @@
       '#06b6d4', // Cyan (V)
       '#3b82f6', // Blue (vi)
       '#a855f7', // Purple (vii°)
-      '#ec4899'  // Pink (VIII)
+      '#ec4899'  // Pink (VIII / octave)
     ];
 
     const MODE_INTERVALS = {
@@ -841,7 +865,10 @@
       metroSound: 'woodblock',
       inversion: 'auto',
       runOrder: 'ascending',
-      droneOn: false
+      droneOn: false,
+      freeMode: false,
+      freeNotes: [],
+      stringSet: 'auto'
     };
 
     function getNoteName(semitone) {
@@ -1111,7 +1138,7 @@
     }
 
     // --- RUN ORDERS (teaching sequences) ---
-    const RUN_ORDERS = {
+    const RUN_ORDER_TEMPLATES = {
       ascending: [0, 1, 2, 3, 4, 5, 6, 7],
       descending: [7, 6, 5, 4, 3, 2, 1, 0],
       circle: [0, 5, 1, 4, 2, 6, 3, 7] // I - vi - ii - V - iii - vii° - IV - VIII
@@ -1120,35 +1147,52 @@
     // --- GENERATE ALL 8 DIATONIC TRIADS WITH TRUE VOICE LEADING ---
     // Teaching logic: each chord connects to the previous one with minimal
     // finger movement, common tones are held in place, the run flows along
-    // the neck, and the VIII (octave I) lands roughly one octave away from
-    // the starting I chord.
+    // the neck, and the octave slot lands roughly one octave past the start.
     //
     // STRING COVERAGE:
-    //  - Range filter OFF: all 8 triads are locked to the SAME 3 consecutive
-    //    strings, so the student sees the vertical connections on one group.
-    //  - Range filter ON: the lock is released and the triads roam across
-    //    ALL 6 STRINGS inside the selected fret window, always as 3-note
-    //    triads on 3 consecutive strings, spreading the whole neck.
+    //  - String Group selector forces a specific 3-consecutive-string set
+    //    for the whole run (e-B-G / B-G-D / G-D-A / D-A-E).
+    //  - Otherwise, range filter OFF: locked to the active 3-string group.
+    //    Range filter ON: triads roam across ALL 6 STRINGS in the window.
+    //
+    // FREE NOTES:
+    //  - 1 placed note = the tonic; the key follows it and the run starts
+    //    on the I (or i) chord anchored at that exact position.
+    //  - 2 placed notes = tonic + a second seed; the run is rotated to
+    //    start on the diatonic degree whose chord contains the second
+    //    note, anchored so both notes are physically inside the first
+    //    triad whenever possible.
     function getEightDiatonicTriads(activeVoicing) {
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
-      const order = RUN_ORDERS[state.runOrder] || RUN_ORDERS.ascending;
+
+      // 1. Build the slot order. With two placed Free Notes the run is
+      //    rotated to start on the degree whose chord contains the second
+      //    note; otherwise the selected Run Order template is used.
+      let order;
+      if (state.freeNotes.length >= 2) {
+        order = [];
+        for (let i = 0; i < 8; i++) {
+          order.push({ deg: (state.degreeIndex + i) % 7, octave: i === 7 });
+        }
+      } else {
+        const tpl = RUN_ORDER_TEMPLATES[state.runOrder] || RUN_ORDER_TEMPLATES.ascending;
+        order = tpl.map(t => ({ deg: t % 7, octave: t === 7 }));
+      }
       const wantAscend = state.runOrder !== 'descending';
 
-      // 1. Collect candidate voicings for each degree. When the range
-      //    filter is ON, every string group inside the window is fair game
-      //    (all 6 strings). When OFF, lock to the active string set.
-      //    An inversion constraint can also be applied (triads only).
-      const lockStringSet = !state.enableFretRange;
-      const activeSetKey = (lockStringSet && activeVoicing) ? stringSetKeyOf(activeVoicing) : null;
+      // 2. Collect candidate voicings per degree, with string-set lock,
+      //    inversion constraint, and range filter respected.
+      const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
+      const lockStringSet = !!forcedSetKey || !state.enableFretRange;
+      const activeSetKey = forcedSetKey || ((lockStringSet && activeVoicing) ? stringSetKeyOf(activeVoicing) : null);
       const perDegree = [];
-      for (let d = 0; d < 8; d++) {
-        const degIndex = d % 7;
-        const all = generateVoicings(state.key, degIndex, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
+      for (let d = 0; d < 7; d++) {
+        const all = generateVoicings(state.key, d, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
         let matching = activeSetKey
           ? all.filter(v => stringSetKeyOf(v) === activeSetKey)
           : all;
         if (state.inversion !== 'auto' && state.chordType === 'triad') {
-          const inv = matching.filter(v => voicingInversion(v, degIndex) === state.inversion);
+          const inv = matching.filter(v => voicingInversion(v, d) === state.inversion);
           if (inv.length > 0) matching = inv; // fall back if impossible in range
         }
         if (matching.length === 0) matching = all; // fall back rather than skip
@@ -1158,35 +1202,45 @@
       const triadsRun = [];
       if (perDegree.some(p => p.length === 0)) return triadsRun;
 
-      // 2. Anchor the first chord of the order as close as possible to the
-      //    currently displayed voicing so the run starts where the student is.
-      const firstSlot = order[0];
+      // 3. Anchor pool for the first chord. Prefer voicings that physically
+      //    contain the placed Free Notes (same string and fret), then by
+      //    pitch class, then the default best-position choice.
+      let anchorPool = perDegree[order[0].deg];
+      if (state.freeNotes.length > 0) {
+        const exact = anchorPool.filter(v =>
+          state.freeNotes.every(p => v.notes.some(n => n.string === p.string && n.fret === p.fret)));
+        if (exact.length > 0) anchorPool = exact;
+        else {
+          const byPc = anchorPool.filter(v =>
+            state.freeNotes.every(p => v.notes.some(n => n.pc === p.pc)));
+          if (byPc.length > 0) anchorPool = byPc;
+        }
+      }
+
       let currentVoicing;
       if (activeVoicing) {
         const activeAvg = avgFretOf(activeVoicing);
-        currentVoicing = perDegree[firstSlot].reduce((best, v) =>
+        currentVoicing = anchorPool.reduce((best, v) =>
           Math.abs(avgFretOf(v) - activeAvg) < Math.abs(avgFretOf(best) - activeAvg) ? v : best
         );
       } else {
-        currentVoicing = perDegree[firstSlot][0]; // lowest, easiest shape
+        currentVoicing = anchorPool[0]; // lowest, easiest shape
       }
 
       let prevAvg = avgFretOf(currentVoicing);
       const firstAvg = prevAvg;
 
-      // 3. Walk the chosen order, chaining the best voice-leading choice
+      // 4. Walk the order, chaining the best voice-leading choice
       order.forEach((slot, i) => {
         let chosen = currentVoicing;
 
         if (i > 0) {
-          const isOctave = (slot === 7);
           let bestCost = Infinity;
-
-          perDegree[slot].forEach(v => {
+          perDegree[slot.deg].forEach(v => {
             let cost = voiceLeadCost(currentVoicing, v, prevAvg, wantAscend);
-            if (isOctave) {
-              // VIII is the octave I: steer it to land roughly one octave
-              // past the starting I so the run visibly completes the climb.
+            if (slot.octave) {
+              // The octave slot lands roughly one octave past the start
+              // chord so the run visibly completes the climb.
               const target = wantAscend ? firstAvg + 12 : firstAvg - 12;
               cost += Math.abs(avgFretOf(v) - target) * 0.8;
             }
@@ -1198,10 +1252,10 @@
         prevAvg = avgFretOf(chosen);
 
         triadsRun.push({
-          degree: slot,
-          roman: romanList[slot],
-          name: getChordName(state.key, slot % 7, state.mode, state.chordType),
-          color: TRIAD_COLORS[slot],
+          degree: slot.deg,
+          roman: slot.octave ? romanList[7] : romanList[slot.deg],
+          name: getChordName(state.key, slot.deg, state.mode, state.chordType),
+          color: slot.octave ? TRIAD_COLORS[7] : TRIAD_COLORS[slot.deg],
           notes: chosen.notes
         });
       });
@@ -1312,6 +1366,26 @@
         ctx.fillText(STRING_NAMES[i], marginX - 12, y + 4);
       }
 
+      // Marker for user-placed Free Notes (drawn on top of everything)
+      function drawFreeNoteMarker(p) {
+        const x = p.fret === 0 ? marginX - 18 : marginX + (p.fret - 0.5) * fretWidth;
+        const y = marginY + p.string * stringSpacing;
+
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, 17, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
       const keyIdx = NOTES.indexOf(state.key);
       const scale = state.mode === 'major' ? MAJOR_SCALE : MINOR_SCALE;
       const chordRoot = (keyIdx + scale[state.degreeIndex]) % 12;
@@ -1370,7 +1444,7 @@
         }
       }
 
-      // 2. DIATONIC TRIADS RUN (SHOWING ALL 8 TRIADS WITHIN RANGE)
+      // 2. DIATONIC TRIADS RUN (SHOWING ALL 8 TRIADS)
       if (state.showDiatonicRun && activeDiatonicRun.length > 0) {
         const noteMap = new Map();
 
@@ -1455,11 +1529,17 @@
           ctx.fillText(labelText, x, y);
         });
 
+        // Free-note markers on top of the run
+        state.freeNotes.forEach(drawFreeNoteMarker);
+
         return;
       }
 
       // 3. SINGLE CHORD VOICING
-      if (!voicing) return;
+      if (!voicing) {
+        state.freeNotes.forEach(drawFreeNoteMarker);
+        return;
+      }
 
       voicing.notes.forEach(n => {
         if (state.enableFretRange && (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
@@ -1510,6 +1590,69 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(labelText, x, y);
       });
+
+      // Free-note markers on top of the single chord
+      state.freeNotes.forEach(drawFreeNoteMarker);
+    }
+
+    // --- FREE NOTE INPUT (click to place / remove seed notes) ---
+    canvas.addEventListener('click', (e) => {
+      if (!state.freeMode) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (1100 / rect.width);
+      const y = (e.clientY - rect.top) * (220 / rect.height);
+      const marginX = 50, marginY = 30;
+      const boardHeight = 220 - marginY * 2;
+      const stringSpacing = boardHeight / 5;
+      const fretWidth = (1100 - marginX * 2) / 15;
+
+      let s = Math.round((y - marginY) / stringSpacing);
+      s = Math.max(0, Math.min(5, s));
+      let f;
+      if (x < marginX) f = 0;
+      else f = Math.max(1, Math.min(15, Math.ceil((x - marginX) / fretWidth)));
+
+      toggleFreeNote(s, f);
+    });
+
+    function toggleFreeNote(s, f) {
+      const idx = state.freeNotes.findIndex(n => n.string === s && n.fret === f);
+      if (idx >= 0) {
+        state.freeNotes.splice(idx, 1); // click again to remove
+      } else {
+        if (state.freeNotes.length >= 2) state.freeNotes.shift(); // max 2, oldest replaced
+        state.freeNotes.push({ string: s, fret: f, pc: (TUNING[s] + f) % 12 });
+      }
+      applyFreeNotes();
+    }
+
+    // Derive key + starting degree from the placed notes, then render the run
+    function applyFreeNotes() {
+      if (state.freeNotes.length === 0) { updateApp(); return; }
+
+      // First placed note = tonic of the key
+      state.key = NOTES[state.freeNotes[0].pc];
+      state.degreeIndex = 0;
+      state.voicingIndex = 0;
+      state.showDiatonicRun = true;
+
+      document.getElementById('keySelect').value = state.key;
+      document.getElementById('diatonicOnBtn').classList.add('active');
+      document.getElementById('diatonicOffBtn').classList.remove('active');
+
+      // Second placed note: rotate the run to start on the diatonic
+      // degree whose chord contains that pitch class.
+      if (state.freeNotes.length >= 2) {
+        const pc2 = state.freeNotes[1].pc;
+        for (let d = 0; d < 7; d++) {
+          const rootPc = chordRootPcOf(d);
+          const ivs = getChordIntervals(d, state.mode, state.chordType);
+          const pcs = ivs.map(i => (rootPc + i.semitones) % 12);
+          if (pcs.includes(pc2)) { state.degreeIndex = d; break; }
+        }
+      }
+
+      updateApp();
     }
 
     // --- APP CONTROLLER & UI UPDATES ---
@@ -1590,7 +1733,8 @@
         degreeContainer.appendChild(btn);
       });
 
-      const voicings = generateVoicings(
+      const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
+      let voicings = generateVoicings(
         state.key,
         state.degreeIndex % 7,
         state.mode,
@@ -1599,6 +1743,10 @@
         state.startFret,
         state.fretSpan
       );
+      if (forcedSetKey) {
+        const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
+        if (inSet.length > 0) voicings = inSet;
+      }
 
       const voicingContainer = document.getElementById('voicingContainer');
       voicingContainer.innerHTML = '';
@@ -1647,6 +1795,7 @@
       document.getElementById('modeMajorBtn').classList.add('active');
       document.getElementById('modeMinorBtn').classList.remove('active');
       updateApp();
+      if (state.freeNotes.length > 0) applyFreeNotes();
     });
 
     document.getElementById('modeMinorBtn').addEventListener('click', () => {
@@ -1656,12 +1805,14 @@
       document.getElementById('modeMinorBtn').classList.add('active');
       document.getElementById('modeMajorBtn').classList.remove('active');
       updateApp();
+      if (state.freeNotes.length > 0) applyFreeNotes();
     });
 
     document.getElementById('chordTypeSelect').addEventListener('change', (e) => {
       state.chordType = e.target.value;
       state.voicingIndex = 0;
       updateApp();
+      if (state.freeNotes.length > 0) applyFreeNotes();
     });
 
     function setLabelMode(mode) {
@@ -1763,7 +1914,8 @@
     });
 
     document.getElementById('cycleVoicingBtn').addEventListener('click', () => {
-      const voicings = generateVoicings(
+      const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
+      let voicings = generateVoicings(
         state.key,
         state.degreeIndex % 7,
         state.mode,
@@ -1772,6 +1924,10 @@
         state.startFret,
         state.fretSpan
       );
+      if (forcedSetKey) {
+        const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
+        if (inSet.length > 0) voicings = inSet;
+      }
       if (voicings.length > 0) {
         state.voicingIndex = (state.voicingIndex + 1) % voicings.length;
         updateApp();
@@ -1883,6 +2039,33 @@
       link.download = `${chordName.replace(/\s+/g, '_')}_fretboard.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+    });
+
+    // --- FREE NOTES / RESET / STRING GROUP LISTENERS ---
+    document.getElementById('freeOnBtn').addEventListener('click', () => {
+      state.freeMode = true;
+      document.getElementById('freeOnBtn').classList.add('active');
+      document.getElementById('freeOffBtn').classList.remove('active');
+    });
+
+    document.getElementById('freeOffBtn').addEventListener('click', () => {
+      state.freeMode = false;
+      document.getElementById('freeOffBtn').classList.add('active');
+      document.getElementById('freeOnBtn').classList.remove('active');
+    });
+
+    document.getElementById('resetBoardBtn').addEventListener('click', () => {
+      state.freeNotes = [];
+      state.showDiatonicRun = false;
+      state.voicingIndex = 0;
+      document.getElementById('diatonicOffBtn').classList.add('active');
+      document.getElementById('diatonicOnBtn').classList.remove('active');
+      updateApp();
+    });
+
+    document.getElementById('stringSetSelect').addEventListener('change', (e) => {
+      state.stringSet = e.target.value;
+      updateApp();
     });
 
     // --- AUDIO ENGINE (FluidR3_GM soundfont via soundfont-player) ---
