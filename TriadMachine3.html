@@ -814,9 +814,14 @@
             <button class="btn btn-secondary" id="nextChordBtn" style="padding: 6px 10px;"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
 
-          <button class="btn" id="cycleVoicingBtn" style="padding: 6px 12px;">
-            <i class="fa-solid fa-arrows-rotate"></i> Swap Inversion / Position
-          </button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn" id="cycleVoicingBtn" style="padding: 6px 12px;">
+              <i class="fa-solid fa-arrows-rotate"></i> Swap Inversion / Position
+            </button>
+            <button class="btn btn-secondary" id="cycleOneChordInversionBtn" style="padding: 6px 10px;" title="Swap inversion of I chord only at relative location">
+              <i class="fa-solid fa-rotate"></i> Swap I-Chord Inv
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1011,6 +1016,7 @@
       degreeIndex: 0,
       chordType: 'triad',
       voicingIndex: 0,
+      oneChordVoicingOffset: 0, // Override index offset specifically for degree 0 / 7 (one chord)
       labelMode: 'interval',
       showScaleOverlay: false,
       scaleRoot: 'AUTO',
@@ -1476,9 +1482,8 @@
         }
       } else if (activeVoicing) {
         const activeAvg = avgFretOf(activeVoicing);
-        currentVoicing = perDegree[anchorDeg].reduce((best, v) =>
-          Math.abs(avgFretOf(v) - activeAvg) < Math.abs(avgFretOf(best) - activeAvg) ? v : best
-        );
+        const idx = (state.voicingIndex + state.oneChordVoicingOffset) % perDegree[anchorDeg].length;
+        currentVoicing = perDegree[anchorDeg][idx] || perDegree[anchorDeg][0];
       } else {
         currentVoicing = perDegree[anchorDeg][0]; // lowest, easiest shape
       }
@@ -2482,6 +2487,11 @@
         state.voicingIndex = (state.voicingIndex + 1) % voicings.length;
         updateApp();
       }
+    });
+
+    document.getElementById('cycleOneChordInversionBtn').addEventListener('click', () => {
+      state.oneChordVoicingOffset++;
+      updateApp();
     });
 
     document.getElementById('saveFavBtn').addEventListener('click', () => {
