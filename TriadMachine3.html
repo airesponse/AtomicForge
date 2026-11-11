@@ -1016,7 +1016,7 @@
       degreeIndex: 0,
       chordType: 'triad',
       voicingIndex: 0,
-      oneChordVoicingOffset: 0, // Override index offset specifically for degree 0 / 7 (one chord)
+      oneChordVoicingOffset: 0, // Inversion/voicing cycle index specifically for the I chord
       labelMode: 'interval',
       showScaleOverlay: false,
       scaleRoot: 'AUTO',
@@ -1398,33 +1398,9 @@
     }
 
     // --- GENERATE ALL 8 DIATONIC TRIADS WITH TRUE VOICE LEADING ---
-    // Teaching logic: each chord connects to the previous one with minimal
-    // finger movement, common tones are held in place, the run flows along
-    // the neck, and the octave slot lands roughly one octave past the start.
-    //
-    // STRING COVERAGE:
-    //  - String Group selector forces a specific 3-consecutive-string set
-    //    for the whole run (e-B-G / B-G-D / G-D-A / D-A-E).
-    //  - Otherwise, range filter OFF: locked to the active 3-string group.
-    //    Range filter ON: triads roam across ALL 6 STRINGS in the window.
-    //
-    // FREE NOTES (HARD ANCHOR):
-    //  - The FIRST triad of the run always physically includes the placed
-    //    note(s). If no generated voicing sits exactly there, a shape is
-    //    synthesized around the placed position.
-    //  - 1 placed note = the tonic; the key follows it and the run is 8
-    //    consecutive diatonic triads starting from the I (or i) chord.
-    //  - 2 placed notes = the run starts on the degree whose chord contains
-    //    BOTH notes (or the second note if no single triad holds both),
-    //    and every later chord is voice-led from that exact anchor, with a
-    //    strong bonus for chords that keep holding the placed notes.
     function getEightDiatonicTriads(activeVoicing) {
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
-      // 1. Slot order. With Free Notes placed the run is always 8
-      //    CONSECUTIVE diatonic degrees starting from the anchor degree,
-      //    with slot 8 as its octave. Without Free Notes the selected Run
-      //    Order template applies.
       let order;
       if (state.freeNotes.length > 0) {
         order = [];
@@ -1437,8 +1413,6 @@
       }
       const wantAscend = state.freeNotes.length > 0 ? true : state.runOrder !== 'descending';
 
-      // 2. Collect candidate voicings per degree, with string-set lock,
-      //    inversion constraint, and range filter respected.
       const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
       const lockStringSet = !!forcedSetKey || !state.enableFretRange;
       const activeSetKey = forcedSetKey || ((lockStringSet && activeVoicing) ? stringSetKeyOf(activeVoicing) : null);
@@ -1450,50 +1424,40 @@
           : all;
         if (state.inversion !== 'auto' && state.chordType === 'triad') {
           const inv = matching.filter(v => voicingInversion(v, d) === state.inversion);
-          if (inv.length > 0) matching = inv; // fall back if impossible in range
+          if (inv.length > 0) matching = inv;
         }
-        if (matching.length === 0) matching = all; // fall back rather than skip
+        if (matching.length === 0) matching = all;
         perDegree.push(matching);
       }
 
       const triadsRun = [];
       if (perDegree.some(p => p.length === 0)) return triadsRun;
 
-      // 3. HARD ANCHOR for the first chord: it must physically include the
-      //    placed notes that are chord tones of the anchor degree. Use a
-      //    generated voicing at that exact position if one exists, otherwise
-      //    synthesize a shape around the placed notes.
       const anchorDeg = order[0].deg;
       const anchorPcs = chordPcsOf(anchorDeg);
       const anchors = state.freeNotes.filter(p => anchorPcs.includes(p.pc));
 
       let currentVoicing;
+      const candidateList = perDegree[anchorDeg];
+
       if (anchors.length > 0) {
-        const exact = perDegree[anchorDeg].filter(v =>
+        const exact = candidateList.filter(v =>
           anchors.every(p => v.notes.some(n => n.string === p.string && n.fret === p.fret)));
         if (exact.length > 0) {
-          // pick the exact-match shape closest to the placed notes' region
-          const targetAvg = anchors.reduce((s, p) => s + p.fret, 0) / anchors.length;
-          currentVoicing = exact.reduce((best, v) =>
-            Math.abs(avgFretOf(v) - targetAvg) < Math.abs(avgFretOf(best) - targetAvg) ? v : best);
+          const idx = state.oneChordVoicingOffset % exact.length;
+          currentVoicing = exact[idx];
         } else {
           const synth = synthesizeAnchorVoicing(anchorDeg, anchors);
-          currentVoicing = synth || perDegree[anchorDeg][0];
+          currentVoicing = synth || candidateList[state.oneChordVoicingOffset % candidateList.length];
         }
-      } else if (activeVoicing) {
-        const activeAvg = avgFretOf(activeVoicing);
-        const idx = (state.voicingIndex + state.oneChordVoicingOffset) % perDegree[anchorDeg].length;
-        currentVoicing = perDegree[anchorDeg][idx] || perDegree[anchorDeg][0];
       } else {
-        currentVoicing = perDegree[anchorDeg][0]; // lowest, easiest shape
+        const idx = (state.voicingIndex + state.oneChordVoicingOffset) % candidateList.length;
+        currentVoicing = candidateList[idx] || candidateList[0];
       }
 
       let prevAvg = avgFretOf(currentVoicing);
       const firstAvg = prevAvg;
 
-      // 4. Walk the order, chaining the best voice-leading choice. Every
-      //    later chord is chosen relative to the anchored first triad, so
-      //    the whole run grows directly out of the placed note.
       order.forEach((slot, i) => {
         let chosen = currentVoicing;
 
@@ -1502,8 +1466,6 @@
           perDegree[slot.deg].forEach(v => {
             let cost = voiceLeadCost(currentVoicing, v, prevAvg, wantAscend);
             if (slot.octave) {
-              // The octave slot lands roughly one octave past the start
-              // chord so the run visibly completes the climb.
               const target = wantAscend ? firstAvg + 12 : firstAvg - 12;
               cost += Math.abs(avgFretOf(v) - target) * 0.8;
             }
@@ -1882,16 +1844,11 @@
     });
 
     function toggleFreeNote(s, f) {
-      // Free Notes now uses one tapped fret as the root anchor. A new tap
-      // replaces the previous anchor; tapping the same fret again keeps it
-      // selected instead of clearing the triad run.
       const pc = (TUNING[s] + f) % 12;
       state.freeNotes = [{ string: s, fret: f, pc }];
       applyFreeNotes();
     }
 
-    // Treat the single tapped fret as the tonic/root, then build the full
-    // diatonic triad run outward from that exact physical fretboard position.
     function applyFreeNotes() {
       if (state.freeNotes.length === 0) { updateApp(); return; }
 
@@ -1913,6 +1870,30 @@
 
     // --- APP CONTROLLER & UI UPDATES ---
     function updateApp() {
+      // Calculate effective I-chord voicing for single chord display
+      const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
+      let voicings = generateVoicings(
+        state.key,
+        state.degreeIndex % 7,
+        state.mode,
+        state.chordType,
+        state.enableFretRange,
+        state.startFret,
+        state.fretSpan
+      );
+      if (forcedSetKey) {
+        const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
+        if (inSet.length > 0) voicings = inSet;
+      }
+
+      let activeVoicing = null;
+      if (voicings.length > 0) {
+        const effectiveIndex = (state.degreeIndex % 7 === 0)
+          ? (state.voicingIndex + state.oneChordVoicingOffset) % voicings.length
+          : state.voicingIndex % voicings.length;
+        activeVoicing = voicings[effectiveIndex];
+      }
+
       const chordName = getChordName(state.key, state.degreeIndex, state.mode, state.chordType);
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
       const degreeText = romanList[state.degreeIndex];
@@ -1935,8 +1916,6 @@
         triadLegendBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">8 Diatonic Key:</span>';
         notesRowBar.innerHTML = '<span style="font-size:11px; font-weight:700; color:var(--text-muted); margin-right:4px;">Notes Breakdown:</span>';
 
-        const voicings = generateVoicings(state.key, state.degreeIndex, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
-        const activeVoicing = voicings[state.voicingIndex] || voicings[0];
         const run = getEightDiatonicTriads(activeVoicing);
 
         run.forEach(t => {
@@ -1956,7 +1935,6 @@
           notesRowBar.appendChild(pill);
         });
 
-        // Hybrid-picking hint when the run crosses string groups (range-filter mode)
         const setKeys = new Set(run.map(t => stringSetKeyOf(t)));
         if (setKeys.size > 1) {
           const hint = document.createElement('div');
@@ -1989,32 +1967,19 @@
         degreeContainer.appendChild(btn);
       });
 
-      const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
-      let voicings = generateVoicings(
-        state.key,
-        state.degreeIndex % 7,
-        state.mode,
-        state.chordType,
-        state.enableFretRange,
-        state.startFret,
-        state.fretSpan
-      );
-      if (forcedSetKey) {
-        const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
-        if (inSet.length > 0) voicings = inSet;
-      }
-
       const voicingContainer = document.getElementById('voicingContainer');
       voicingContainer.innerHTML = '';
 
       if (voicings.length === 0) {
         voicingContainer.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:8px;">No playable voicings in range</div>';
       } else {
-        if (state.voicingIndex >= voicings.length) state.voicingIndex = 0;
+        const activeIdx = (state.degreeIndex % 7 === 0)
+          ? (state.voicingIndex + state.oneChordVoicingOffset) % voicings.length
+          : state.voicingIndex % voicings.length;
 
         voicings.forEach((v, idx) => {
           const card = document.createElement('div');
-          card.className = `voicing-card ${idx === state.voicingIndex ? 'active' : ''}`;
+          card.className = `voicing-card ${idx === activeIdx ? 'active' : ''}`;
 
           const stringsUsed = v.notes.map(n => STRING_NAMES[n.string]).reverse().join('');
           const fretPattern = v.notes.map(n => n.fret).join('-');
@@ -2025,7 +1990,11 @@
           `;
 
           card.onclick = () => {
-            state.voicingIndex = idx;
+            if (state.degreeIndex % 7 === 0) {
+              state.oneChordVoicingOffset = idx - state.voicingIndex;
+            } else {
+              state.voicingIndex = idx;
+            }
             updateApp();
           };
 
@@ -2033,7 +2002,7 @@
         });
       }
 
-      renderFretboard(voicings[state.voicingIndex]);
+      renderFretboard(activeVoicing);
 
       if (state.droneOn) startDrone();
     }
@@ -2307,7 +2276,7 @@
       blues:{name:'Blues',ints:[0,3,5,6,7,10],formula:'1 ♭3 4 ♭5 5 ♭7',context:'Minor pentatonic plus blue ♭5; resolve chromatic tension into chord tones.'},
       wholeTone:{name:'Whole tone',ints:[0,2,4,6,8,10],formula:'1 2 3 ♯4 ♯5 ♭7',context:'Symmetrical six-note collection; supports augmented harmony.'},
       halfWhole:{name:'Diminished (half-whole)',ints:[0,1,3,4,6,7,9,10],formula:'1 ♭2 ♭3 3 ♭5 5 6 ♭7',context:'Eight-note dominant diminished collection; useful over 7(♭9/♯9/♯11/13).'},
-      wholeHalf:{name:'Diminished (whole-half)',ints:[0,2,3,5,6,8,9,11],formula:'1 2 ♭3 4 ♭5 ♭6 6 7',context:'Eight-note diminished collection; often used over diminished seventh harmony.'},
+      wholeHalf:{name:'Diminished (whole-half)',ints:[0,2,3,5,6,8,9,11],formula:'1 2 3 ♭5 ♭6 6 7',context:'Eight-note diminished collection; often used over diminished seventh harmony.'},
       altered:{name:'Altered / Super Locrian',ints:[0,1,3,4,6,8,10],formula:'1 ♭9 ♯9 3 ♭5 ♯5 ♭7',context:'Seventh mode of melodic minor; altered dominant tensions resolve to tonic.'},
       lydianDom:{name:'Lydian dominant',ints:[0,2,4,6,7,9,10],formula:'1 2 3 ♯4 5 6 ♭7',context:'Fourth mode of melodic minor; dominant 7(♯11) sound.'}
     };
@@ -2618,6 +2587,7 @@
       state.freeNotes = [];
       state.showDiatonicRun = false;
       state.voicingIndex = 0;
+      state.oneChordVoicingOffset = 0;
       document.getElementById('diatonicOffBtn').classList.add('active');
       document.getElementById('diatonicOnBtn').classList.remove('active');
       updateApp();
