@@ -1219,16 +1219,8 @@
       return v.notes.map(n => n.string).sort((a, b) => a - b).join(',');
     }
 
-    // Voice-leading cost between the previous triad and a candidate triad.
-    // Rewards common tones held on the same string/fret, penalizes large jumps
-    // and string hopping, and discourages the run from sliding the wrong way
-    // so the triads flow logically along the neck.
     function voiceLeadCost(prevVoicing, candVoicing, prevAvg, wantAscend) {
       const prevByString = new Map(prevVoicing.notes.map(n => [n.string, n.fret]));
-      // With the range filter ON, moving between 3-string groups across the
-      // full 6-string neck is expected, so string hops are cheap. With the
-      // filter OFF, the run is locked to one 3-consecutive-string group and
-      // any hop is a big detour.
       const stringHopPenalty = state.enableFretRange ? 1 : 4;
       let cost = 0;
       let heldTones = 0;
@@ -1238,26 +1230,20 @@
         if (pf !== undefined) {
           const move = Math.abs(n.fret - pf);
           cost += move;
-          if (move === 0) heldTones++; // a common tone physically held in place
+          if (move === 0) heldTones++;
         } else {
-          cost += stringHopPenalty; // note jumped to a different string
+          cost += stringHopPenalty;
         }
       });
 
-      // slight reward for held common tones (smooth, connected sound)
       cost -= heldTones * 0.5;
 
-      // Placed Free Notes are strong anchors: any chord that physically
-      // holds a placed note in place is preferred, so the run keeps
-      // returning to the user's chosen position.
       state.freeNotes.forEach(p => {
         if (candVoicing.notes.some(n => n.string === p.string && n.fret === p.fret)) cost -= 2.5;
       });
 
-      // keep each individual shape compact
       cost += candVoicing.span * 0.4;
 
-      // directional flow: discourage sliding the wrong way down the neck
       const avg = avgFretOf(candVoicing);
       if (wantAscend && avg < prevAvg - 0.01) cost += 12 + (prevAvg - avg);
       if (!wantAscend && avg > prevAvg + 0.01) cost += 12 + (avg - prevAvg);
@@ -1273,7 +1259,6 @@
     function usesSharps() {
       const keyIdx = NOTES.indexOf(state.key);
       if (state.mode === 'major') return SHARP_MAJOR_KEYS.includes(state.key);
-      // minor key: spell like its relative major (e.g. Em -> G major)
       return SHARP_MAJOR_KEYS.includes(NOTES[(keyIdx + 3) % 12]);
     }
 
@@ -1281,7 +1266,6 @@
       return (usesSharps() ? SPELL_SHARP : SPELL_FLAT)[((pc % 12) + 12) % 12];
     }
 
-    // --- FINGERING & CAGED ZONE LABELS ---
     function fingerFor(fret, baseFret) {
       if (fret === 0) return 'o';
       return String(Math.min(4, Math.max(1, fret - baseFret + 1)));
@@ -1302,14 +1286,12 @@
       return (keyIdx + scale[degree % 7]) % 12;
     }
 
-    // All pitch classes of the diatonic chord built on `degree`
     function chordPcsOf(degree) {
       const rootPc = chordRootPcOf(degree);
       return getChordIntervals(degree, state.mode, state.chordType)
         .map(i => (rootPc + i.semitones) % 12);
     }
 
-    // Bass note (lowest-sounding string = highest string index) decides inversion
     function voicingInversion(voicing, degree) {
       const rootPc = chordRootPcOf(degree);
       const intervals = getChordIntervals(degree, state.mode, state.chordType);
@@ -1319,19 +1301,12 @@
       return 'second';
     }
 
-    // --- RUN ORDERS (teaching sequences) ---
     const RUN_ORDER_TEMPLATES = {
       ascending: [0, 1, 2, 3, 4, 5, 6, 7],
       descending: [7, 6, 5, 4, 3, 2, 1, 0],
-      circle: [0, 5, 1, 4, 2, 6, 3, 7] // I - vi - ii - V - iii - vii° - IV - VIII
+      circle: [0, 5, 1, 4, 2, 6, 3, 7]
     };
 
-    // Build a voicing for `degree` that physically includes the given anchor
-    // notes, choosing the remaining chord tones on adjacent strings as close
-    // as possible to the anchor's fret region. Used as the hard anchor for
-    // the first triad of a Free Notes run when no generated voicing happens
-    // to sit exactly on the placed positions (e.g. the note is outside the
-    // range-filter window or an unusual string).
     function synthesizeAnchorVoicing(degree, anchors) {
       if (!anchors || anchors.length === 0) return null;
 
@@ -1346,12 +1321,10 @@
         const set = [];
         for (let i = 0; i < size; i++) set.push(s0 + i);
 
-        // every anchor must live on its own string inside this set
         const anchorStrings = anchors.map(p => p.string);
         if (anchors.some(p => !set.includes(p.string))) continue;
         if (new Set(anchorStrings).size !== anchorStrings.length) continue;
 
-        // remaining chord tones go on the remaining strings
         const pool = [...targetPcs];
         anchors.forEach(p => {
           const idx = pool.indexOf(p.pc);
@@ -1451,6 +1424,7 @@
           currentVoicing = synth || candidateList[state.oneChordVoicingOffset % candidateList.length];
         }
       } else {
+        // Robust I-Chord Inversion Swap logic: ALWAYS rotates through candidates regardless of freeMode state
         const idx = (state.voicingIndex + state.oneChordVoicingOffset) % candidateList.length;
         currentVoicing = candidateList[idx] || candidateList[0];
       }
@@ -1591,7 +1565,6 @@
         ctx.fillText(STRING_NAMES[i], marginX - 12, y + 4);
       }
 
-      // Marker for user-placed Free Notes (drawn on top of everything)
       function drawFreeNoteMarker(p) {
         const x = p.fret === 0 ? marginX - 18 : marginX + (p.fret - 0.5) * fretWidth;
         const y = marginY + p.string * stringSpacing;
@@ -1679,8 +1652,6 @@
           const tRoot = (keyIdx + tScale[triad.degree % 7]) % 12;
 
           triad.notes.forEach(n => {
-            // Hard range bound only applies when no Free Notes are placed:
-            // the anchored run always stays fully visible.
             if (state.enableFretRange && state.freeNotes.length === 0 &&
                 (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
               return;
@@ -1701,7 +1672,6 @@
           });
         });
 
-        // Finger-label base for the run: lowest fretted note in the whole run
         let fingerBase = 99;
         activeDiatonicRun.forEach(t => t.notes.forEach(n => { if (n.fret > 0 && n.fret < fingerBase) fingerBase = n.fret; }));
         if (fingerBase === 99) fingerBase = 1;
@@ -1749,7 +1719,6 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          // DYNAMIC LABELING (INTERVAL / NOTE / FINGER TOGGLE)
           let labelText;
           if (state.labelMode === 'interval') labelText = item.intervalName;
           else if (state.labelMode === 'finger') labelText = fingerFor(item.fret, fingerBase);
@@ -1757,7 +1726,6 @@
           ctx.fillText(labelText, x, y);
         });
 
-        // Free-note markers on top of the run
         state.freeNotes.forEach(drawFreeNoteMarker);
 
         return;
@@ -1819,11 +1787,10 @@
         ctx.fillText(labelText, x, y);
       });
 
-      // Free-note markers on top of the single chord
       state.freeNotes.forEach(drawFreeNoteMarker);
     }
 
-    // --- FREE NOTE INPUT (click to place / remove seed notes) ---
+    // --- FREE NOTE INPUT ---
     canvas.addEventListener('click', (e) => {
       if (!state.freeMode) return;
       const rect = canvas.getBoundingClientRect();
@@ -1870,7 +1837,6 @@
 
     // --- APP CONTROLLER & UI UPDATES ---
     function updateApp() {
-      // Calculate effective I-chord voicing for single chord display
       const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
       let voicings = generateVoicings(
         state.key,
@@ -2006,7 +1972,6 @@
 
       if (state.droneOn) startDrone();
     }
-
 
     // --- ARPEGGIO EXPLORER ---
     const ARPEGGIO_TYPES = [
@@ -2458,6 +2423,7 @@
       }
     });
 
+    // RESTORED ORIGINAL RELIABLE I-CHORD INVERSION SWAP
     document.getElementById('cycleOneChordInversionBtn').addEventListener('click', () => {
       state.oneChordVoicingOffset++;
       updateApp();
@@ -2533,9 +2499,7 @@
           }
 
           if (state.showScaleOverlay) {
-            document.getElementById('overlayOnBtn').click();
-          } else {
-            document.getElementById('overlayOffBtn').click();
+            document.php?fav.showScaleOverlay ? document.getElementById('overlayOnBtn').click() : document.getElementById('overlayOffBtn').click();
           }
 
           if (state.showDiatonicRun) {
@@ -2570,7 +2534,6 @@
       link.click();
     });
 
-    // --- FREE NOTES / RESET / STRING GROUP LISTENERS ---
     document.getElementById('freeOnBtn').addEventListener('click', () => {
       state.freeMode = true;
       document.getElementById('freeOnBtn').classList.add('active');
@@ -2598,7 +2561,7 @@
       updateApp();
     });
 
-    // --- AUDIO ENGINE (FluidR3_GM soundfont via soundfont-player) ---
+    // --- AUDIO ENGINE ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const STRING_MIDI = [64, 59, 55, 50, 45, 40]; // e4 B3 G3 D3 A2 E2
     let leadInstrument = null;
@@ -2636,9 +2599,8 @@
       return padInstrument;
     }
 
-    // Play a voicing: bass-to-treble, as a block or as an arpeggio
     function playVoicingAt(player, voicing, when, duration) {
-      const notes = [...voicing.notes].sort((a, b) => b.string - a.string); // bass first
+      const notes = [...voicing.notes].sort((a, b) => b.string - a.string);
       const gap = state.playStyle === 'arp' ? beatSec() * 0.22 : 0;
       notes.forEach((n, i) => {
         player.play(midiOf(n), when + i * gap, { duration: duration });
@@ -2664,12 +2626,11 @@
       const active = voicings[state.voicingIndex] || voicings[0];
       const run = getEightDiatonicTriads(active);
       if (run.length === 0) return;
-      const step = beatSec() * 2; // two beats per chord
+      const step = beatSec() * 2;
       const t0 = audioCtx.currentTime + 0.05;
       run.forEach((t, i) => playVoicingAt(player, t, t0 + i * step, step * 0.95));
     }
 
-    // --- METRONOME (synthesized, realistic click sounds) ---
     function getNoise() {
       if (!noiseBuf) {
         noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
@@ -2746,7 +2707,7 @@
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
         src.connect(hp); hp.connect(g); g.connect(out);
         src.start(when); src.stop(when + 0.07);
-      } else { // beep
+      } else {
         const osc = audioCtx.createOscillator();
         osc.type = 'square';
         osc.frequency.value = accented ? 1200 : 900;
@@ -2779,7 +2740,6 @@
       if (metroTimer) { clearInterval(metroTimer); metroTimer = null; }
     }
 
-    // --- ROOT DRONE (warm pad sustains the current chord root) ---
     async function startDrone() {
       const pad = await getPadInstrument();
       stopDroneNote();
@@ -2794,7 +2754,6 @@
       }
     }
 
-    // --- AUDIO EVENT LISTENERS ---
     document.getElementById('instrumentSelect').addEventListener('change', (e) => {
       state.instrument = e.target.value;
     });
