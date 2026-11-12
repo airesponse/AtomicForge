@@ -147,10 +147,11 @@
       padding: 6px 10px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       overflow-x: auto;
       white-space: nowrap;
       scrollbar-width: thin;
+      position: relative;
     }
 
     .compact-controls-bar::-webkit-scrollbar {
@@ -168,6 +169,7 @@
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
+      position: relative;
     }
 
     .ctrl-item label {
@@ -198,19 +200,76 @@
     }
 
     .btn-toggle {
-      padding: 3px 8px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      border-radius: 4px;
+      padding: 5px 10px;
+      background: var(--bg-dark);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
       font-size: 11px;
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-toggle:hover {
+      border-color: var(--accent-primary);
     }
 
     .btn-toggle.active {
       background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+    }
+
+    /* Dropdown Popup Menu */
+    .popup-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      background: #0f172a;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      min-width: 120px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+
+    .popup-menu.show {
+      display: flex;
+    }
+
+    .popup-item {
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-main);
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: left;
+      background: transparent;
+      border: none;
+      width: 100%;
+    }
+
+    .popup-item:hover {
+      background-color: var(--accent-primary);
+      color: white;
+    }
+
+    .popup-item.selected {
+      color: var(--accent-primary);
+      font-weight: 700;
+    }
+    .popup-item.selected:hover {
       color: white;
     }
 
@@ -510,6 +569,34 @@
       background-color: var(--panel-border);
       margin: 0 4px;
     }
+
+    .view-tabs { display:flex; gap:6px; margin-bottom:2px; }
+    .view-tab { padding:7px 14px; border:1px solid var(--panel-border); border-radius:7px 7px 0 0; background:var(--panel-bg); color:var(--text-muted); font-weight:700; font-size:12px; cursor:pointer; }
+    .view-tab.active { background:var(--accent-primary); color:#fff; border-color:var(--accent-primary); }
+    .arp-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px 10px; background:var(--panel-bg); border:1px solid var(--panel-border); border-radius:8px; }
+    .arp-controls .ctrl-item { gap:6px; }
+    .arp-info { color:var(--text-muted); font-size:11px; padding:2px 4px; }
+    .arp-legend { display:flex; flex-wrap:wrap; gap:12px; align-items:center; font-size:11px; color:var(--text-muted); }
+    .arp-legend span { display:inline-flex; align-items:center; gap:5px; }
+    .arp-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    #arpeggioCanvas { cursor:crosshair; touch-action:manipulation; }
+    .arp-hint { font-size:11px; color:var(--text-muted); padding:2px 4px; }
+
+    .dev-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+    .dev-degree { background:#0f172a; border:1px solid #334155; color:#cbd5e1; border-radius:7px; padding:8px; text-align:left; cursor:pointer; min-height:58px; }
+    .dev-degree.active { border:2px solid #60a5fa; background:#172554; color:#fff; }
+    .dev-degree strong { display:block; font-size:15px; margin-bottom:3px; }
+    .dev-degree small { color:#94a3b8; font-size:10px; }
+    .theory-panel { background:var(--panel-bg); border:1px solid var(--panel-border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:9px; }
+    .theory-panel h3 { font-size:13px; }
+    .theory-copy { color:#cbd5e1; font-size:11px; line-height:1.55; }
+    .theory-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px 10px; background:var(--panel-bg); border:1px solid var(--panel-border); border-radius:8px; }
+    .theory-controls .ctrl-item { gap:6px; }
+    .theory-legend { display:flex; flex-wrap:wrap; gap:10px; font-size:10px; color:#cbd5e1; }
+    .theory-legend span { display:inline-flex; align-items:center; gap:4px; }
+    .theory-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+    .theory-canvas { cursor:crosshair; touch-action:manipulation; }
+
   </style>
 </head>
 <body>
@@ -531,117 +618,65 @@
     </div>
   </header>
 
+  <div class="view-tabs" role="tablist" aria-label="Tool views">
+    <button class="view-tab active" id="triadTabBtn" role="tab" aria-selected="true">Triad Machine</button>
+    <button class="view-tab" id="arpeggioTabBtn" role="tab" aria-selected="false">Arpeggios</button>
+    <button class="view-tab" id="chordDevTabBtn" role="tab" aria-selected="false">Chordal Development</button>
+    <button class="view-tab" id="scalesTabBtn" role="tab" aria-selected="false">Scales</button>
+  </div>
+
+  <div id="triadTabPanel">
   <div class="app-layout">
     
-    <!-- FIRST CONTROLS BAR (theory: key, mode, structure, notation, scales, diatonic run) -->
+    <!-- FIRST CONTROLS BAR (Updated per specifications) -->
     <div class="compact-controls-bar">
       
-      <!-- Key -->
+      <!-- 1. Key Button with Popup (A to G) -->
       <div class="ctrl-item">
-        <label>Key:</label>
-        <select id="keySelect">
-          <option value="C">C</option>
-          <option value="C#">C# / Db</option>
-          <option value="D">D</option>
-          <option value="D#">D# / Eb</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="F#">F# / Gb</option>
-          <option value="G" selected>G</option>
-          <option value="G#">G# / Ab</option>
-          <option value="A">A</option>
-          <option value="A#">A# / Bb</option>
-          <option value="B">B</option>
-        </select>
+        <button class="btn-toggle" id="keyMenuBtn">Key: G <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+        <div class="popup-menu" id="keyPopupMenu"></div>
       </div>
 
-      <!-- Quality/Mode -->
+      <!-- 2. Major/Minor Single Toggle Button -->
       <div class="ctrl-item">
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="modeMajorBtn">Maj</button>
-          <button class="btn-toggle" id="modeMinorBtn">Min</button>
-        </div>
+        <button class="btn-toggle" id="modeToggleBtn">Major</button>
       </div>
 
-      <!-- Type Dropdown -->
+      <!-- 3. Structure Button with Popup (Label removed) -->
       <div class="ctrl-item">
-        <label>Structure:</label>
-        <select id="chordTypeSelect">
-          <option value="triad">Triads (3 notes)</option>
-          <option value="dom7">Dominant 7th (7)</option>
-          <option value="maj7">Major 7th (Maj7)</option>
-          <option value="9th">9th Chords (9)</option>
-          <option value="sus4">Sus4 Chords</option>
-          <option value="sus2">Sus2 Chords</option>
-          <option value="6th">6th Chords (6)</option>
-        </select>
+        <button class="btn-toggle" id="structureMenuBtn">Triads (3 notes) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+        <div class="popup-menu" id="structurePopupMenu"></div>
       </div>
 
-      <!-- Notation -->
+      <!-- 4. Intervals/Notes/Fingers Single Toggle Button -->
       <div class="ctrl-item">
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="labelIntervalBtn">Intervals</button>
-          <button class="btn-toggle" id="labelNoteBtn">Notes</button>
-          <button class="btn-toggle" id="labelFingerBtn">Fingers</button>
-        </div>
+        <button class="btn-toggle" id="labelToggleBtn">Intervals</button>
       </div>
 
       <div class="divider"></div>
 
-      <!-- Scale Overlay -->
+      <!-- 5. Scale Overlay On/Off Toggle Button -->
       <div class="ctrl-item">
-        <label>Scale Overlay:</label>
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="overlayOffBtn">Off</button>
-          <button class="btn-toggle" id="overlayOnBtn">On</button>
-        </div>
+        <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
       </div>
 
+      <!-- 6. Root Button with Popup -->
       <div class="ctrl-item">
-        <label>Root:</label>
-        <select id="scaleRootSelect">
-          <option value="AUTO" selected>Auto</option>
-          <option value="C">C</option>
-          <option value="C#">C#</option>
-          <option value="D">D</option>
-          <option value="D#">D#</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="F#">F#</option>
-          <option value="G">G</option>
-          <option value="G#">G#</option>
-          <option value="A">A</option>
-          <option value="A#">A#</option>
-          <option value="B">B</option>
-        </select>
+        <button class="btn-toggle" id="rootMenuBtn">Root: Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+        <div class="popup-menu" id="rootPopupMenu"></div>
       </div>
 
+      <!-- 7. Scale Chooser Button with Popup -->
       <div class="ctrl-item">
-        <select id="scaleSelect">
-          <option value="ionian">Ionian (Major)</option>
-          <option value="dorian">Dorian</option>
-          <option value="phrygian">Phrygian</option>
-          <option value="lydian">Lydian</option>
-          <option value="mixolydian">Mixolydian</option>
-          <option value="aeolian">Aeolian (Minor)</option>
-          <option value="locrian">Locrian</option>
-          <option value="pentatonic_major">Maj Pentatonic</option>
-          <option value="pentatonic_minor">Min Pentatonic</option>
-          <option value="harmonic_minor">Harmonic Minor</option>
-          <option value="melodic_minor">Melodic Minor</option>
-          <option value="blues">Blues</option>
-        </select>
+        <button class="btn-toggle" id="scaleMenuBtn">Ionian (Major) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+        <div class="popup-menu" id="scalePopupMenu"></div>
       </div>
 
       <div class="divider"></div>
 
-      <!-- 8 Diatonic Triads Run Switch -->
+      <!-- 8. 8 Diatonic Triads On/Off Toggle Button -->
       <div class="ctrl-item">
-        <label>8 Diatonic Triads (I-VIII):</label>
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="diatonicOffBtn">Off</button>
-          <button class="btn-toggle" id="diatonicOnBtn">On</button>
-        </div>
+        <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
       </div>
 
     </div>
@@ -825,6 +860,128 @@
 
     </div>
 
+  </div>
+  </div><!-- /triadTabPanel -->
+
+  <div id="arpeggioTabPanel" style="display:none;" class="app-layout">
+    <div class="arp-controls">
+      <div class="ctrl-item"><label for="arpRootSelect">Root:</label>
+        <select id="arpRootSelect"></select>
+      </div>
+      <div class="ctrl-item"><label for="arpTypeSelect">Arpeggio:</label>
+        <select id="arpTypeSelect">
+          <option value="maj">Major</option>
+          <option value="min">Minor</option>
+          <option value="dim">Diminished</option>
+          <option value="aug">Augmented</option>
+          <option value="sus2">Sus2</option>
+          <option value="sus4">Sus4</option>
+          <option value="maj6">Major 6</option>
+          <option value="min6">Minor 6</option>
+          <option value="dom7">Dominant 7</option>
+          <option value="maj7">Major 7</option>
+          <option value="min7">Minor 7</option>
+          <option value="min7b5">Half-diminished 7</option>
+          <option value="dim7">Diminished 7</option>
+          <option value="minMaj7">Minor-major 7</option>
+          <option value="augMaj7">Augmented major 7</option>
+        </select>
+      </div>
+      <div class="ctrl-item">
+        <label>Cycle:</label>
+        <div class="toggle-group">
+          <button class="btn-toggle active" id="arpCycleOffBtn">Off</button>
+          <button class="btn-toggle" id="arpCycleOnBtn">On</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="arpPrevBtn" style="padding:5px 9px;"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+      <button class="btn" id="arpNextBtn" style="padding:5px 9px;"><i class="fa-solid fa-chevron-right"></i> Next Type</button>
+      <div class="arp-info" id="arpInfo">Select a root or tap any fret on the board.</div>
+    </div>
+
+    <div class="fretboard-card">
+      <div class="fretboard-header">
+        <div class="chord-info"><h2 id="arpTitle">C Major Arpeggio</h2></div>
+        <div class="arp-legend">
+          <span><i class="arp-dot" style="background:#ef4444"></i> Root</span>
+          <span><i class="arp-dot" style="background:#22c55e"></i> 3rd</span>
+          <span><i class="arp-dot" style="background:#f97316"></i> 5th</span>
+          <span><i class="arp-dot" style="background:#a855f7"></i> 7th</span>
+          <span><i class="arp-dot" style="background:#06b6d4"></i> Extension</span>
+        </div>
+      </div>
+      <div class="canvas-container">
+        <canvas id="arpeggioCanvas" width="1100" height="220"></canvas>
+      </div>
+      <div class="arp-hint">Tap or click any string/fret position to make that note the arpeggio root. The selected root position is outlined in white.</div>
+    </div>
+  </div>
+
+
+  <div id="chordDevTabPanel" style="display:none;" class="app-layout">
+    <div class="theory-controls">
+      <div class="ctrl-item"><label for="devKey">Key:</label><select id="devKey"></select></div>
+      <div class="ctrl-item"><label for="devMode">Mode:</label><select id="devMode"><option value="major">Major</option><option value="minor">Natural minor</option></select></div>
+      <div class="ctrl-item"><label for="devSize">Chord structure:</label><select id="devSize"><option value="3">Triads</option><option value="4" selected>7th chords</option><option value="5">9th chords</option></select></div>
+      <div class="ctrl-item"><label for="devProgression">Progression:</label><select id="devProgression">
+        <option value="1456">I–V–vi–IV (pop)</option><option value="251">ii–V–I (jazz)</option><option value="1645">I–vi–IV–V (50s)</option>
+        <option value="1625">I–vi–ii–V (turnaround)</option><option value="1b63b7">i–♭VI–♭III–♭VII (minor)</option>
+        <option value="modal">i–♭VII vamp (Dorian/Aeolian)</option><option value="custom">Build your own</option>
+      </select></div>
+    </div>
+    <div class="theory-panel">
+      <h3>Harmonic progression</h3>
+      <div id="devProgressionCards" class="dev-grid"></div>
+      <div id="devCustomControls" class="theory-controls" style="display:none;">
+        <div class="ctrl-item"><label for="devAddDegree">Add scale degree:</label><select id="devAddDegree"><option value="1">I / i</option><option value="2">ii</option><option value="3">iii</option><option value="4">IV</option><option value="5">V</option><option value="6">vi</option><option value="7">vii°</option></select></div>
+        <button class="btn" id="devAddChordBtn">Add chord</button><button class="btn btn-secondary" id="devRemoveChordBtn">Remove last</button>
+      </div>
+      <div class="theory-copy" id="devAnalysis">Select a chord to inspect its function, chord tones and voice-leading context.</div>
+    </div>
+    <div class="fretboard-card">
+      <div class="fretboard-header">
+        <div class="chord-info"><h2 id="devChordTitle">Gmaj7</h2></div>
+        <div class="theory-legend">
+          <span><i class="theory-dot" style="background:#ef4444"></i> Root</span><span><i class="theory-dot" style="background:#22c55e"></i> 3rd</span>
+          <span><i class="theory-dot" style="background:#f97316"></i> 5th</span><span><i class="theory-dot" style="background:#a855f7"></i> 7th</span>
+          <span><i class="theory-dot" style="background:#06b6d4"></i> 9th</span>
+        </div>
+      </div>
+      <div class="canvas-container"><canvas id="devCanvas" class="theory-canvas" width="1100" height="220"></canvas></div>
+      <div class="arp-hint">Tap any fret to transpose the harmonic centre to that pitch. Select progression cards to inspect each chord on the same fretboard.</div>
+    </div>
+  </div>
+
+  <div id="scalesTabPanel" style="display:none;" class="app-layout">
+    <div class="theory-controls">
+      <div class="ctrl-item"><label for="scaleRoot">Tonic:</label><select id="scaleRoot"></select></div>
+      <div class="ctrl-item"><label for="scaleType">Scale / mode:</label><select id="scaleType">
+        <optgroup label="Diatonic modes">
+          <option value="major">Major (Ionian)</option><option value="dorian">Dorian</option><option value="phrygian">Phrygian</option><option value="lydian">Lydian</option><option value="mixolydian">Mixolydian</option><option value="minor">Natural minor (Aeolian)</option><option value="locrian">Locrian</option>
+        </optgroup>
+        <optgroup label="Minor and pentatonic">
+          <option value="harmonicMinor">Harmonic minor</option><option value="melodicMinor">Melodic minor</option><option value="majorPent">Major pentatonic</option><option value="minorPent">Minor pentatonic</option><option value="blues">Blues</option>
+        </optgroup>
+        <optgroup label="Symmetrical and altered">
+          <option value="wholeTone">Whole tone</option><option value="halfWhole">Diminished (half-whole)</option><option value="wholeHalf">Diminished (whole-half)</option><option value="altered">Altered / Super Locrian</option><option value="lydianDom">Lydian dominant</option>
+        </optgroup>
+      </select></div>
+      <div class="ctrl-item"><label>Display:</label><div class="toggle-group"><button class="btn-toggle active" id="scaleIntervalsBtn">Intervals</button><button class="btn-toggle" id="scaleNotesBtn">Notes</button></div></div>
+      <button class="btn btn-secondary" id="scalePrevBtn" style="padding:5px 9px;">Previous</button>
+      <button class="btn" id="scaleNextBtn" style="padding:5px 9px;">Next Scale</button>
+    </div>
+    <div class="theory-panel">
+      <h3 id="scaleHeading">G Major (Ionian)</h3>
+      <div class="theory-copy" id="scaleFormula">Formula and characteristic tones will appear here.</div>
+      <div class="theory-copy" id="scaleContext">Scale-degree and harmonic context.</div>
+    </div>
+    <div class="fretboard-card">
+      <div class="fretboard-header"><div class="chord-info"><h2 id="scaleBoardTitle">G Major</h2></div>
+        <div class="theory-legend"><span><i class="theory-dot" style="background:#ef4444"></i> Tonic</span><span><i class="theory-dot" style="background:#22c55e"></i> 3rd</span><span><i class="theory-dot" style="background:#f97316"></i> 5th</span><span><i class="theory-dot" style="background:#a855f7"></i> Colour tones</span></div>
+      </div>
+      <div class="canvas-container"><canvas id="scaleCanvas" class="theory-canvas" width="1100" height="220"></canvas></div>
+      <div class="arp-hint">Tap any fret to make that pitch the tonic. The fretboard shows every occurrence of the selected scale across six strings and 15 frets.</div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/soundfont-player@0.11.0/dist/soundfont-player.min.js"></script>
@@ -1078,16 +1235,8 @@
       return v.notes.map(n => n.string).sort((a, b) => a - b).join(',');
     }
 
-    // Voice-leading cost between the previous triad and a candidate triad.
-    // Rewards common tones held on the same string/fret, penalizes large jumps
-    // and string hopping, and discourages the run from sliding the wrong way
-    // so the triads flow logically along the neck.
     function voiceLeadCost(prevVoicing, candVoicing, prevAvg, wantAscend) {
       const prevByString = new Map(prevVoicing.notes.map(n => [n.string, n.fret]));
-      // With the range filter ON, moving between 3-string groups across the
-      // full 6-string neck is expected, so string hops are cheap. With the
-      // filter OFF, the run is locked to one 3-consecutive-string group and
-      // any hop is a big detour.
       const stringHopPenalty = state.enableFretRange ? 1 : 4;
       let cost = 0;
       let heldTones = 0;
@@ -1097,26 +1246,20 @@
         if (pf !== undefined) {
           const move = Math.abs(n.fret - pf);
           cost += move;
-          if (move === 0) heldTones++; // a common tone physically held in place
+          if (move === 0) heldTones++;
         } else {
-          cost += stringHopPenalty; // note jumped to a different string
+          cost += stringHopPenalty;
         }
       });
 
-      // slight reward for held common tones (smooth, connected sound)
       cost -= heldTones * 0.5;
 
-      // Placed Free Notes are strong anchors: any chord that physically
-      // holds a placed note in place is preferred, so the run keeps
-      // returning to the user's chosen position.
       state.freeNotes.forEach(p => {
         if (candVoicing.notes.some(n => n.string === p.string && n.fret === p.fret)) cost -= 2.5;
       });
 
-      // keep each individual shape compact
       cost += candVoicing.span * 0.4;
 
-      // directional flow: discourage sliding the wrong way down the neck
       const avg = avgFretOf(candVoicing);
       if (wantAscend && avg < prevAvg - 0.01) cost += 12 + (prevAvg - avg);
       if (!wantAscend && avg > prevAvg + 0.01) cost += 12 + (avg - prevAvg);
@@ -1124,7 +1267,7 @@
       return cost;
     }
 
-    // --- NOTE SPELLING (key-aware enharmonics) ---
+    // --- NOTE SPELLING ---
     const SPELL_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const SPELL_FLAT  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
     const SHARP_MAJOR_KEYS = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
@@ -1132,7 +1275,6 @@
     function usesSharps() {
       const keyIdx = NOTES.indexOf(state.key);
       if (state.mode === 'major') return SHARP_MAJOR_KEYS.includes(state.key);
-      // minor key: spell like its relative major (e.g. Em -> G major)
       return SHARP_MAJOR_KEYS.includes(NOTES[(keyIdx + 3) % 12]);
     }
 
@@ -1140,7 +1282,6 @@
       return (usesSharps() ? SPELL_SHARP : SPELL_FLAT)[((pc % 12) + 12) % 12];
     }
 
-    // --- FINGERING & CAGED ZONE LABELS ---
     function fingerFor(fret, baseFret) {
       if (fret === 0) return 'o';
       return String(Math.min(4, Math.max(1, fret - baseFret + 1)));
@@ -1161,14 +1302,12 @@
       return (keyIdx + scale[degree % 7]) % 12;
     }
 
-    // All pitch classes of the diatonic chord built on `degree`
     function chordPcsOf(degree) {
       const rootPc = chordRootPcOf(degree);
       return getChordIntervals(degree, state.mode, state.chordType)
         .map(i => (rootPc + i.semitones) % 12);
     }
 
-    // Bass note (lowest-sounding string = highest string index) decides inversion
     function voicingInversion(voicing, degree) {
       const rootPc = chordRootPcOf(degree);
       const intervals = getChordIntervals(degree, state.mode, state.chordType);
@@ -1178,19 +1317,12 @@
       return 'second';
     }
 
-    // --- RUN ORDERS (teaching sequences) ---
     const RUN_ORDER_TEMPLATES = {
       ascending: [0, 1, 2, 3, 4, 5, 6, 7],
       descending: [7, 6, 5, 4, 3, 2, 1, 0],
-      circle: [0, 5, 1, 4, 2, 6, 3, 7] // I - vi - ii - V - iii - vii° - IV - VIII
+      circle: [0, 5, 1, 4, 2, 6, 3, 7]
     };
 
-    // Build a voicing for `degree` that physically includes the given anchor
-    // notes, choosing the remaining chord tones on adjacent strings as close
-    // as possible to the anchor's fret region. Used as the hard anchor for
-    // the first triad of a Free Notes run when no generated voicing happens
-    // to sit exactly on the placed positions (e.g. the note is outside the
-    // range-filter window or an unusual string).
     function synthesizeAnchorVoicing(degree, anchors) {
       if (!anchors || anchors.length === 0) return null;
 
@@ -1205,12 +1337,10 @@
         const set = [];
         for (let i = 0; i < size; i++) set.push(s0 + i);
 
-        // every anchor must live on its own string inside this set
         const anchorStrings = anchors.map(p => p.string);
         if (anchors.some(p => !set.includes(p.string))) continue;
         if (new Set(anchorStrings).size !== anchorStrings.length) continue;
 
-        // remaining chord tones go on the remaining strings
         const pool = [...targetPcs];
         anchors.forEach(p => {
           const idx = pool.indexOf(p.pc);
@@ -1256,34 +1386,9 @@
       return best;
     }
 
-    // --- GENERATE ALL 8 DIATONIC TRIADS WITH TRUE VOICE LEADING ---
-    // Teaching logic: each chord connects to the previous one with minimal
-    // finger movement, common tones are held in place, the run flows along
-    // the neck, and the octave slot lands roughly one octave past the start.
-    //
-    // STRING COVERAGE:
-    //  - String Group selector forces a specific 3-consecutive-string set
-    //    for the whole run (e-B-G / B-G-D / G-D-A / D-A-E).
-    //  - Otherwise, range filter OFF: locked to the active 3-string group.
-    //    Range filter ON: triads roam across ALL 6 STRINGS in the window.
-    //
-    // FREE NOTES (HARD ANCHOR):
-    //  - The FIRST triad of the run always physically includes the placed
-    //    note(s). If no generated voicing sits exactly there, a shape is
-    //    synthesized around the placed position.
-    //  - 1 placed note = the tonic; the key follows it and the run is 8
-    //    consecutive diatonic triads starting from the I (or i) chord.
-    //  - 2 placed notes = the run starts on the degree whose chord contains
-    //    BOTH notes (or the second note if no single triad holds both),
-    //    and every later chord is voice-led from that exact anchor, with a
-    //    strong bonus for chords that keep holding the placed notes.
     function getEightDiatonicTriads(activeVoicing) {
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
 
-      // 1. Slot order. With Free Notes placed the run is always 8
-      //    CONSECUTIVE diatonic degrees starting from the anchor degree,
-      //    with slot 8 as its octave. Without Free Notes the selected Run
-      //    Order template applies.
       let order;
       if (state.freeNotes.length > 0) {
         order = [];
@@ -1296,8 +1401,6 @@
       }
       const wantAscend = state.freeNotes.length > 0 ? true : state.runOrder !== 'descending';
 
-      // 2. Collect candidate voicings per degree, with string-set lock,
-      //    inversion constraint, and range filter respected.
       const forcedSetKey = state.stringSet !== 'auto' ? state.stringSet : null;
       const lockStringSet = !!forcedSetKey || !state.enableFretRange;
       const activeSetKey = forcedSetKey || ((lockStringSet && activeVoicing) ? stringSetKeyOf(activeVoicing) : null);
@@ -1309,19 +1412,15 @@
           : all;
         if (state.inversion !== 'auto' && state.chordType === 'triad') {
           const inv = matching.filter(v => voicingInversion(v, d) === state.inversion);
-          if (inv.length > 0) matching = inv; // fall back if impossible in range
+          if (inv.length > 0) matching = inv;
         }
-        if (matching.length === 0) matching = all; // fall back rather than skip
+        if (matching.length === 0) matching = all;
         perDegree.push(matching);
       }
 
       const triadsRun = [];
       if (perDegree.some(p => p.length === 0)) return triadsRun;
 
-      // 3. HARD ANCHOR for the first chord: it must physically include the
-      //    placed notes that are chord tones of the anchor degree. Use a
-      //    generated voicing at that exact position if one exists, otherwise
-      //    synthesize a shape around the placed notes.
       const anchorDeg = order[0].deg;
       const anchorPcs = chordPcsOf(anchorDeg);
       const anchors = state.freeNotes.filter(p => anchorPcs.includes(p.pc));
@@ -1331,7 +1430,6 @@
         const exact = perDegree[anchorDeg].filter(v =>
           anchors.every(p => v.notes.some(n => n.string === p.string && n.fret === p.fret)));
         if (exact.length > 0) {
-          // pick the exact-match shape closest to the placed notes' region
           const targetAvg = anchors.reduce((s, p) => s + p.fret, 0) / anchors.length;
           currentVoicing = exact.reduce((best, v) =>
             Math.abs(avgFretOf(v) - targetAvg) < Math.abs(avgFretOf(best) - targetAvg) ? v : best);
@@ -1345,15 +1443,12 @@
           Math.abs(avgFretOf(v) - activeAvg) < Math.abs(avgFretOf(best) - activeAvg) ? v : best
         );
       } else {
-        currentVoicing = perDegree[anchorDeg][0]; // lowest, easiest shape
+        currentVoicing = perDegree[anchorDeg][0];
       }
 
       let prevAvg = avgFretOf(currentVoicing);
       const firstAvg = prevAvg;
 
-      // 4. Walk the order, chaining the best voice-leading choice. Every
-      //    later chord is chosen relative to the anchored first triad, so
-      //    the whole run grows directly out of the placed note.
       order.forEach((slot, i) => {
         let chosen = currentVoicing;
 
@@ -1362,8 +1457,6 @@
           perDegree[slot.deg].forEach(v => {
             let cost = voiceLeadCost(currentVoicing, v, prevAvg, wantAscend);
             if (slot.octave) {
-              // The octave slot lands roughly one octave past the start
-              // chord so the run visibly completes the climb.
               const target = wantAscend ? firstAvg + 12 : firstAvg - 12;
               cost += Math.abs(avgFretOf(v) - target) * 0.8;
             }
@@ -1401,7 +1494,6 @@
 
       ctx.scale(dpr, dpr);
 
-      // Background
       ctx.fillStyle = '#18181b';
       ctx.fillRect(0, 0, width, height);
 
@@ -1413,13 +1505,11 @@
       const fretWidth = boardWidth / numFrets;
       const stringSpacing = boardHeight / 5;
 
-      // Wood Grain
       ctx.fillStyle = 'rgba(255,255,255,0.02)';
       for (let i = 0; i < boardHeight; i += 4) {
         ctx.fillRect(marginX, marginY + i, boardWidth, 1.5);
       }
 
-      // Fret Range Highlight
       if (state.enableFretRange) {
         const startX = marginX + Math.max(0, state.startFret) * fretWidth;
         const endX = marginX + Math.min(15, state.startFret + state.fretSpan) * fretWidth;
@@ -1433,11 +1523,9 @@
         ctx.strokeRect(startX, marginY, rangeW, boardHeight);
       }
 
-      // Nut
       ctx.fillStyle = '#e2e8f0';
       ctx.fillRect(marginX - 6, marginY - 2, 6, boardHeight + 4);
 
-      // Inlay Markers
       const inlays = [3, 5, 7, 9, 12, 15];
       ctx.fillStyle = '#3f3f46';
       inlays.forEach(fret => {
@@ -1454,7 +1542,6 @@
         }
       });
 
-      // Frets
       ctx.strokeStyle = '#71717a';
       ctx.lineWidth = 2;
       for (let i = 0; i <= numFrets; i++) {
@@ -1472,7 +1559,6 @@
         }
       }
 
-      // Strings
       for (let i = 0; i < 6; i++) {
         const y = marginY + i * stringSpacing;
         const thickness = 1 + (i * 0.4);
@@ -1489,7 +1575,6 @@
         ctx.fillText(STRING_NAMES[i], marginX - 12, y + 4);
       }
 
-      // Marker for user-placed Free Notes (drawn on top of everything)
       function drawFreeNoteMarker(p) {
         const x = p.fret === 0 ? marginX - 18 : marginX + (p.fret - 0.5) * fretWidth;
         const y = marginY + p.string * stringSpacing;
@@ -1522,7 +1607,6 @@
         });
       }
 
-      // 1. SCALE OVERLAY LAYER
       if (state.showScaleOverlay) {
         const activeScaleRoot = state.scaleRoot === 'AUTO' ? chordRoot : NOTES.indexOf(state.scaleRoot);
         const scaleIntervals = MODE_INTERVALS[state.selectedScale] || MODE_INTERVALS['ionian'];
@@ -1567,7 +1651,6 @@
         }
       }
 
-      // 2. DIATONIC TRIADS RUN (SHOWING ALL 8 TRIADS)
       if (state.showDiatonicRun && activeDiatonicRun.length > 0) {
         const noteMap = new Map();
 
@@ -1577,8 +1660,6 @@
           const tRoot = (keyIdx + tScale[triad.degree % 7]) % 12;
 
           triad.notes.forEach(n => {
-            // Hard range bound only applies when no Free Notes are placed:
-            // the anchored run always stays fully visible.
             if (state.enableFretRange && state.freeNotes.length === 0 &&
                 (n.fret < state.startFret || n.fret > state.startFret + state.fretSpan)) {
               return;
@@ -1599,7 +1680,6 @@
           });
         });
 
-        // Finger-label base for the run: lowest fretted note in the whole run
         let fingerBase = 99;
         activeDiatonicRun.forEach(t => t.notes.forEach(n => { if (n.fret > 0 && n.fret < fingerBase) fingerBase = n.fret; }));
         if (fingerBase === 99) fingerBase = 1;
@@ -1647,7 +1727,6 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           
-          // DYNAMIC LABELING (INTERVAL / NOTE / FINGER TOGGLE)
           let labelText;
           if (state.labelMode === 'interval') labelText = item.intervalName;
           else if (state.labelMode === 'finger') labelText = fingerFor(item.fret, fingerBase);
@@ -1655,13 +1734,11 @@
           ctx.fillText(labelText, x, y);
         });
 
-        // Free-note markers on top of the run
         state.freeNotes.forEach(drawFreeNoteMarker);
 
         return;
       }
 
-      // 3. SINGLE CHORD VOICING
       if (!voicing) {
         state.freeNotes.forEach(drawFreeNoteMarker);
         return;
@@ -1717,11 +1794,9 @@
         ctx.fillText(labelText, x, y);
       });
 
-      // Free-note markers on top of the single chord
       state.freeNotes.forEach(drawFreeNoteMarker);
     }
 
-    // --- FREE NOTE INPUT (click to place / remove seed notes) ---
     canvas.addEventListener('click', (e) => {
       if (!state.freeMode) return;
       const rect = canvas.getBoundingClientRect();
@@ -1742,58 +1817,88 @@
     });
 
     function toggleFreeNote(s, f) {
-      const idx = state.freeNotes.findIndex(n => n.string === s && n.fret === f);
-      if (idx >= 0) {
-        state.freeNotes.splice(idx, 1); // click again to remove
-      } else {
-        if (state.freeNotes.length >= 2) state.freeNotes.shift(); // max 2, oldest replaced
-        state.freeNotes.push({ string: s, fret: f, pc: (TUNING[s] + f) % 12 });
-      }
+      const pc = (TUNING[s] + f) % 12;
+      state.freeNotes = [{ string: s, fret: f, pc }];
       applyFreeNotes();
     }
 
-    // Derive key + starting degree from the placed notes, then render the run.
-    // The first note is the tonic; the run then starts on the degree whose
-    // chord contains the second note (preferring a degree that contains
-    // BOTH notes), and the first triad is hard-anchored on the placed
-    // positions by getEightDiatonicTriads.
     function applyFreeNotes() {
       if (state.freeNotes.length === 0) { updateApp(); return; }
 
-      // First placed note = tonic of the key
-      state.key = NOTES[state.freeNotes[0].pc];
+      const anchor = state.freeNotes[0];
+      state.key = NOTES[anchor.pc];
       state.degreeIndex = 0;
       state.voicingIndex = 0;
+      state.chordType = 'triad';
       state.showDiatonicRun = true;
 
-      document.getElementById('keySelect').value = state.key;
-      document.getElementById('diatonicOnBtn').classList.add('active');
-      document.getElementById('diatonicOffBtn').classList.remove('active');
-
-      // Second placed note: pick the starting degree of the consecutive run.
-      // Prefer a degree whose chord contains BOTH notes; otherwise the
-      // first degree whose chord contains the second note.
-      if (state.freeNotes.length >= 2) {
-        const pc1 = state.freeNotes[0].pc;
-        const pc2 = state.freeNotes[1].pc;
-        let found = -1;
-        for (let d = 0; d < 7; d++) {
-          const pcs = chordPcsOf(d);
-          if (pcs.includes(pc1) && pcs.includes(pc2)) { found = d; break; }
-        }
-        if (found < 0) {
-          for (let d = 0; d < 7; d++) {
-            if (chordPcsOf(d).includes(pc2)) { found = d; break; }
-          }
-        }
-        if (found >= 0) state.degreeIndex = found;
-      }
-
+      updateTopMenuUI();
       updateApp();
+    }
+
+    // Dynamic Top Menu UI updates
+    function updateTopMenuUI() {
+      // 1. Key Button
+      document.getElementById('keyMenuBtn').innerHTML = `Key: ${state.key} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+      
+      // 2. Mode Toggle
+      const modeBtn = document.getElementById('modeToggleBtn');
+      modeBtn.textContent = state.mode === 'major' ? 'Major' : 'Minor';
+      modeBtn.classList.toggle('active', state.mode === 'major');
+
+      // 3. Structure Button
+      const structNames = {
+        'triad': 'Triads (3 notes)',
+        'dom7': 'Dominant 7th (7)',
+        'maj7': 'Major 7th (Maj7)',
+        '9th': '9th Chords (9)',
+        'sus4': 'Sus4 Chords',
+        'sus2': 'Sus2 Chords',
+        '6th': '6th Chords (6)'
+      };
+      document.getElementById('structureMenuBtn').innerHTML = `${structNames[state.chordType] || 'Triads'} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+
+      // 4. Label Toggle
+      const labelBtn = document.getElementById('labelToggleBtn');
+      if (state.labelMode === 'interval') labelBtn.textContent = 'Intervals';
+      else if (state.labelMode === 'note') labelBtn.textContent = 'Notes';
+      else labelBtn.textContent = 'Fingers';
+
+      // 5. Overlay Toggle
+      const overlayBtn = document.getElementById('overlayToggleBtn');
+      overlayBtn.textContent = `Scale Overlay: ${state.showScaleOverlay ? 'On' : 'Off'}`;
+      overlayBtn.classList.toggle('active', state.showScaleOverlay);
+
+      // 6. Root Button
+      document.getElementById('rootMenuBtn').innerHTML = `Root: ${state.scaleRoot} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+
+      // 7. Scale Button
+      const scaleNames = {
+        'ionian': 'Ionian (Major)',
+        'dorian': 'Dorian',
+        'phrygian': 'Phrygian',
+        'lydian': 'Lydian',
+        'mixolydian': 'Mixolydian',
+        'aeolian': 'Aeolian (Minor)',
+        'locrian': 'Locrian',
+        'pentatonic_major': 'Maj Pentatonic',
+        'pentatonic_minor': 'Min Pentatonic',
+        'harmonic_minor': 'Harmonic Minor',
+        'melodic_minor': 'Melodic Minor',
+        'blues': 'Blues'
+      };
+      document.getElementById('scaleMenuBtn').innerHTML = `${scaleNames[state.selectedScale] || 'Ionian'} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+
+      // 8. 8 Diatomics Toggle
+      const diatonicBtn = document.getElementById('diatonicToggleBtn');
+      diatonicBtn.textContent = `8 Diatonics: ${state.showDiatonicRun ? 'On' : 'Off'}`;
+      diatonicBtn.classList.toggle('active', state.showDiatonicRun);
     }
 
     // --- APP CONTROLLER & UI UPDATES ---
     function updateApp() {
+      updateTopMenuUI();
+
       const chordName = getChordName(state.key, state.degreeIndex, state.mode, state.chordType);
       const romanList = state.mode === 'major' ? ROMAN_MAJOR : ROMAN_MINOR;
       const degreeText = romanList[state.degreeIndex];
@@ -1837,7 +1942,6 @@
           notesRowBar.appendChild(pill);
         });
 
-        // Hybrid-picking hint when the run crosses string groups (range-filter mode)
         const setKeys = new Set(run.map(t => stringSetKeyOf(t)));
         if (setKeys.size > 1) {
           const hint = document.createElement('div');
@@ -1863,7 +1967,6 @@
           state.voicingIndex = 0;
           if (state.scaleRoot === 'AUTO') {
             state.selectedScale = autoScaleMap[idx];
-            document.getElementById('scaleSelect').value = state.selectedScale;
           }
           updateApp();
         };
@@ -1919,89 +2022,451 @@
       if (state.droneOn) startDrone();
     }
 
-    // --- EVENT LISTENERS ---
-    document.getElementById('keySelect').addEventListener('change', (e) => {
-      state.key = e.target.value;
-      updateApp();
-    });
+    // --- POPUP MENU GENERATION AND EVENT HANDLERS ---
+    const KEY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    const STRUCTURE_OPTIONS = [
+      { id: 'triad', label: 'Triads (3 notes)' },
+      { id: 'dom7', label: 'Dominant 7th (7)' },
+      { id: 'maj7', label: 'Major 7th (Maj7)' },
+      { id: '9th', label: '9th Chords (9)' },
+      { id: 'sus4', label: 'Sus4 Chords' },
+      { id: 'sus2', label: 'Sus2 Chords' },
+      { id: '6th', label: '6th Chords (6)' }
+    ];
+    const ROOT_OPTIONS = ['AUTO', 'A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    const SCALE_OPTIONS = [
+      { id: 'ionian', label: 'Ionian (Major)' },
+      { id: 'dorian', label: 'Dorian' },
+      { id: 'phrygian', label: 'Phrygian' },
+      { id: 'lydian', label: 'Lydian' },
+      { id: 'mixolydian', label: 'Mixolydian' },
+      { id: 'aeolian', label: 'Aeolian (Minor)' },
+      { id: 'locrian', label: 'Locrian' },
+      { id: 'pentatonic_major', label: 'Maj Pentatonic' },
+      { id: 'pentatonic_minor', label: 'Min Pentatonic' },
+      { id: 'harmonic_minor', label: 'Harmonic Minor' },
+      { id: 'melodic_minor', label: 'Melodic Minor' },
+      { id: 'blues', label: 'Blues' }
+    ];
 
-    document.getElementById('modeMajorBtn').addEventListener('click', () => {
-      state.mode = 'major';
-      state.selectedScale = DEGREE_MODE_MAP_MAJOR[state.degreeIndex];
-      document.getElementById('scaleSelect').value = state.selectedScale;
-      document.getElementById('modeMajorBtn').classList.add('active');
-      document.getElementById('modeMinorBtn').classList.remove('active');
-      updateApp();
-      if (state.freeNotes.length > 0) applyFreeNotes();
-    });
-
-    document.getElementById('modeMinorBtn').addEventListener('click', () => {
-      state.mode = 'minor';
-      state.selectedScale = DEGREE_MODE_MAP_MINOR[state.degreeIndex];
-      document.getElementById('scaleSelect').value = state.selectedScale;
-      document.getElementById('modeMinorBtn').classList.add('active');
-      document.getElementById('modeMajorBtn').classList.remove('active');
-      updateApp();
-      if (state.freeNotes.length > 0) applyFreeNotes();
-    });
-
-    document.getElementById('chordTypeSelect').addEventListener('change', (e) => {
-      state.chordType = e.target.value;
-      state.voicingIndex = 0;
-      updateApp();
-      if (state.freeNotes.length > 0) applyFreeNotes();
-    });
-
-    function setLabelMode(mode) {
-      state.labelMode = mode;
-      document.getElementById('labelIntervalBtn').classList.toggle('active', mode === 'interval');
-      document.getElementById('labelNoteBtn').classList.toggle('active', mode === 'note');
-      document.getElementById('labelFingerBtn').classList.toggle('active', mode === 'finger');
-      updateApp();
+    function closeAllPopups() {
+      document.querySelectorAll('.popup-menu').forEach(menu => menu.classList.remove('show'));
     }
 
-    document.getElementById('labelIntervalBtn').addEventListener('click', () => setLabelMode('interval'));
-    document.getElementById('labelNoteBtn').addEventListener('click', () => setLabelMode('note'));
-    document.getElementById('labelFingerBtn').addEventListener('click', () => setLabelMode('finger'));
+    function setupPopups() {
+      // 1. Key Popup (A to G)
+      const keyMenu = document.getElementById('keyPopupMenu');
+      keyMenu.innerHTML = '';
+      KEY_LETTERS.forEach(letter => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.key === letter ? 'selected' : ''}`;
+        btn.textContent = letter;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.key = letter;
+          closeAllPopups();
+          updateApp();
+        };
+        keyMenu.appendChild(btn);
+      });
 
-    document.getElementById('overlayOnBtn').addEventListener('click', () => {
-      state.showScaleOverlay = true;
-      document.getElementById('overlayOnBtn').classList.add('active');
-      document.getElementById('overlayOffBtn').classList.remove('active');
+      // 3. Structure Popup
+      const structMenu = document.getElementById('structurePopupMenu');
+      structMenu.innerHTML = '';
+      STRUCTURE_OPTIONS.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.chordType === opt.id ? 'selected' : ''}`;
+        btn.textContent = opt.label;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.chordType = opt.id;
+          state.voicingIndex = 0;
+          closeAllPopups();
+          updateApp();
+          if (state.freeNotes.length > 0) applyFreeNotes();
+        };
+        structMenu.appendChild(btn);
+      });
+
+      // 6. Root Popup
+      const rootMenu = document.getElementById('rootPopupMenu');
+      rootMenu.innerHTML = '';
+      ROOT_OPTIONS.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.scaleRoot === r ? 'selected' : ''}`;
+        btn.textContent = r;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.scaleRoot = r;
+          closeAllPopups();
+          updateApp();
+        };
+        rootMenu.appendChild(btn);
+      });
+
+      // 7. Scale Popup
+      const scaleMenu = document.getElementById('scalePopupMenu');
+      scaleMenu.innerHTML = '';
+      SCALE_OPTIONS.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.selectedScale === s.id ? 'selected' : ''}`;
+        btn.textContent = s.label;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.selectedScale = s.id;
+          closeAllPopups();
+          updateApp();
+        };
+        scaleMenu.appendChild(btn);
+      });
+    }
+
+    // Toggle menu displays
+    function togglePopup(e, popupId) {
+      e.stopPropagation();
+      const popup = document.getElementById(popupId);
+      const isVisible = popup.classList.contains('show');
+      closeAllPopups();
+      if (!isVisible) {
+        setupPopups();
+        popup.classList.add('show');
+      }
+    }
+
+    document.getElementById('keyMenuBtn').addEventListener('click', (e) => togglePopup(e, 'keyPopupMenu'));
+    document.getElementById('structureMenuBtn').addEventListener('click', (e) => togglePopup(e, 'structurePopupMenu'));
+    document.getElementById('rootMenuBtn').addEventListener('click', (e) => togglePopup(e, 'rootPopupMenu'));
+    document.getElementById('scaleMenuBtn').addEventListener('click', (e) => togglePopup(e, 'scalePopupMenu'));
+
+    // Top menu toggle buttons
+    document.getElementById('modeToggleBtn').addEventListener('click', () => {
+      state.mode = state.mode === 'major' ? 'minor' : 'major';
+      state.selectedScale = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR[state.degreeIndex] : DEGREE_MODE_MAP_MINOR[state.degreeIndex];
+      updateApp();
+      if (state.freeNotes.length > 0) applyFreeNotes();
+    });
+
+    document.getElementById('labelToggleBtn').addEventListener('click', () => {
+      if (state.labelMode === 'interval') state.labelMode = 'note';
+      else if (state.labelMode === 'note') state.labelMode = 'finger';
+      else state.labelMode = 'interval';
       updateApp();
     });
 
-    document.getElementById('overlayOffBtn').addEventListener('click', () => {
-      state.showScaleOverlay = false;
-      document.getElementById('overlayOffBtn').classList.add('active');
-      document.getElementById('overlayOnBtn').classList.remove('active');
+    document.getElementById('overlayToggleBtn').addEventListener('click', () => {
+      state.showScaleOverlay = !state.showScaleOverlay;
       updateApp();
     });
 
-    document.getElementById('scaleRootSelect').addEventListener('change', (e) => {
-      state.scaleRoot = e.target.value;
+    document.getElementById('diatonicToggleBtn').addEventListener('click', () => {
+      state.showDiatonicRun = !state.showDiatonicRun;
       updateApp();
     });
 
-    document.getElementById('scaleSelect').addEventListener('change', (e) => {
-      state.selectedScale = e.target.value;
-      updateApp();
+    // Close menus on clicking outside
+    document.addEventListener('click', () => {
+      closeAllPopups();
     });
 
-    document.getElementById('diatonicOnBtn').addEventListener('click', () => {
-      state.showDiatonicRun = true;
-      document.getElementById('diatonicOnBtn').classList.add('active');
-      document.getElementById('diatonicOffBtn').classList.remove('active');
-      updateApp();
+    // --- ARPEGGIO EXPLORER ---
+    const ARPEGGIO_TYPES = [
+      { id:'maj', name:'Major', intervals:[0,4,7], labels:['R','3','5'] },
+      { id:'min', name:'Minor', intervals:[0,3,7], labels:['R','b3','5'] },
+      { id:'dim', name:'Diminished', intervals:[0,3,6], labels:['R','b3','b5'] },
+      { id:'aug', name:'Augmented', intervals:[0,4,8], labels:['R','3','#5'] },
+      { id:'sus2', name:'Sus2', intervals:[0,2,7], labels:['R','2','5'] },
+      { id:'sus4', name:'Sus4', intervals:[0,5,7], labels:['R','4','5'] },
+      { id:'maj6', name:'Major 6', intervals:[0,4,7,9], labels:['R','3','5','6'] },
+      { id:'min6', name:'Minor 6', intervals:[0,3,7,9], labels:['R','b3','5','6'] },
+      { id:'dom7', name:'Dominant 7', intervals:[0,4,7,10], labels:['R','3','5','b7'] },
+      { id:'maj7', name:'Major 7', intervals:[0,4,7,11], labels:['R','3','5','7'] },
+      { id:'min7', name:'Minor 7', intervals:[0,3,7,10], labels:['R','b3','5','b7'] },
+      { id:'min7b5', name:'Half-diminished 7', intervals:[0,3,6,10], labels:['R','b3','b5','b7'] },
+      { id:'dim7', name:'Diminished 7', intervals:[0,3,6,9], labels:['R','b3','b5','bb7'] },
+      { id:'minMaj7', name:'Minor-major 7', intervals:[0,3,7,11], labels:['R','b3','5','7'] },
+      { id:'augMaj7', name:'Augmented major 7', intervals:[0,4,8,11], labels:['R','3','#5','7'] }
+    ];
+    let arpRootPc = 0;
+    let arpRootPosition = null;
+    let arpCycleTimer = null;
+    const arpCanvas = document.getElementById('arpeggioCanvas');
+    const arpCtx = arpCanvas.getContext('2d');
+
+    const arpRootSelect = document.getElementById('arpRootSelect');
+    NOTES.forEach((note, pc) => {
+      const option = document.createElement('option');
+      option.value = String(pc);
+      option.textContent = note;
+      arpRootSelect.appendChild(option);
     });
 
-    document.getElementById('diatonicOffBtn').addEventListener('click', () => {
-      state.showDiatonicRun = false;
-      document.getElementById('diatonicOffBtn').classList.add('active');
-      document.getElementById('diatonicOnBtn').classList.remove('active');
-      updateApp();
+    function currentArpeggio() {
+      return ARPEGGIO_TYPES.find(t => t.id === document.getElementById('arpTypeSelect').value) || ARPEGGIO_TYPES[0];
+    }
+
+    function updateArpeggio() {
+      const type = currentArpeggio();
+      const rootName = spelled(arpRootPc);
+      document.getElementById('arpTitle').textContent = `${rootName} ${type.name} Arpeggio`;
+      document.getElementById('arpInfo').textContent = `${type.intervals.length} notes · ${type.intervals.map((v,i) => `${type.labels[i]} (${spelled((arpRootPc+v)%12)})`).join('  ·  ')} · Tap a fret to change root`;
+      arpRootSelect.value = String(arpRootPc);
+      renderArpeggioFretboard();
+    }
+
+    function renderArpeggioFretboard() {
+      const dpr = window.devicePixelRatio || 1;
+      const width = 1100, height = 220;
+      arpCanvas.width = width * dpr;
+      arpCanvas.height = height * dpr;
+      arpCanvas.style.width = '100%';
+      arpCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      arpCtx.fillStyle = '#18181b';
+      arpCtx.fillRect(0, 0, width, height);
+
+      const marginX=50, marginY=30, boardWidth=width-marginX*2, boardHeight=height-marginY*2;
+      const numFrets=15, fretWidth=boardWidth/numFrets, stringSpacing=boardHeight/5;
+      arpCtx.fillStyle='rgba(255,255,255,0.02)';
+      for(let y=0;y<boardHeight;y+=4) arpCtx.fillRect(marginX,marginY+y,boardWidth,1.5);
+      arpCtx.fillStyle='#e2e8f0'; arpCtx.fillRect(marginX-6,marginY-2,6,boardHeight+4);
+      arpCtx.fillStyle='#3f3f46';
+      [3,5,7,9,12,15].forEach(f=>{
+        const x=marginX+(f-.5)*fretWidth;
+        if(f===12){[1.5,3.5].forEach(v=>{arpCtx.beginPath();arpCtx.arc(x,marginY+stringSpacing*v,6,0,Math.PI*2);arpCtx.fill();});}
+        else {arpCtx.beginPath();arpCtx.arc(x,marginY+boardHeight/2,6,0,Math.PI*2);arpCtx.fill();}
+      });
+      arpCtx.strokeStyle='#71717a'; arpCtx.lineWidth=2;
+      for(let f=0;f<=numFrets;f++){
+        const x=marginX+f*fretWidth; arpCtx.beginPath();arpCtx.moveTo(x,marginY);arpCtx.lineTo(x,marginY+boardHeight);arpCtx.stroke();
+        if(f>0){arpCtx.fillStyle='#71717a';arpCtx.font='600 11px Inter';arpCtx.textAlign='center';arpCtx.fillText(f,x-fretWidth/2,height-8);}
+      }
+      for(let s=0;s<6;s++){
+        const y=marginY+s*stringSpacing; arpCtx.strokeStyle='#a1a1aa';arpCtx.lineWidth=1+s*.4;
+        arpCtx.beginPath();arpCtx.moveTo(marginX-6,y);arpCtx.lineTo(marginX+boardWidth,y);arpCtx.stroke();
+        arpCtx.fillStyle='#a1a1aa';arpCtx.font='600 12px Inter';arpCtx.textAlign='right';arpCtx.fillText(STRING_NAMES[s],marginX-12,y+4);
+      }
+
+      const type=currentArpeggio();
+      const colors=['#ef4444','#22c55e','#f97316','#a855f7','#06b6d4','#06b6d4'];
+      const intervalIndex=new Map(type.intervals.map((v,i)=>[(arpRootPc+v)%12,i]));
+      for(let s=0;s<6;s++){
+        for(let f=0;f<=15;f++){
+          const pc=(TUNING[s]+f)%12;
+          if(!intervalIndex.has(pc)) continue;
+          const idx=intervalIndex.get(pc), x=f===0?marginX-18:marginX+(f-.5)*fretWidth, y=marginY+s*stringSpacing;
+          const isSelected=arpRootPosition && arpRootPosition.string===s && arpRootPosition.fret===f;
+          arpCtx.shadowColor='rgba(0,0,0,.5)'; arpCtx.shadowBlur=6; arpCtx.shadowOffsetY=2;
+          arpCtx.fillStyle=colors[Math.min(idx,colors.length-1)];
+          arpCtx.beginPath();arpCtx.arc(x,y,14,0,Math.PI*2);arpCtx.fill();
+          arpCtx.shadowBlur=0;arpCtx.strokeStyle=isSelected?'#ffffff':'rgba(255,255,255,.8)';arpCtx.lineWidth=isSelected?4:1.5;
+          arpCtx.beginPath();arpCtx.arc(x,y,isSelected?18:14,0,Math.PI*2);arpCtx.stroke();
+          arpCtx.fillStyle='#fff';arpCtx.font='700 10px Inter';arpCtx.textAlign='center';arpCtx.textBaseline='middle';
+          const label=state.labelMode==='note'?spelled(pc):type.labels[idx];
+          arpCtx.fillText(label,x,y);
+        }
+      }
+    }
+
+    arpCanvas.addEventListener('click', e => {
+      const rect=arpCanvas.getBoundingClientRect();
+      const x=(e.clientX-rect.left)*(1100/rect.width), y=(e.clientY-rect.top)*(220/rect.height);
+      const marginX=50,marginY=30,boardHeight=160,stringSpacing=boardHeight/5,fretWidth=1000/15;
+      if(y<marginY-8 || y>marginY+boardHeight+8) return;
+      const string=Math.max(0,Math.min(5,Math.round((y-marginY)/stringSpacing)));
+      const fret=x<marginX?0:Math.max(1,Math.min(15,Math.ceil((x-marginX)/fretWidth)));
+      arpRootPc=(TUNING[string]+fret)%12;
+      arpRootPosition={string,fret};
+      updateArpeggio();
     });
 
+    arpRootSelect.addEventListener('change',e=>{arpRootPc=Number(e.target.value);arpRootPosition=null;updateArpeggio();});
+    document.getElementById('arpTypeSelect').addEventListener('change',updateArpeggio);
+    function stepArpeggio(direction){
+      const select=document.getElementById('arpTypeSelect');
+      const index=ARPEGGIO_TYPES.findIndex(t=>t.id===select.value);
+      select.value=ARPEGGIO_TYPES[(index+direction+ARPEGGIO_TYPES.length)%ARPEGGIO_TYPES.length].id;
+      updateArpeggio();
+    }
+    document.getElementById('arpPrevBtn').addEventListener('click',()=>stepArpeggio(-1));
+    document.getElementById('arpNextBtn').addEventListener('click',()=>stepArpeggio(1));
+
+    function setArpeggioCycle(enabled){
+      document.getElementById('arpCycleOnBtn').classList.toggle('active',enabled);
+      document.getElementById('arpCycleOffBtn').classList.toggle('active',!enabled);
+      if(arpCycleTimer){clearInterval(arpCycleTimer);arpCycleTimer=null;}
+      if(enabled) arpCycleTimer=setInterval(()=>stepArpeggio(1),2500);
+    }
+    document.getElementById('arpCycleOnBtn').addEventListener('click',()=>setArpeggioCycle(true));
+    document.getElementById('arpCycleOffBtn').addEventListener('click',()=>setArpeggioCycle(false));
+
+    function showToolTab(tab){
+      const tabs=['triads','arpeggios','development','scales'];
+      const panels=['triadTabPanel','arpeggioTabPanel','chordDevTabPanel','scalesTabPanel'];
+      const buttons=['triadTabBtn','arpeggioTabBtn','chordDevTabBtn','scalesTabBtn'];
+      tabs.forEach((name,i)=>{
+        const active=name===tab;
+        document.getElementById(panels[i]).style.display=active?(i===0?'block':'flex'):'none';
+        document.getElementById(buttons[i]).classList.toggle('active',active);
+        document.getElementById(buttons[i]).setAttribute('aria-selected',String(active));
+      });
+      if(tab==='arpeggios') updateArpeggio();
+      if(tab==='development') updateChordDevelopment();
+      if(tab==='scales') updateScaleExplorer();
+    }
+    document.getElementById('triadTabBtn').addEventListener('click',()=>showToolTab('triads'));
+    document.getElementById('arpeggioTabBtn').addEventListener('click',()=>showToolTab('arpeggios'));
+    document.getElementById('chordDevTabBtn').addEventListener('click',()=>showToolTab('development'));
+    document.getElementById('scalesTabBtn').addEventListener('click',()=>showToolTab('scales'));
+
+    // --- CHORDAL DEVELOPMENT LAB ---
+    const DEV_PROGRESSION_PRESETS={
+      '1456':[1,5,6,4], '251':[2,5,1], '1645':[1,6,4,5], '1625':[1,6,2,5],
+      '1b63b7':[1,-6,-3,-7], 'modal':[1,-7,1,-7]
+    };
+    let devTonic=7, devSelected=0, devCustom=[1,4,5,1];
+    const devCanvas=document.getElementById('devCanvas'), devCtx=devCanvas.getContext('2d');
+    const devRootNames=NOTES;
+    function initTheorySelects(){
+      ['devKey','scaleRoot'].forEach(id=>{
+        const el=document.getElementById(id);
+        NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n;el.appendChild(o);});
+      });
+      document.getElementById('devKey').value=String(devTonic);
+      document.getElementById('scaleRoot').value='7';
+    }
+    function devDegrees(){
+      const minor=document.getElementById('devMode').value==='minor';
+      return minor?[0,2,3,5,7,8,10]:MAJOR_SCALE;
+    }
+    function devRoman(degree,minor){
+      const names=minor?['i','ii°','III','iv','v','VI','VII']:['I','ii','iii','IV','V','vi','vii°'];
+      const numeral=names[(Math.abs(degree)-1)%7]||'I';
+      return degree<0?'♭'+numeral:numeral;
+    }
+    function devChordAt(degree){
+      const size=Number(document.getElementById('devSize').value);
+      const minor=document.getElementById('devMode').value==='minor';
+      const scale=devDegrees(), d=(Math.abs(degree)-1)%7, root=(devTonic+scale[d]+(degree<0?11:0))%12;
+      const ints=[];
+      for(let j=0;j<size;j++){
+        const step=(d+j*2)%7, octave=Math.floor((d+j*2)/7);
+        ints.push((scale[step]+12*octave-scale[d])%24);
+      }
+      const intervals=ints.map(v=>v%12);
+      const quality=intervals.slice(0,3).join(',');
+      const suffix=({ '0,4,7':'', '0,3,7':'m', '0,3,6':'dim', '0,4,8':'aug' })[quality]??'';
+      let ext='';
+      if(size>=4){const seventh=intervals[3];ext=seventh===11?'maj7':seventh===10?'7':seventh===9?'6':'7';}
+      if(size===5) ext+='(9)';
+      const roman=devRoman(degree,minor);
+      return {degree,root,intervals,roman,symbol:spelled(root)+suffix+ext,quality,minor};
+    }
+    function currentDevDegrees(){
+      const key=document.getElementById('devProgression').value;
+      return key==='custom'?devCustom:DEV_PROGRESSION_PRESETS[key]||[1,5,6,4];
+    }
+    function updateChordDevelopment(){
+      const prog=currentDevDegrees(), container=document.getElementById('devProgressionCards');
+      container.innerHTML='';
+      if(devSelected>=prog.length)devSelected=0;
+      document.getElementById('devCustomControls').style.display=document.getElementById('devProgression').value==='custom'?'flex':'none';
+      prog.forEach((degree,i)=>{
+        const chord=devChordAt(degree), card=document.createElement('button');
+        card.className='dev-degree'+(i===devSelected?' active':'');
+        card.innerHTML=`<strong>${chord.roman} · ${chord.symbol}</strong><small>Chord ${i+1} of ${prog.length} · ${chord.intervals.length} tones</small>`;
+        card.addEventListener('click',()=>{devSelected=i;updateChordDevelopment();});
+        container.appendChild(card);
+      });
+      const chord=devChordAt(prog[devSelected]||1);
+      document.getElementById('devChordTitle').textContent=chord.symbol;
+      const next=devChordAt(prog[(devSelected+1)%prog.length]||1);
+      const common=chord.intervals.map(v=>(chord.root+v)%12).filter(pc=>next.intervals.some(v=>(next.root+v)%12===pc)).map(spelled);
+      const functionText=chord.degree===1?'Tonic: establishes or returns to the tonal centre.':
+        [2,7].includes(Math.abs(chord.degree))?'Predominant or predominant-function area: creates forward motion toward dominant harmony.':
+        Math.abs(chord.degree)===5?'Dominant: creates strong tension and typically resolves to tonic.':
+        'Pre-dominant, tonic-substitute or colour function depends on context, voicing and phrase position.';
+      document.getElementById('devAnalysis').textContent=`${chord.roman} (${chord.symbol}) · ${functionText} Next chord: ${next.symbol}. Common tones retained: ${common.length?common.join(', '):'none in this pitch-class voicing'}. Try keeping common tones in the same voice and moving other voices by the smallest interval.`;
+      renderTheoryBoard(devCanvas,devCtx,chord.root,chord.intervals,'chord');
+    }
+    function renderTheoryBoard(canvas,ctx,root,intervals,kind){
+      const dpr=window.devicePixelRatio||1,w=1100,h=220;
+      canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width='100%';ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.fillStyle='#18181b';ctx.fillRect(0,0,w,h);
+      const mx=50,my=30,bw=1000,bh=160,fw=bw/15,ss=bh/5;
+      ctx.fillStyle='#e2e8f0';ctx.fillRect(mx-6,my-2,6,bh+4);
+      ctx.strokeStyle='#71717a';ctx.lineWidth=2;
+      for(let f=0;f<=15;f++){let x=mx+f*fw;ctx.beginPath();ctx.moveTo(x,my);ctx.lineTo(x,my+bh);ctx.stroke();if(f){ctx.fillStyle='#a1a1aa';ctx.font='11px Inter';ctx.textAlign='center';ctx.fillText(f,x-fw/2,212);}}
+      [3,5,7,9,12,15].forEach(f=>{let x=mx+(f-.5)*fw;ctx.fillStyle='#52525b';ctx.beginPath();ctx.arc(x,my+bh/2,5,0,Math.PI*2);ctx.fill();});
+      for(let s=0;s<6;s++){let y=my+s*ss;ctx.strokeStyle='#a1a1aa';ctx.lineWidth=1+s*.4;ctx.beginPath();ctx.moveTo(mx-6,y);ctx.lineTo(mx+bw,y);ctx.stroke();ctx.fillStyle='#a1a1aa';ctx.font='12px Inter';ctx.textAlign='right';ctx.fillText(STRING_NAMES[s],mx-12,y+4);}
+      const palette=['#ef4444','#22c55e','#f97316','#a855f7','#06b6d4'];
+      for(let s=0;s<6;s++)for(let f=0;f<=15;f++){
+        const pc=(TUNING[s]+f)%12, idx=intervals.findIndex(v=>v%12===((pc-root+12)%12));
+        if(idx<0)continue;
+        const x=f===0?mx-18:mx+(f-.5)*fw,y=my+s*ss;
+        ctx.fillStyle=palette[Math.min(idx,palette.length-1)];ctx.beginPath();ctx.arc(x,y,13,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.5;ctx.stroke();
+        const labels=kind==='chord'?['R','3','5','7','9']:['1','2','3','4','5','6','7'];
+        ctx.fillStyle='#fff';ctx.font='700 10px Inter';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(kind==='scale'?(scaleDisplay==='note'?spelled(pc):(SCALE_LIBRARY[document.getElementById('scaleType').value].formula.split(' ')[idx]||String(idx+1))):(state.labelMode==='note'?spelled(pc):(labels[idx]||String(idx+1))),x,y);
+      }
+    }
+    document.getElementById('devAddChordBtn').addEventListener('click',()=>{devCustom.push(Number(document.getElementById('devAddDegree').value));devSelected=devCustom.length-1;updateChordDevelopment();});
+    document.getElementById('devRemoveChordBtn').addEventListener('click',()=>{if(devCustom.length>1){devCustom.pop();devSelected=Math.min(devSelected,devCustom.length-1);updateChordDevelopment();}});
+    ['devKey','devMode','devSize','devProgression'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
+      if(id==='devKey')devTonic=Number(e.target.value);
+      devSelected=0;updateChordDevelopment();
+    }));
+    devCanvas.addEventListener('click',e=>{
+      const r=devCanvas.getBoundingClientRect(),x=(e.clientX-r.left)*1100/r.width,y=(e.clientY-r.top)*220/r.height;
+      if(y<22||y>205)return;const st=Math.max(0,Math.min(5,Math.round((y-30)/32))),fr=x<50?0:Math.max(1,Math.min(15,Math.ceil((x-50)/(1000/15))));
+      devTonic=(TUNING[st]+fr)%12;document.getElementById('devKey').value=String(devTonic);devSelected=0;updateChordDevelopment();
+    });
+
+    // --- SCALE AND MODE EXPLORER ---
+    const SCALE_LIBRARY={
+      major:{name:'Major / Ionian',ints:[0,2,4,5,7,9,11],formula:'1 2 3 4 5 6 7',context:'Bright diatonic reference; I–ii–iii–IV–V–vi–vii°.'},
+      dorian:{name:'Dorian',ints:[0,2,3,5,7,9,10],formula:'1 2 ♭3 4 5 6 ♭7',context:'Minor tonic with a natural 6; useful over m7 and ii chords.'},
+      phrygian:{name:'Phrygian',ints:[0,1,3,5,7,8,10],formula:'1 ♭2 ♭3 4 5 ♭6 ♭7',context:'Spanish/flamenco colour; the ♭2 is the defining tension.'},
+      lydian:{name:'Lydian',ints:[0,2,4,6,7,9,11],formula:'1 2 3 ♯4 5 6 7',context:'Major sound with a raised 4; characteristic over maj7(♯11).'},
+      mixolydian:{name:'Mixolydian',ints:[0,2,4,5,7,9,10],formula:'1 2 3 4 5 6 ♭7',context:'Dominant-mode sound; useful over 7 and 9 chords.'},
+      minor:{name:'Natural minor / Aeolian',ints:[0,2,3,5,7,8,10],formula:'1 2 ♭3 4 5 ♭6 ♭7',context:'Natural minor; i–ii°–III–iv–v–VI–VII.'},
+      locrian:{name:'Locrian',ints:[0,1,3,5,6,8,10],formula:'1 ♭2 ♭3 4 ♭5 ♭6 ♭7',context:'Diminished tonic collection; commonly used over m7♭5.'},
+      harmonicMinor:{name:'Harmonic minor',ints:[0,2,3,5,7,8,11],formula:'1 2 ♭3 4 5 ♭6 7',context:'Minor tonic with leading tone; V or V7 resolves strongly to i.'},
+      melodicMinor:{name:'Melodic minor (ascending)',ints:[0,2,3,5,7,9,11],formula:'1 2 ♭3 4 5 6 7',context:'Jazz melodic minor collection; source of Lydian dominant, altered and other modes.'},
+      majorPent:{name:'Major pentatonic',ints:[0,2,4,7,9],formula:'1 2 3 5 6',context:'Five-note major collection; avoids semitone clashes.'},
+      minorPent:{name:'Minor pentatonic',ints:[0,3,5,7,10],formula:'1 ♭3 4 5 ♭7',context:'Core blues/rock vocabulary; add ♭5 for blues scale.'},
+      blues:{name:'Blues',ints:[0,3,5,6,7,10],formula:'1 ♭3 4 ♭5 5 ♭7',context:'Minor pentatonic plus blue ♭5; resolve chromatic tension into chord tones.'},
+      wholeTone:{name:'Whole tone',ints:[0,2,4,6,8,10],formula:'1 2 3 ♯4 ♯5 ♭7',context:'Symmetrical six-note collection; supports augmented harmony.'},
+      halfWhole:{name:'Diminished (half-whole)',ints:[0,1,3,4,6,7,9,10],formula:'1 ♭2 ♭3 3 ♭5 5 6 ♭7',context:'Eight-note dominant diminished collection; useful over 7(♭9/♯9/♯11/13).'},
+      wholeHalf:{name:'Diminished (whole-half)',ints:[0,2,3,5,6,8,9,11],formula:'1 2 ♭3 4 ♭5 ♭6 6 7',context:'Eight-note diminished collection; often used over diminished seventh harmony.'},
+      altered:{name:'Altered / Super Locrian',ints:[0,1,3,4,6,8,10],formula:'1 ♭9 ♯9 3 ♭5 ♯5 ♭7',context:'Seventh mode of melodic minor; altered dominant tensions resolve to tonic.'},
+      lydianDom:{name:'Lydian dominant',ints:[0,2,4,6,7,9,10],formula:'1 2 3 ♯4 5 6 ♭7',context:'Fourth mode of melodic minor; dominant 7(♯11) sound.'}
+    };
+    let scaleRootPc=7,scaleDisplay='interval';
+    const scaleCanvas=document.getElementById('scaleCanvas'),scaleCtx=scaleCanvas.getContext('2d');
+    function updateScaleExplorer(){
+      const key=document.getElementById('scaleType').value,sc=SCALE_LIBRARY[key],root=spelled(scaleRootPc);
+      document.getElementById('scaleHeading').textContent=`${root} ${sc.name}`;
+      document.getElementById('scaleBoardTitle').textContent=`${root} ${sc.name}`;
+      document.getElementById('scaleFormula').textContent=`Formula: ${sc.formula} · Notes: ${sc.ints.map(i=>spelled((scaleRootPc+i)%12)).join(' – ')}`;
+      document.getElementById('scaleContext').textContent=sc.context+' Tap a fret to transpose the tonic.';
+      renderTheoryBoard(scaleCanvas,scaleCtx,scaleRootPc,sc.ints,'scale');
+    }
+    document.getElementById('scaleRoot').addEventListener('change',e=>{scaleRootPc=Number(e.target.value);updateScaleExplorer();});
+    document.getElementById('scaleType').addEventListener('change',updateScaleExplorer);
+    document.getElementById('scaleIntervalsBtn').addEventListener('click',()=>{scaleDisplay='interval';document.getElementById('scaleIntervalsBtn').classList.add('active');document.getElementById('scaleNotesBtn').classList.remove('active');updateScaleExplorer();});
+    document.getElementById('scaleNotesBtn').addEventListener('click',()=>{scaleDisplay='note';document.getElementById('scaleNotesBtn').classList.active;document.getElementById('scaleIntervalsBtn').classList.remove('active');updateScaleExplorer();});
+    function stepScale(dir){
+      const sel=document.getElementById('scaleType'),keys=Object.keys(SCALE_LIBRARY),i=keys.indexOf(sel.value);
+      sel.value=keys[(i+dir+keys.length)%keys.length];updateScaleExplorer();
+    }
+    document.getElementById('scalePrevBtn').addEventListener('click',()=>stepScale(-1));
+    document.getElementById('scaleNextBtn').addEventListener('click',()=>stepScale(1));
+    scaleCanvas.addEventListener('click',e=>{
+      const r=scaleCanvas.getBoundingClientRect(),x=(e.clientX-r.left)*1100/r.width,y=(e.clientY-r.top)*220/r.height;
+      if(y<22||y>205)return;const st=Math.max(0,Math.min(5,Math.round((y-30)/32))),fr=x<50?0:Math.max(1,Math.min(15,Math.ceil((x-50)/(1000/15))));
+      scaleRootPc=(TUNING[st]+fr)%12;document.getElementById('scaleRoot').value=String(scaleRootPc);updateScaleExplorer();
+    });
+
+    // --- RANGE LIMIT LISTENERS ---
     document.getElementById('rangeOnBtn').addEventListener('click', () => {
       state.enableFretRange = true;
       document.getElementById('rangeOnBtn').classList.add('active');
@@ -2034,7 +2499,6 @@
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
       if (state.scaleRoot === 'AUTO') {
         state.selectedScale = autoScaleMap[state.degreeIndex];
-        document.getElementById('scaleSelect').value = state.selectedScale;
       }
       updateApp();
     });
@@ -2045,7 +2509,6 @@
       const autoScaleMap = state.mode === 'major' ? DEGREE_MODE_MAP_MAJOR : DEGREE_MODE_MAP_MINOR;
       if (state.scaleRoot === 'AUTO') {
         state.selectedScale = autoScaleMap[state.degreeIndex];
-        document.getElementById('scaleSelect').value = state.selectedScale;
       }
       updateApp();
     });
@@ -2127,30 +2590,8 @@
           state.startFret = fav.startFret ?? 3;
           state.fretSpan = fav.fretSpan ?? 5;
 
-          document.getElementById('keySelect').value = fav.key;
-          document.getElementById('chordTypeSelect').value = fav.chordType;
-          document.getElementById('scaleRootSelect').value = state.scaleRoot;
-          document.getElementById('scaleSelect').value = state.selectedScale;
           document.getElementById('startFretInput').value = state.startFret;
           document.getElementById('fretSpanInput').value = state.fretSpan;
-
-          if (fav.mode === 'major') {
-            document.getElementById('modeMajorBtn').click();
-          } else {
-            document.getElementById('modeMinorBtn').click();
-          }
-
-          if (state.showScaleOverlay) {
-            document.getElementById('overlayOnBtn').click();
-          } else {
-            document.getElementById('overlayOffBtn').click();
-          }
-
-          if (state.showDiatonicRun) {
-            document.getElementById('diatonicOnBtn').click();
-          } else {
-            document.getElementById('diatonicOffBtn').click();
-          }
 
           if (state.enableFretRange) {
             document.getElementById('rangeOnBtn').click();
@@ -2195,8 +2636,6 @@
       state.freeNotes = [];
       state.showDiatonicRun = false;
       state.voicingIndex = 0;
-      document.getElementById('diatonicOffBtn').classList.add('active');
-      document.getElementById('diatonicOnBtn').classList.remove('active');
       updateApp();
     });
 
@@ -2205,9 +2644,9 @@
       updateApp();
     });
 
-    // --- AUDIO ENGINE (FluidR3_GM soundfont via soundfont-player) ---
+    // --- AUDIO ENGINE ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const STRING_MIDI = [64, 59, 55, 50, 45, 40]; // e4 B3 G3 D3 A2 E2
+    const STRING_MIDI = [64, 59, 55, 50, 45, 40];
     let leadInstrument = null;
     let padInstrument = null;
     let droneNote = null;
@@ -2243,9 +2682,8 @@
       return padInstrument;
     }
 
-    // Play a voicing: bass-to-treble, as a block or as an arpeggio
     function playVoicingAt(player, voicing, when, duration) {
-      const notes = [...voicing.notes].sort((a, b) => b.string - a.string); // bass first
+      const notes = [...voicing.notes].sort((a, b) => b.string - a.string);
       const gap = state.playStyle === 'arp' ? beatSec() * 0.22 : 0;
       notes.forEach((n, i) => {
         player.play(midiOf(n), when + i * gap, { duration: duration });
@@ -2271,12 +2709,11 @@
       const active = voicings[state.voicingIndex] || voicings[0];
       const run = getEightDiatonicTriads(active);
       if (run.length === 0) return;
-      const step = beatSec() * 2; // two beats per chord
+      const step = beatSec() * 2;
       const t0 = audioCtx.currentTime + 0.05;
       run.forEach((t, i) => playVoicingAt(player, t, t0 + i * step, step * 0.95));
     }
 
-    // --- METRONOME (synthesized, realistic click sounds) ---
     function getNoise() {
       if (!noiseBuf) {
         noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
@@ -2353,7 +2790,7 @@
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
         src.connect(hp); hp.connect(g); g.connect(out);
         src.start(when); src.stop(when + 0.07);
-      } else { // beep
+      } else {
         const osc = audioCtx.createOscillator();
         osc.type = 'square';
         osc.frequency.value = accented ? 1200 : 900;
@@ -2386,7 +2823,6 @@
       if (metroTimer) { clearInterval(metroTimer); metroTimer = null; }
     }
 
-    // --- ROOT DRONE (warm pad sustains the current chord root) ---
     async function startDrone() {
       const pad = await getPadInstrument();
       stopDroneNote();
@@ -2401,7 +2837,6 @@
       }
     }
 
-    // --- AUDIO EVENT LISTENERS ---
     document.getElementById('instrumentSelect').addEventListener('change', (e) => {
       state.instrument = e.target.value;
     });
@@ -2461,7 +2896,12 @@
       updateApp();
     });
 
+    setupPopups();
     updateApp();
+    initTheorySelects();
+    updateChordDevelopment();
+    updateScaleExplorer();
+    updateArpeggio();
   </script>
 </body>
 </html>
