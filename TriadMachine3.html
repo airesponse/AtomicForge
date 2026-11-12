@@ -350,7 +350,12 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+    }
+
+    .fretboard-controls .ctrl-item:not(:first-child) .btn-toggle {
+      padding: 4px 7px;
+      font-size: 10px;
     }
 
     .key-selector-button {
@@ -360,6 +365,11 @@
       padding: 6px 10px;
       font-size: 18px;
       font-weight: 800;
+    }
+
+    .toolbar-reset-btn {
+      padding: 4px 7px;
+      font-size: 9px;
     }
 
     .chord-badge {
@@ -728,16 +738,6 @@
 
       <!-- TEACHING OPTIONS -->
       <div class="ctrl-item">
-        <label>Inversion:</label>
-        <select id="inversionSelect">
-          <option value="auto" selected>Auto</option>
-          <option value="root">Root Pos</option>
-          <option value="first">1st Inv</option>
-          <option value="second">2nd Inv</option>
-        </select>
-      </div>
-
-      <div class="ctrl-item">
         <label>Run Order:</label>
         <select id="runOrderSelect">
           <option value="ascending" selected>Ascending I-VIII</option>
@@ -747,28 +747,6 @@
       </div>
 
       <div class="divider"></div>
-
-      <!-- FREE NOTES / RESET / STRING GROUP -->
-      <div class="ctrl-item">
-        <label>Free Notes:</label>
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="freeOffBtn">Off</button>
-          <button class="btn-toggle" id="freeOnBtn">On</button>
-        </div>
-      </div>
-
-      <button class="btn btn-secondary btn-hdr" id="resetBoardBtn"><i class="fa-solid fa-eraser"></i> Reset Board</button>
-
-      <div class="ctrl-item">
-        <label>String Group:</label>
-        <select id="stringSetSelect">
-          <option value="auto" selected>Auto</option>
-          <option value="0,1,2">e-B-G</option>
-          <option value="1,2,3">B-G-D</option>
-          <option value="2,3,4">G-D-A</option>
-          <option value="3,4,5">D-A-E</option>
-        </select>
-      </div>
 
     </div>
 
@@ -816,6 +794,17 @@
             <div class="ctrl-item">
               <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
             </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Auto">AUTO</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="freeNotesBtn" aria-pressed="false">Free Notes</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="stringSetMenuBtn">Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="stringSetPopupMenu"></div>
+            </div>
+            <button class="btn btn-secondary btn-hdr toolbar-reset-btn" id="resetBoardBtn">RESET</button>
           </div>
         </div>
 
@@ -1023,6 +1012,13 @@
       'blues': [0, 3, 5, 6, 7, 10]
     };
 
+    const STRING_SET_OPTIONS = [
+      { value: 'auto', label: 'Auto' },
+      { value: '0,1,2', label: 'e-B-G' },
+      { value: '1,2,3', label: 'B-G-D' },
+      { value: '2,3,4', label: 'G-D-A' },
+      { value: '3,4,5', label: 'D-A-E' }
+    ];
     const DEGREE_MODE_MAP_MAJOR = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
     const DEGREE_MODE_MAP_MINOR = ['aeolian', 'locrian', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian'];
 
@@ -1895,6 +1891,21 @@
       const diatonicBtn = document.getElementById('diatonicToggleBtn');
       diatonicBtn.textContent = `8 Diatonics: ${state.showDiatonicRun ? 'On' : 'Off'}`;
       diatonicBtn.classList.toggle('active', state.showDiatonicRun);
+
+      const inversionLabels = { auto: 'AUTO', first: '1st', second: '2nd', root: 'Root' };
+      const inversionBtn = document.getElementById('inversionToggleBtn');
+      inversionBtn.textContent = inversionLabels[state.inversion] || 'AUTO';
+      inversionBtn.setAttribute('aria-label', `Inversion: ${inversionBtn.textContent}`);
+      inversionBtn.classList.toggle('active', state.inversion !== 'auto');
+
+      const freeNotesBtn = document.getElementById('freeNotesBtn');
+      freeNotesBtn.classList.toggle('active', state.freeMode);
+      freeNotesBtn.setAttribute('aria-pressed', String(state.freeMode));
+
+      const stringSet = STRING_SET_OPTIONS.find(option => option.value === state.stringSet) || STRING_SET_OPTIONS[0];
+      const stringSetMenuBtn = document.getElementById('stringSetMenuBtn');
+      stringSetMenuBtn.innerHTML = `${stringSet.label} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+      stringSetMenuBtn.setAttribute('aria-label', `String group: ${stringSet.label}`);
     }
 
     // --- APP CONTROLLER & UI UPDATES ---
@@ -2121,6 +2132,22 @@
         };
         scaleMenu.appendChild(btn);
       });
+
+      const stringSetMenu = document.getElementById('stringSetPopupMenu');
+      stringSetMenu.innerHTML = '';
+      STRING_SET_OPTIONS.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.stringSet === option.value ? 'selected' : ''}`;
+        btn.textContent = option.label;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.stringSet = option.value;
+          state.voicingIndex = 0;
+          closeAllPopups();
+          updateApp();
+        };
+        stringSetMenu.appendChild(btn);
+      });
     }
 
     // Toggle menu displays
@@ -2139,6 +2166,7 @@
     document.getElementById('structureMenuBtn').addEventListener('click', (e) => togglePopup(e, 'structurePopupMenu'));
     document.getElementById('rootMenuBtn').addEventListener('click', (e) => togglePopup(e, 'rootPopupMenu'));
     document.getElementById('scaleMenuBtn').addEventListener('click', (e) => togglePopup(e, 'scalePopupMenu'));
+    document.getElementById('stringSetMenuBtn').addEventListener('click', (e) => togglePopup(e, 'stringSetPopupMenu'));
 
     // Top menu toggle buttons
     document.getElementById('modeToggleBtn').addEventListener('click', () => {
@@ -2622,27 +2650,15 @@
     });
 
     // --- FREE NOTES / RESET / STRING GROUP LISTENERS ---
-    document.getElementById('freeOnBtn').addEventListener('click', () => {
-      state.freeMode = true;
-      document.getElementById('freeOnBtn').classList.add('active');
-      document.getElementById('freeOffBtn').classList.remove('active');
-    });
-
-    document.getElementById('freeOffBtn').addEventListener('click', () => {
-      state.freeMode = false;
-      document.getElementById('freeOffBtn').classList.add('active');
-      document.getElementById('freeOnBtn').classList.remove('active');
+    document.getElementById('freeNotesBtn').addEventListener('click', () => {
+      state.freeMode = !state.freeMode;
+      updateTopMenuUI();
     });
 
     document.getElementById('resetBoardBtn').addEventListener('click', () => {
       state.freeNotes = [];
       state.showDiatonicRun = false;
       state.voicingIndex = 0;
-      updateApp();
-    });
-
-    document.getElementById('stringSetSelect').addEventListener('change', (e) => {
-      state.stringSet = e.target.value;
       updateApp();
     });
 
@@ -2888,8 +2904,11 @@
       stopDroneNote();
     });
 
-    document.getElementById('inversionSelect').addEventListener('change', (e) => {
-      state.inversion = e.target.value;
+    document.getElementById('inversionToggleBtn').addEventListener('click', () => {
+      const inversionOrder = ['auto', 'first', 'second', 'root'];
+      const currentIndex = inversionOrder.indexOf(state.inversion);
+      state.inversion = inversionOrder[(currentIndex + 1) % inversionOrder.length];
+      state.voicingIndex = 0;
       updateApp();
     });
 
