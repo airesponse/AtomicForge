@@ -2915,7 +2915,7 @@
       if (!state.droneOn) return;
       stopDroneNote();
       const rootPc = chordRootPcOf(state.degreeIndex);
-      droneNote = trackAudioSource(pad.play(36 + rootPc, audioCtx.currentTime));
+      droneNote = trackAudioSource(pad.play(36 + rootPc, audioCtx.currentTime, { loop: true }));
     }
 
     function stopDroneNote() {
