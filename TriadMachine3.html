@@ -392,6 +392,11 @@
       box-shadow: 0 0 16px rgba(34, 197, 94, 0.55);
     }
 
+    .btn-stop {
+      border-color: #ef4444;
+      color: #fecaca;
+    }
+
     .range-control-group {
       display: flex;
       align-items: center;
@@ -742,6 +747,7 @@
             <div class="ctrl-item">
               <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Auto">Auto</button>
             </div>
+            <button class="btn toolbar-swap-btn" id="cycleVoicingBtn"><i class="fa-solid fa-arrows-rotate"></i> Swap</button>
             <div class="scale-control-group">
               <div class="ctrl-item">
                 <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
@@ -772,7 +778,6 @@
               <button class="btn-toggle" id="freeNotesBtn" aria-pressed="false">Free Notes</button>
             </div>
             <button class="btn btn-secondary btn-hdr toolbar-reset-btn" id="resetBoardBtn">RESET</button>
-            <button class="btn toolbar-swap-btn" id="cycleVoicingBtn"><i class="fa-solid fa-arrows-rotate"></i> Swap</button>
           </div>
         </div>
 
@@ -801,14 +806,14 @@
           <label for="instrumentSelect">Instrument:</label>
           <select id="instrumentSelect">
             <option value="acoustic_guitar_nylon">Nylon Guitar</option>
-            <option value="acoustic_guitar_steel" selected>Steel Guitar</option>
+            <option value="acoustic_guitar_steel">Steel Guitar</option>
             <option value="electric_guitar_clean">Clean Electric</option>
             <option value="electric_guitar_jazz">Jazz Electric</option>
             <option value="electric_guitar_muted">Muted Electric</option>
             <option value="overdriven_guitar">Overdriven</option>
             <option value="distortion_guitar">Distorted</option>
             <option value="acoustic_piano">Piano</option>
-            <option value="string_ensemble_1">Strings</option>
+            <option value="string_ensemble_1" selected>Strings</option>
           </select>
         </div>
 
@@ -821,6 +826,7 @@
 
         <button class="btn btn-secondary btn-hdr" id="playChordBtn"><i class="fa-solid fa-play"></i> Chord</button>
         <button class="btn btn-hdr" id="playRunBtn"><i class="fa-solid fa-play"></i> Run</button>
+        <button class="btn btn-secondary btn-hdr btn-stop" id="stopSoundBtn"><i class="fa-solid fa-stop"></i> Stop</button>
         <button class="btn btn-secondary btn-hdr" id="metroBtn"><i class="fa-solid fa-drum"></i> Metronome</button>
 
         <div class="ctrl-item">
@@ -1056,7 +1062,7 @@
       startFret: 3,
       fretSpan: 5,
       favorites: [],
-      instrument: 'acoustic_guitar_steel',
+      instrument: 'string_ensemble_1',
       playStyle: 'block',
       bpm: 90,
       metroOn: false,
@@ -2708,10 +2714,20 @@
     // --- AUDIO ENGINE ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const STRING_MIDI = [64, 59, 55, 50, 45, 40];
+    const activeAudioSources = new Set();
     let leadInstrument = null;
     let padInstrument = null;
     let droneNote = null;
     let noiseBuf = null;
+    let playbackGeneration = 0;
+
+    function trackAudioSource(source) {
+      if (source && typeof source.stop === 'function') {
+        activeAudioSources.add(source);
+        source.addEventListener?.('ended', () => activeAudioSources.delete(source), { once: true });
+      }
+      return source;
+    }
 
     function ensureAudio() {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -2747,14 +2763,16 @@
       const notes = [...voicing.notes].sort((a, b) => b.string - a.string);
       const gap = state.playStyle === 'arp' ? beatSec() * 0.22 : 0;
       notes.forEach((n, i) => {
-        player.play(midiOf(n), when + i * gap, { duration: duration });
+        trackAudioSource(player.play(midiOf(n), when + i * gap, { duration: duration }));
       });
     }
 
     async function playChordNow() {
+      const generation = playbackGeneration;
       const btn = document.getElementById('playChordBtn');
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Load';
       const player = await getLeadInstrument();
+      if (generation !== playbackGeneration) return;
       btn.innerHTML = '<i class="fa-solid fa-play"></i> Chord';
       const voicings = generateVoicings(state.key, state.degreeIndex % 7, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
       const v = voicings[state.voicingIndex] || voicings[0];
@@ -2762,9 +2780,11 @@
     }
 
     async function playRunNow() {
+      const generation = playbackGeneration;
       const btn = document.getElementById('playRunBtn');
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Load';
       const player = await getLeadInstrument();
+      if (generation !== playbackGeneration) return;
       btn.innerHTML = '<i class="fa-solid fa-play"></i> Run';
       const voicings = generateVoicings(state.key, state.degreeIndex % 7, state.mode, state.chordType, state.enableFretRange, state.startFret, state.fretSpan);
       const active = voicings[state.voicingIndex] || voicings[0];
@@ -2800,6 +2820,7 @@
         g.gain.setValueAtTime(0.9 * vol, when);
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.07);
         osc.connect(bp); bp.connect(g); g.connect(out);
+        trackAudioSource(osc);
         osc.start(when); osc.stop(when + 0.09);
       } else if (state.metroSound === 'duck') {
         const osc = audioCtx.createOscillator();
@@ -2817,6 +2838,7 @@
         g.gain.exponentialRampToValueAtTime(0.9 * vol, when + 0.02);
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.17);
         osc.connect(bp); bp.connect(g); g.connect(out);
+        trackAudioSource(osc);
         osc.start(when); osc.stop(when + 0.2);
       } else if (state.metroSound === 'cowbell') {
         [587, 845].forEach(f => {
@@ -2827,6 +2849,7 @@
           g.gain.setValueAtTime(0.3 * vol, when);
           g.gain.exponentialRampToValueAtTime(0.001, when + 0.25);
           osc.connect(g); g.connect(out);
+          trackAudioSource(osc);
           osc.start(when); osc.stop(when + 0.3);
         });
       } else if (state.metroSound === 'rim') {
@@ -2839,6 +2862,7 @@
         g.gain.setValueAtTime(0.8 * vol, when);
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.035);
         src.connect(hp); hp.connect(g); g.connect(out);
+        trackAudioSource(src);
         src.start(when); src.stop(when + 0.05);
       } else if (state.metroSound === 'hat') {
         const src = audioCtx.createBufferSource();
@@ -2850,6 +2874,7 @@
         g.gain.setValueAtTime(0.6 * vol, when);
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
         src.connect(hp); hp.connect(g); g.connect(out);
+        trackAudioSource(src);
         src.start(when); src.stop(when + 0.07);
       } else {
         const osc = audioCtx.createOscillator();
@@ -2859,6 +2884,7 @@
         g.gain.setValueAtTime(0.25 * vol, when);
         g.gain.exponentialRampToValueAtTime(0.001, when + 0.07);
         osc.connect(g); g.connect(out);
+        trackAudioSource(osc);
         osc.start(when); osc.stop(when + 0.09);
       }
     }
@@ -2886,16 +2912,35 @@
 
     async function startDrone() {
       const pad = await getPadInstrument();
+      if (!state.droneOn) return;
       stopDroneNote();
       const rootPc = chordRootPcOf(state.degreeIndex);
-      droneNote = pad.play(36 + rootPc, audioCtx.currentTime);
+      droneNote = trackAudioSource(pad.play(36 + rootPc, audioCtx.currentTime));
     }
 
     function stopDroneNote() {
       if (droneNote) {
-        try { droneNote.stop(); } catch (e) {}
+        activeAudioSources.delete(droneNote);
+        try { droneNote.stop(0); } catch (e) {}
         droneNote = null;
       }
+    }
+
+    function stopAllSound() {
+      playbackGeneration++;
+      stopMetronome();
+      state.metroOn = false;
+      document.getElementById('metroBtn').classList.remove('metro-on');
+      state.droneOn = false;
+      document.getElementById('droneOffBtn').classList.add('active');
+      document.getElementById('droneOnBtn').classList.remove('active');
+      stopDroneNote();
+      activeAudioSources.forEach(source => {
+        try { source.stop(0); } catch (e) {}
+      });
+      activeAudioSources.clear();
+      document.getElementById('playChordBtn').innerHTML = '<i class="fa-solid fa-play"></i> Chord';
+      document.getElementById('playRunBtn').innerHTML = '<i class="fa-solid fa-play"></i> Run';
     }
 
     document.getElementById('instrumentSelect').addEventListener('change', (e) => {
@@ -2916,6 +2961,7 @@
 
     document.getElementById('playChordBtn').addEventListener('click', () => { ensureAudio(); playChordNow(); });
     document.getElementById('playRunBtn').addEventListener('click', () => { ensureAudio(); playRunNow(); });
+    document.getElementById('stopSoundBtn').addEventListener('click', stopAllSound);
 
     document.getElementById('metroBtn').addEventListener('click', () => {
       state.metroOn = !state.metroOn;
