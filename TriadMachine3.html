@@ -372,6 +372,12 @@
       font-size: 9px;
     }
 
+    .range-control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .chord-badge {
       font-size: 11px;
       padding: 2px 6px;
@@ -664,22 +670,6 @@
     <!-- RANGE, AUDIO, TEACHING, AND FREE NOTE CONTROLS -->
     <div class="compact-controls-bar">
 
-      <!-- Fret Range Limit -->
-      <div class="ctrl-item">
-        <label>Range Limit:</label>
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="rangeOffBtn">Full Neck</button>
-          <button class="btn-toggle" id="rangeOnBtn">Filter</button>
-        </div>
-      </div>
-
-      <div class="ctrl-item" id="rangeControls" style="display:none;">
-        <label>Start:</label>
-        <input type="number" id="startFretInput" min="0" max="12" value="3" style="width:40px;">
-        <label>Span:</label>
-        <input type="number" id="fretSpanInput" min="3" max="12" value="5" style="width:40px;">
-      </div>
-
       <div class="divider"></div>
 
       <!-- AUDIO / PLAYBACK -->
@@ -736,18 +726,6 @@
 
       <div class="divider"></div>
 
-      <!-- TEACHING OPTIONS -->
-      <div class="ctrl-item">
-        <label>Run Order:</label>
-        <select id="runOrderSelect">
-          <option value="ascending" selected>Ascending I-VIII</option>
-          <option value="descending">Descending VIII-I</option>
-          <option value="circle">Circle (I-vi-ii-V)</option>
-        </select>
-      </div>
-
-      <div class="divider"></div>
-
     </div>
 
     <!-- MAIN FRETBOARD AREA -->
@@ -793,6 +771,19 @@
             </div>
             <div class="ctrl-item">
               <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
+            </div>
+            <div class="range-control-group">
+              <button class="btn-toggle" id="rangeToggleBtn" aria-pressed="false">Full Neck</button>
+              <div class="ctrl-item" id="rangeControls" style="display:none;">
+                <label for="startFretInput">Start:</label>
+                <input type="number" id="startFretInput" min="0" max="12" value="3" style="width:40px;">
+                <label for="fretSpanInput">Span:</label>
+                <input type="number" id="fretSpanInput" min="3" max="12" value="5" style="width:40px;">
+              </div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="runOrderMenuBtn">Ascending I-VIII <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="runOrderPopupMenu"></div>
             </div>
             <div class="ctrl-item">
               <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Auto">AUTO</button>
@@ -1264,7 +1255,7 @@
     }
 
     // --- NOTE SPELLING ---
-    const SPELL_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const SPELL_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const SPELL_FLAT  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
     const SHARP_MAJOR_KEYS = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
 
@@ -1276,11 +1267,6 @@
 
     function spelled(pc) {
       return (usesSharps() ? SPELL_SHARP : SPELL_FLAT)[((pc % 12) + 12) % 12];
-    }
-
-    function fingerFor(fret, baseFret) {
-      if (fret === 0) return 'o';
-      return String(Math.min(4, Math.max(1, fret - baseFret + 1)));
     }
 
     function cagedZone(minFret) {
@@ -1316,8 +1302,17 @@
     const RUN_ORDER_TEMPLATES = {
       ascending: [0, 1, 2, 3, 4, 5, 6, 7],
       descending: [7, 6, 5, 4, 3, 2, 1, 0],
-      circle: [0, 5, 1, 4, 2, 6, 3, 7]
+      circle: [0, 5, 1, 4, 2, 6, 3, 7],
+      thirds: [0, 2, 4, 6, 1, 3, 5, 7],
+      fourths: [0, 3, 6, 2, 5, 1, 4, 7]
     };
+    const RUN_ORDER_OPTIONS = [
+      { id: 'ascending', label: 'Ascending I-VIII' },
+      { id: 'descending', label: 'Descending VIII-I' },
+      { id: 'circle', label: 'Circle (I-vi-ii-V)' },
+      { id: 'thirds', label: 'Thirds Cycle' },
+      { id: 'fourths', label: 'Fourths Cycle' }
+    ];
 
     function synthesizeAnchorVoicing(degree, anchors) {
       if (!anchors || anchors.length === 0) return null;
@@ -1725,7 +1720,6 @@
           
           let labelText;
           if (state.labelMode === 'interval') labelText = item.intervalName;
-          else if (state.labelMode === 'finger') labelText = fingerFor(item.fret, fingerBase);
           else labelText = spelled(item.pc);
           ctx.fillText(labelText, x, y);
         });
@@ -1758,15 +1752,8 @@
           else if (intervalObj.type === 'fifth') color = '#f97316';
           else if (intervalObj.type === 'seventh') color = '#a855f7';
 
-          if (state.labelMode === 'interval') {
-            labelText = intervalObj.name;
-          } else if (state.labelMode === 'finger') {
-            const fretted = voicing.notes.map(m => m.fret).filter(f => f > 0);
-            const base = fretted.length > 0 ? Math.min(...fretted) : 1;
-            labelText = fingerFor(n.fret, base);
-          } else {
-            labelText = spelled(n.pc);
-          }
+          if (state.labelMode === 'interval') labelText = intervalObj.name;
+          else labelText = spelled(n.pc);
         }
 
         ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -1858,9 +1845,9 @@
 
       // 4. Label Toggle
       const labelBtn = document.getElementById('labelToggleBtn');
-      if (state.labelMode === 'interval') labelBtn.textContent = 'Intervals';
-      else if (state.labelMode === 'note') labelBtn.textContent = 'Notes';
-      else labelBtn.textContent = 'Fingers';
+      labelBtn.textContent = state.labelMode === 'interval' ? 'Intervals' : 'Notes';
+      labelBtn.classList.toggle('active', state.labelMode === 'note');
+      labelBtn.setAttribute('aria-pressed', String(state.labelMode === 'note'));
 
       // 5. Overlay Toggle
       const overlayBtn = document.getElementById('overlayToggleBtn');
@@ -1906,6 +1893,17 @@
       const stringSetMenuBtn = document.getElementById('stringSetMenuBtn');
       stringSetMenuBtn.innerHTML = `${stringSet.label} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
       stringSetMenuBtn.setAttribute('aria-label', `String group: ${stringSet.label}`);
+
+      const rangeToggleBtn = document.getElementById('rangeToggleBtn');
+      rangeToggleBtn.textContent = state.enableFretRange ? 'Range' : 'Full Neck';
+      rangeToggleBtn.classList.toggle('active', state.enableFretRange);
+      rangeToggleBtn.setAttribute('aria-pressed', String(state.enableFretRange));
+      document.getElementById('rangeControls').style.display = state.enableFretRange ? 'flex' : 'none';
+
+      const runOrder = RUN_ORDER_OPTIONS.find(option => option.id === state.runOrder) || RUN_ORDER_OPTIONS[0];
+      const runOrderMenuBtn = document.getElementById('runOrderMenuBtn');
+      runOrderMenuBtn.innerHTML = `${runOrder.label} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+      runOrderMenuBtn.setAttribute('aria-label', `Run order: ${runOrder.label}`);
     }
 
     // --- APP CONTROLLER & UI UPDATES ---
@@ -2148,6 +2146,21 @@
         };
         stringSetMenu.appendChild(btn);
       });
+
+      const runOrderMenu = document.getElementById('runOrderPopupMenu');
+      runOrderMenu.innerHTML = '';
+      RUN_ORDER_OPTIONS.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = `popup-item ${state.runOrder === option.id ? 'selected' : ''}`;
+        btn.textContent = option.label;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          state.runOrder = option.id;
+          closeAllPopups();
+          updateApp();
+        };
+        runOrderMenu.appendChild(btn);
+      });
     }
 
     // Toggle menu displays
@@ -2167,6 +2180,7 @@
     document.getElementById('rootMenuBtn').addEventListener('click', (e) => togglePopup(e, 'rootPopupMenu'));
     document.getElementById('scaleMenuBtn').addEventListener('click', (e) => togglePopup(e, 'scalePopupMenu'));
     document.getElementById('stringSetMenuBtn').addEventListener('click', (e) => togglePopup(e, 'stringSetPopupMenu'));
+    document.getElementById('runOrderMenuBtn').addEventListener('click', (e) => togglePopup(e, 'runOrderPopupMenu'));
 
     // Top menu toggle buttons
     document.getElementById('modeToggleBtn').addEventListener('click', () => {
@@ -2177,9 +2191,7 @@
     });
 
     document.getElementById('labelToggleBtn').addEventListener('click', () => {
-      if (state.labelMode === 'interval') state.labelMode = 'note';
-      else if (state.labelMode === 'note') state.labelMode = 'finger';
-      else state.labelMode = 'interval';
+      state.labelMode = state.labelMode === 'interval' ? 'note' : 'interval';
       updateApp();
     });
 
@@ -2497,20 +2509,14 @@
     });
 
     // --- RANGE LIMIT LISTENERS ---
-    document.getElementById('rangeOnBtn').addEventListener('click', () => {
-      state.enableFretRange = true;
-      document.getElementById('rangeOnBtn').classList.add('active');
-      document.getElementById('rangeOffBtn').classList.remove('active');
-      document.getElementById('rangeControls').style.display = 'flex';
+    function setFretRangeEnabled(enabled) {
+      state.enableFretRange = enabled;
+      state.voicingIndex = 0;
       updateApp();
-    });
+    }
 
-    document.getElementById('rangeOffBtn').addEventListener('click', () => {
-      state.enableFretRange = false;
-      document.getElementById('rangeOffBtn').classList.add('active');
-      document.getElementById('rangeOnBtn').classList.remove('active');
-      document.getElementById('rangeControls').style.display = 'none';
-      updateApp();
+    document.getElementById('rangeToggleBtn').addEventListener('click', () => {
+      setFretRangeEnabled(!state.enableFretRange);
     });
 
     document.getElementById('startFretInput').addEventListener('input', (e) => {
@@ -2622,12 +2628,6 @@
 
           document.getElementById('startFretInput').value = state.startFret;
           document.getElementById('fretSpanInput').value = state.fretSpan;
-
-          if (state.enableFretRange) {
-            document.getElementById('rangeOnBtn').click();
-          } else {
-            document.getElementById('rangeOffBtn').click();
-          }
 
           updateApp();
         };
@@ -2909,11 +2909,6 @@
       const currentIndex = inversionOrder.indexOf(state.inversion);
       state.inversion = inversionOrder[(currentIndex + 1) % inversionOrder.length];
       state.voicingIndex = 0;
-      updateApp();
-    });
-
-    document.getElementById('runOrderSelect').addEventListener('change', (e) => {
-      state.runOrder = e.target.value;
       updateApp();
     });
 
