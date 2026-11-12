@@ -324,9 +324,10 @@
     }
 
     .fretboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 8px 12px;
       padding: 0 4px;
     }
 
@@ -341,7 +342,24 @@
     .chord-info {
       display: flex;
       align-items: center;
-      gap: 8px;
+      min-width: 0;
+    }
+
+    .fretboard-controls {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .key-selector-button {
+      min-width: 58px;
+      min-height: 36px;
+      justify-content: space-between;
+      padding: 6px 10px;
+      font-size: 18px;
+      font-weight: 800;
     }
 
     .chord-badge {
@@ -633,54 +651,7 @@
   <div id="triadTabPanel">
   <div class="app-layout">
     
-    <!-- FIRST CONTROLS BAR (Updated per specifications) -->
-    <div class="compact-controls-bar">
-      
-      <!-- 2. Major/Minor Single Toggle Button -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="modeToggleBtn">Major</button>
-      </div>
-
-      <!-- 3. Structure Button with Popup (Label removed) -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="structureMenuBtn">Triads (3 notes) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-        <div class="popup-menu" id="structurePopupMenu"></div>
-      </div>
-
-      <!-- 4. Intervals/Notes/Fingers Single Toggle Button -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="labelToggleBtn">Intervals</button>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- 5. Scale Overlay On/Off Toggle Button -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
-      </div>
-
-      <!-- 6. Root Button with Popup -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="rootMenuBtn">Root: Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-        <div class="popup-menu" id="rootPopupMenu"></div>
-      </div>
-
-      <!-- 7. Scale Chooser Button with Popup -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="scaleMenuBtn">Ionian (Major) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-        <div class="popup-menu" id="scalePopupMenu"></div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- 8. 8 Diatonic Triads On/Off Toggle Button -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
-      </div>
-
-    </div>
-
-    <!-- SECOND CONTROLS BAR (range, audio, teaching, free notes) -->
+    <!-- RANGE, AUDIO, TEACHING, AND FREE NOTE CONTROLS -->
     <div class="compact-controls-bar">
 
       <!-- Fret Range Limit -->
@@ -808,10 +779,6 @@
         <div class="fretboard-header">
           <div class="chord-info">
             <h2 id="chordTitle">G Major <span class="chord-badge" id="chordDegreeBadge">I Degree</span></h2>
-            <div class="ctrl-item">
-              <button class="btn-toggle" id="keyMenuBtn">Key: G <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-              <div class="popup-menu" id="keyPopupMenu"></div>
-            </div>
           </div>
           <div class="legend">
             <div class="legend-item" id="legendRoot"><div class="legend-dot" style="background: var(--color-root)"></div> Root</div>
@@ -819,6 +786,36 @@
             <div class="legend-item" id="legendFifth"><div class="legend-dot" style="background: var(--color-fifth)"></div> 5th</div>
             <div class="legend-item" id="legendSeventh" style="display:none;"><div class="legend-dot" style="background: var(--color-seventh)"></div> 7th/Ext</div>
             <div class="legend-item" id="legendScale" style="display:none;"><div class="legend-dot" style="background: var(--color-scale); border: 1px solid #94a3b8;"></div> Scale</div>
+          </div>
+          <div class="fretboard-controls">
+            <div class="ctrl-item">
+              <button class="btn-toggle key-selector-button" id="keyMenuBtn" aria-label="Key: G">G <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i></button>
+              <div class="popup-menu" id="keyPopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="modeToggleBtn">Major</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="structureMenuBtn">Triads (3 notes) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="structurePopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="labelToggleBtn">Intervals</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="rootMenuBtn">Root: Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="rootPopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="scaleMenuBtn">Ionian (Major) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="scalePopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
+            </div>
           </div>
         </div>
 
@@ -1842,7 +1839,9 @@
     // Dynamic Top Menu UI updates
     function updateTopMenuUI() {
       // 1. Key Button
-      document.getElementById('keyMenuBtn').innerHTML = `Key: ${state.key} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+      const keyMenuBtn = document.getElementById('keyMenuBtn');
+      keyMenuBtn.innerHTML = `${state.key} <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>`;
+      keyMenuBtn.setAttribute('aria-label', `Key: ${state.key}`);
       
       // 2. Mode Toggle
       const modeBtn = document.getElementById('modeToggleBtn');
