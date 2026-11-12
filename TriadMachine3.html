@@ -338,6 +338,12 @@
       gap: 8px;
     }
 
+    .chord-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .chord-badge {
       font-size: 11px;
       padding: 2px 6px;
@@ -630,12 +636,6 @@
     <!-- FIRST CONTROLS BAR (Updated per specifications) -->
     <div class="compact-controls-bar">
       
-      <!-- 1. Key Button with Popup (A to G) -->
-      <div class="ctrl-item">
-        <button class="btn-toggle" id="keyMenuBtn">Key: G <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-        <div class="popup-menu" id="keyPopupMenu"></div>
-      </div>
-
       <!-- 2. Major/Minor Single Toggle Button -->
       <div class="ctrl-item">
         <button class="btn-toggle" id="modeToggleBtn">Major</button>
@@ -808,6 +808,10 @@
         <div class="fretboard-header">
           <div class="chord-info">
             <h2 id="chordTitle">G Major <span class="chord-badge" id="chordDegreeBadge">I Degree</span></h2>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="keyMenuBtn">Key: G <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="keyPopupMenu"></div>
+            </div>
           </div>
           <div class="legend">
             <div class="legend-item" id="legendRoot"><div class="legend-dot" style="background: var(--color-root)"></div> Root</div>
