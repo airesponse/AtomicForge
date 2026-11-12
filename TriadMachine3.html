@@ -93,9 +93,12 @@
     }
 
     .logo-home a {
-      display: block;
-      width: 28px;
-      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      text-decoration: none;
     }
 
     .logo-home a:focus-visible {
@@ -370,6 +373,23 @@
     .toolbar-reset-btn {
       padding: 4px 7px;
       font-size: 9px;
+    }
+
+    .toolbar-swap-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #4ade80;
+      border-radius: 7px;
+      background: #166534;
+      color: #f0fdf4;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.38);
+    }
+
+    .toolbar-swap-btn:hover {
+      background: #15803d;
+      box-shadow: 0 0 16px rgba(34, 197, 94, 0.55);
     }
 
     .range-control-group {
@@ -654,8 +674,9 @@
   <header>
     <div class="logo-container">
       <div class="logo-home">
-        <i class="fa-solid fa-bolt logo-icon"></i>
-        <a href="index.html" aria-label="Back to Atomic Forge"></a>
+        <a href="index.html" aria-label="Back to Atomic Forge">
+          <i class="fa-solid fa-bolt logo-icon"></i>
+        </a>
       </div>
       <div>
         <h1>The Atomic StormWorks Triad Machine</h1>
@@ -678,67 +699,6 @@
   <div id="triadTabPanel">
   <div class="app-layout">
     
-    <!-- RANGE, AUDIO, TEACHING, AND FREE NOTE CONTROLS -->
-    <div class="compact-controls-bar">
-
-      <div class="divider"></div>
-
-      <!-- AUDIO / PLAYBACK -->
-      <div class="ctrl-item">
-        <label>Instrument:</label>
-        <select id="instrumentSelect">
-          <option value="acoustic_guitar_nylon">Nylon Guitar</option>
-          <option value="acoustic_guitar_steel" selected>Steel Guitar</option>
-          <option value="electric_guitar_clean">Clean Electric</option>
-          <option value="electric_guitar_jazz">Jazz Electric</option>
-          <option value="electric_guitar_muted">Muted Electric</option>
-          <option value="overdriven_guitar">Overdriven</option>
-          <option value="distortion_guitar">Distorted</option>
-          <option value="acoustic_piano">Piano</option>
-          <option value="string_ensemble_1">Strings</option>
-        </select>
-      </div>
-
-      <div class="ctrl-item">
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="playBlockBtn">Block</button>
-          <button class="btn-toggle" id="playArpBtn">Arp</button>
-        </div>
-      </div>
-
-      <button class="btn btn-secondary btn-hdr" id="playChordBtn"><i class="fa-solid fa-play"></i> Chord</button>
-      <button class="btn btn-hdr" id="playRunBtn"><i class="fa-solid fa-play"></i> Run</button>
-      <button class="btn btn-secondary btn-hdr" id="metroBtn"><i class="fa-solid fa-drum"></i> Metronome</button>
-
-      <div class="ctrl-item">
-        <label>BPM:</label>
-        <input type="number" id="bpmInput" min="40" max="240" value="90" style="width:44px;">
-      </div>
-
-      <div class="ctrl-item">
-        <label>Click:</label>
-        <select id="metroSoundSelect">
-          <option value="woodblock" selected>Wood Block</option>
-          <option value="duck">Duck Quack</option>
-          <option value="cowbell">Cowbell</option>
-          <option value="rim">Rim Click</option>
-          <option value="hat">Closed Hat</option>
-          <option value="beep">Beep</option>
-        </select>
-      </div>
-
-      <div class="ctrl-item">
-        <label>Drone:</label>
-        <div class="toggle-group">
-          <button class="btn-toggle active" id="droneOffBtn">Off</button>
-          <button class="btn-toggle" id="droneOnBtn">On</button>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-    </div>
-
     <!-- MAIN FRETBOARD AREA -->
     <div class="main-content">
       
@@ -765,6 +725,9 @@
             <div class="ctrl-item">
               <button class="btn-toggle" id="structureMenuBtn">Triads (3 notes) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
               <div class="popup-menu" id="structurePopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="openStringsToggleBtn" aria-pressed="false">Open Strings</button>
             </div>
             <div class="ctrl-item">
               <button class="btn-toggle" id="labelToggleBtn">Intervals</button>
@@ -809,6 +772,7 @@
               <button class="btn-toggle" id="freeNotesBtn" aria-pressed="false">Free Notes</button>
             </div>
             <button class="btn btn-secondary btn-hdr toolbar-reset-btn" id="resetBoardBtn">RESET</button>
+            <button class="btn toolbar-swap-btn" id="cycleVoicingBtn"><i class="fa-solid fa-arrows-rotate"></i> Swap</button>
           </div>
         </div>
 
@@ -829,9 +793,59 @@
             <button class="btn btn-secondary" id="nextChordBtn" style="padding: 6px 10px;"><i class="fa-solid fa-chevron-right"></i></button>
           </div>
 
-          <button class="btn" id="cycleVoicingBtn" style="padding: 6px 12px;">
-            <i class="fa-solid fa-arrows-rotate"></i> Swap Inversion / Position
-          </button>
+        </div>
+      </div>
+
+      <div class="compact-controls-bar">
+        <div class="ctrl-item">
+          <label for="instrumentSelect">Instrument:</label>
+          <select id="instrumentSelect">
+            <option value="acoustic_guitar_nylon">Nylon Guitar</option>
+            <option value="acoustic_guitar_steel" selected>Steel Guitar</option>
+            <option value="electric_guitar_clean">Clean Electric</option>
+            <option value="electric_guitar_jazz">Jazz Electric</option>
+            <option value="electric_guitar_muted">Muted Electric</option>
+            <option value="overdriven_guitar">Overdriven</option>
+            <option value="distortion_guitar">Distorted</option>
+            <option value="acoustic_piano">Piano</option>
+            <option value="string_ensemble_1">Strings</option>
+          </select>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="toggle-group">
+            <button class="btn-toggle active" id="playBlockBtn">Block</button>
+            <button class="btn-toggle" id="playArpBtn">Arp</button>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary btn-hdr" id="playChordBtn"><i class="fa-solid fa-play"></i> Chord</button>
+        <button class="btn btn-hdr" id="playRunBtn"><i class="fa-solid fa-play"></i> Run</button>
+        <button class="btn btn-secondary btn-hdr" id="metroBtn"><i class="fa-solid fa-drum"></i> Metronome</button>
+
+        <div class="ctrl-item">
+          <label for="bpmInput">BPM:</label>
+          <input type="number" id="bpmInput" min="40" max="240" value="90" style="width:44px;">
+        </div>
+
+        <div class="ctrl-item">
+          <label for="metroSoundSelect">Click:</label>
+          <select id="metroSoundSelect">
+            <option value="woodblock" selected>Wood Block</option>
+            <option value="duck">Duck Quack</option>
+            <option value="cowbell">Cowbell</option>
+            <option value="rim">Rim Click</option>
+            <option value="hat">Closed Hat</option>
+            <option value="beep">Beep</option>
+          </select>
+        </div>
+
+        <div class="ctrl-item">
+          <label>Drone:</label>
+          <div class="toggle-group">
+            <button class="btn-toggle active" id="droneOffBtn">Off</button>
+            <button class="btn-toggle" id="droneOnBtn">On</button>
+          </div>
         </div>
       </div>
 
@@ -1052,7 +1066,8 @@
       droneOn: false,
       freeMode: false,
       freeNotes: [],
-      stringSet: 'auto'
+      stringSet: 'auto',
+      excludeOpenStrings: false
     };
 
     function getNoteName(semitone) {
@@ -1187,6 +1202,7 @@
           const openNote = TUNING[s];
 
           for (let f = minF; f <= maxF; f++) {
+            if (state.excludeOpenStrings && f === 0) continue;
             const pc = (openNote + f) % 12;
             if (targetPitchClasses.includes(pc)) {
               currentFingering.push({ string: s, fret: f, pc: pc });
@@ -1892,6 +1908,10 @@
       diatonicBtn.textContent = `8 Diatonics: ${state.showDiatonicRun ? 'On' : 'Off'}`;
       diatonicBtn.classList.toggle('active', state.showDiatonicRun);
 
+      const openStringsBtn = document.getElementById('openStringsToggleBtn');
+      openStringsBtn.classList.toggle('active', state.excludeOpenStrings);
+      openStringsBtn.setAttribute('aria-pressed', String(state.excludeOpenStrings));
+
       const inversionLabels = { first: '1st', second: '2nd', root: 'Root' };
       const inversionBtn = document.getElementById('inversionToggleBtn');
       inversionBtn.textContent = inversionLabels[state.inversion] || 'Root';
@@ -2219,6 +2239,12 @@
 
     document.getElementById('diatonicToggleBtn').addEventListener('click', () => {
       state.showDiatonicRun = !state.showDiatonicRun;
+      updateApp();
+    });
+
+    document.getElementById('openStringsToggleBtn').addEventListener('click', () => {
+      state.excludeOpenStrings = !state.excludeOpenStrings;
+      state.voicingIndex = 0;
       updateApp();
     });
 
