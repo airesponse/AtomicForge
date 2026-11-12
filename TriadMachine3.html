@@ -740,7 +740,7 @@
               <div class="popup-menu" id="stringSetPopupMenu"></div>
             </div>
             <div class="ctrl-item">
-              <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Root">Root</button>
+              <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Auto">Auto</button>
             </div>
             <div class="scale-control-group">
               <div class="ctrl-item">
@@ -1061,7 +1061,7 @@
       bpm: 90,
       metroOn: false,
       metroSound: 'woodblock',
-      inversion: 'root',
+      inversion: 'auto',
       runOrder: 'ascending',
       droneOn: false,
       freeMode: false,
@@ -1912,11 +1912,11 @@
       openStringsBtn.classList.toggle('active', state.excludeOpenStrings);
       openStringsBtn.setAttribute('aria-pressed', String(state.excludeOpenStrings));
 
-      const inversionLabels = { first: '1st', second: '2nd', root: 'Root' };
+      const inversionLabels = { auto: 'Auto', root: 'Root', first: '1st', second: '2nd' };
       const inversionBtn = document.getElementById('inversionToggleBtn');
-      inversionBtn.textContent = inversionLabels[state.inversion] || 'Root';
+      inversionBtn.textContent = inversionLabels[state.inversion] || 'Auto';
       inversionBtn.setAttribute('aria-label', `Inversion: ${inversionBtn.textContent}`);
-      inversionBtn.classList.add('active');
+      inversionBtn.classList.toggle('active', state.inversion !== 'auto');
 
       const freeNotesBtn = document.getElementById('freeNotesBtn');
       freeNotesBtn.classList.toggle('active', state.freeMode);
@@ -2031,7 +2031,7 @@
         const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
         if (inSet.length > 0) voicings = inSet;
       }
-      if (state.chordType === 'triad') {
+      if (state.chordType === 'triad' && state.inversion !== 'auto') {
         const inversionVoicings = voicings.filter(v => voicingInversion(v, state.degreeIndex % 7) === state.inversion);
         if (inversionVoicings.length > 0) voicings = inversionVoicings;
       }
@@ -2948,7 +2948,7 @@
     });
 
     document.getElementById('inversionToggleBtn').addEventListener('click', () => {
-      const inversionOrder = ['root', 'first', 'second'];
+      const inversionOrder = ['auto', 'root', 'first', 'second'];
       const currentIndex = inversionOrder.indexOf(state.inversion);
       state.inversion = inversionOrder[(currentIndex + 1) % inversionOrder.length];
       state.voicingIndex = 0;
