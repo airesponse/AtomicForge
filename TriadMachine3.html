@@ -378,6 +378,17 @@
       gap: 6px;
     }
 
+    .scale-control-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--panel-border);
+      border-radius: 7px;
+      background: rgba(15, 23, 42, 0.35);
+    }
+
     .chord-badge {
       font-size: 11px;
       padding: 2px 6px;
@@ -759,18 +770,27 @@
               <button class="btn-toggle" id="labelToggleBtn">Intervals</button>
             </div>
             <div class="ctrl-item">
-              <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
-            </div>
-            <div class="ctrl-item">
-              <button class="btn-toggle" id="rootMenuBtn">Root: Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-              <div class="popup-menu" id="rootPopupMenu"></div>
-            </div>
-            <div class="ctrl-item">
-              <button class="btn-toggle" id="scaleMenuBtn">Ionian (Major) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-              <div class="popup-menu" id="scalePopupMenu"></div>
-            </div>
-            <div class="ctrl-item">
               <button class="btn-toggle" id="diatonicToggleBtn">8 Diatonics: Off</button>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="stringSetMenuBtn">Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+              <div class="popup-menu" id="stringSetPopupMenu"></div>
+            </div>
+            <div class="ctrl-item">
+              <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Root">Root</button>
+            </div>
+            <div class="scale-control-group">
+              <div class="ctrl-item">
+                <button class="btn-toggle" id="overlayToggleBtn">Scale Overlay: Off</button>
+              </div>
+              <div class="ctrl-item">
+                <button class="btn-toggle" id="rootMenuBtn">Root: Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+                <div class="popup-menu" id="rootPopupMenu"></div>
+              </div>
+              <div class="ctrl-item">
+                <button class="btn-toggle" id="scaleMenuBtn">Ionian (Major) <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+                <div class="popup-menu" id="scalePopupMenu"></div>
+              </div>
             </div>
             <div class="range-control-group">
               <button class="btn-toggle" id="rangeToggleBtn" aria-pressed="false">Full Neck</button>
@@ -786,14 +806,7 @@
               <div class="popup-menu" id="runOrderPopupMenu"></div>
             </div>
             <div class="ctrl-item">
-              <button class="btn-toggle" id="inversionToggleBtn" aria-label="Inversion: Auto">AUTO</button>
-            </div>
-            <div class="ctrl-item">
               <button class="btn-toggle" id="freeNotesBtn" aria-pressed="false">Free Notes</button>
-            </div>
-            <div class="ctrl-item">
-              <button class="btn-toggle" id="stringSetMenuBtn">Auto <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
-              <div class="popup-menu" id="stringSetPopupMenu"></div>
             </div>
             <button class="btn btn-secondary btn-hdr toolbar-reset-btn" id="resetBoardBtn">RESET</button>
           </div>
@@ -1034,7 +1047,7 @@
       bpm: 90,
       metroOn: false,
       metroSound: 'woodblock',
-      inversion: 'auto',
+      inversion: 'root',
       runOrder: 'ascending',
       droneOn: false,
       freeMode: false,
@@ -1879,11 +1892,11 @@
       diatonicBtn.textContent = `8 Diatonics: ${state.showDiatonicRun ? 'On' : 'Off'}`;
       diatonicBtn.classList.toggle('active', state.showDiatonicRun);
 
-      const inversionLabels = { auto: 'AUTO', first: '1st', second: '2nd', root: 'Root' };
+      const inversionLabels = { first: '1st', second: '2nd', root: 'Root' };
       const inversionBtn = document.getElementById('inversionToggleBtn');
-      inversionBtn.textContent = inversionLabels[state.inversion] || 'AUTO';
+      inversionBtn.textContent = inversionLabels[state.inversion] || 'Root';
       inversionBtn.setAttribute('aria-label', `Inversion: ${inversionBtn.textContent}`);
-      inversionBtn.classList.toggle('active', state.inversion !== 'auto');
+      inversionBtn.classList.add('active');
 
       const freeNotesBtn = document.getElementById('freeNotesBtn');
       freeNotesBtn.classList.toggle('active', state.freeMode);
@@ -1997,6 +2010,10 @@
       if (forcedSetKey) {
         const inSet = voicings.filter(v => stringSetKeyOf(v) === forcedSetKey);
         if (inSet.length > 0) voicings = inSet;
+      }
+      if (state.chordType === 'triad') {
+        const inversionVoicings = voicings.filter(v => voicingInversion(v, state.degreeIndex % 7) === state.inversion);
+        if (inversionVoicings.length > 0) voicings = inversionVoicings;
       }
 
       const voicingContainer = document.getElementById('voicingContainer');
@@ -2905,7 +2922,7 @@
     });
 
     document.getElementById('inversionToggleBtn').addEventListener('click', () => {
-      const inversionOrder = ['auto', 'first', 'second', 'root'];
+      const inversionOrder = ['root', 'first', 'second'];
       const currentIndex = inversionOrder.indexOf(state.inversion);
       state.inversion = inversionOrder[(currentIndex + 1) % inversionOrder.length];
       state.voicingIndex = 0;
