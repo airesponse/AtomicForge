@@ -1,0 +1,1047 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrooveMachine | Atomic Forge</title>
+
+<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg:#080c14;
+  --panel:#111827;
+  --panel2:#151f30;
+  --border:#273449;
+  --text:#edf3ff;
+  --muted:#91a0b8;
+  --cyan:#49e3ff;
+  --purple:#a58bff;
+  --green:#8df6b3;
+  --orange:#ffb86b;
+  --red:#ff778a;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  color:var(--text);
+  background:radial-gradient(ellipse at top,#17233a 0%,var(--bg) 58%);
+  font-family:Inter,system-ui,sans-serif;
+  min-height:100vh;
+}
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+button:disabled { opacity:.4; cursor:not-allowed; }
+header {
+  min-height:78px;
+  padding:16px clamp(16px,4vw,48px);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; border-bottom:1px solid var(--border);
+  background:#080c14d9; flex-wrap:wrap;
+}
+.brand { display:flex; align-items:center; gap:13px; }
+.logo {
+  width:43px;height:43px;border-radius:12px;
+  display:grid;place-items:center;font-size:23px;
+  color:#06101b;background:linear-gradient(135deg,var(--cyan),var(--purple));
+  font-weight:900;
+}
+h1 { font-size:20px;margin:0;letter-spacing:-.7px; }
+.subtitle { color:var(--muted);font-size:11px;margin-top:4px;letter-spacing:1.5px; }
+.back {
+  color:var(--muted);text-decoration:none;border:1px solid var(--border);
+  padding:10px 13px;border-radius:9px;font-size:12px;
+}
+.back:hover { color:var(--cyan);border-color:var(--cyan); }
+main { max-width:1440px;margin:auto;padding:25px clamp(14px,3vw,36px) 48px; }
+.intro { display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap;margin-bottom:22px; }
+.eyebrow { color:var(--cyan);font:11px 'Space Mono',monospace;letter-spacing:2px;text-transform:uppercase; }
+h2 { font-size:clamp(25px,3vw,36px);letter-spacing:-1.2px;margin:9px 0 8px; }
+.intro p { margin:0;color:var(--muted);font-size:13px;line-height:1.7;max-width:680px; }
+.status {
+  display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--green);
+  border:1px solid #28523e;background:#10271e;padding:9px 12px;border-radius:20px;
+}
+.dot { width:7px;height:7px;background:currentColor;border-radius:50%; }
+.layout { display:grid;grid-template-columns:minmax(280px,.85fr) minmax(0,1.65fr);gap:18px;align-items:start; }
+.panel {
+  border:1px solid var(--border);border-radius:16px;
+  background:linear-gradient(150deg,#131d2d,#0d1421);
+  padding:20px;margin-bottom:18px;min-width:0;
+}
+.panel-head { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px; }
+.panel h3 { margin:0;font-size:14px;letter-spacing:-.2px; }
+.small { color:var(--muted);font-size:11px;line-height:1.6; }
+.tag { font:10px 'Space Mono',monospace;color:var(--cyan);border:1px solid #244c5c;padding:5px 7px;border-radius:6px;white-space:nowrap; }
+.drop {
+  display:block;text-align:center;padding:27px 14px;border:1px dashed #3a506c;
+  background:#0a1220;border-radius:12px;cursor:pointer;transition:.2s;
+}
+.drop:hover,.drop.drag { border-color:var(--cyan);background:#102033; }
+.upload-icon { font-size:29px;color:var(--cyan);margin-bottom:10px; }
+.drop strong { display:block;font-size:13px;margin-bottom:6px; }
+.drop span { color:var(--muted);font-size:11px;line-height:1.6; }
+#fileInput { display:none; }
+.filebox { margin-top:12px;border-radius:10px;background:#0a1220;border:1px solid var(--border);padding:12px; }
+.filetop { display:flex;gap:10px;align-items:center; }
+.fileicon { font-size:20px;color:var(--purple); }
+.filename { overflow-wrap:anywhere;font-size:12px;font-weight:600; }
+.filemeta { font-size:10px;color:var(--muted);margin-top:4px; }
+.btn {
+  border:1px solid var(--border);background:#1a2638;color:var(--text);
+  padding:10px 13px;border-radius:9px;font-size:12px;font-weight:600;transition:.15s;
+}
+.btn:hover:not(:disabled) { border-color:var(--cyan); }
+.btn.primary { background:linear-gradient(100deg,#4de4ff,#9c8bff);color:#07101c;border:0; }
+.btn.primary:hover:not(:disabled) { filter:brightness(1.08); }
+.btn.danger { color:var(--red); }
+.btn.full { width:100%;margin-top:12px; }
+.row { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+.presets { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px; }
+.preset { padding:12px 6px;border:1px solid var(--border);border-radius:9px;background:#0c1421;color:var(--muted);font-size:11px; }
+.preset:hover { color:var(--text);border-color:var(--purple); }
+.preset span { display:block;font-size:19px;margin-bottom:7px; }
+.control-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px; }
+.control { background:#0b1320;border:1px solid #202e43;padding:13px;border-radius:11px;min-width:0; }
+.control label { display:block;color:var(--muted);font-size:11px;margin-bottom:10px; }
+.control select { width:100%;background:#111d2e;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:10px;font-size:12px; }
+.value { float:right;color:var(--cyan);font:12px 'Space Mono',monospace; }
+input[type=range] { width:100%;accent-color:var(--cyan);cursor:pointer; }
+.style-buttons { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px; }
+.style-btn { padding:11px 4px;border-radius:8px;border:1px solid var(--border);background:#0b1320;color:var(--muted);font-size:11px; }
+.style-btn.active { border-color:var(--cyan);background:#112939;color:var(--cyan); }
+.transport { display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:16px; }
+.transport .btn { min-width:85px; }
+.beat-leds { display:flex;gap:5px;margin-left:auto; }
+.led { width:8px;height:8px;border-radius:50%;background:#263449; }
+.led.on { background:var(--cyan);box-shadow:0 0 10px #49e3ff88; }
+.track-list { display:grid;gap:9px; }
+.track {
+  display:grid;grid-template-columns:42px minmax(0,1fr) minmax(95px,.65fr) 35px;
+  align-items:center;gap:12px;padding:13px;border:1px solid var(--border);
+  border-radius:11px;background:#0a1220;
+}
+.track-icon { width:38px;height:38px;display:grid;place-items:center;border-radius:10px;font-size:19px;background:#18273b; }
+.track-name { font-size:12px;font-weight:700; }
+.track-sub { font-size:10px;color:var(--muted);margin-top:4px; }
+.track input[type=range] { min-width:0; }
+.mute { width:32px;height:30px;padding:0;border-radius:7px;border:1px solid var(--border);background:#152033;color:var(--muted); }
+.mute.off { color:var(--red);border-color:#703342; }
+.track.disabled { opacity:.5; }
+.export-panel { border-color:#30405b;background:linear-gradient(140deg,#142239,#101624); }
+.export-title { display:flex;align-items:center;gap:10px; }
+.export-title span { font-size:22px; }
+.export-title h3 { margin:0; }
+.export-options { display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin:15px 0; }
+.checkline { display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px; }
+.checkline input { accent-color:var(--cyan); }
+.progress { height:5px;border-radius:8px;background:#263349;overflow:hidden;margin-top:13px;display:none; }
+.progress > div { height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .2s; }
+.notice { margin-top:12px;padding:11px 12px;border-radius:9px;font-size:11px;line-height:1.6;display:none; }
+.notice.show { display:block; }
+.notice.info { background:#102337;color:#b7eaff;border:1px solid #234b62; }
+.notice.error { background:#321820;color:#ffc2cb;border:1px solid #703342; }
+.notice.success { background:#10291e;color:#b3ffd0;border:1px solid #28523e; }
+.analysis {
+  margin-top:14px;padding:13px;background:#0b1320;border:1px solid var(--border);
+  border-radius:10px;font-size:11px;color:var(--muted);line-height:1.7;
+}
+.analysis strong { color:var(--text); }
+footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:15px; }
+@media(max-width:850px) { .layout { grid-template-columns:1fr; } }
+@media(max-width:480px) {
+  .control-grid { grid-template-columns:1fr; }
+  .track { grid-template-columns:36px minmax(0,1fr) 78px 30px;gap:7px;padding:9px; }
+  .track-icon { width:33px;height:33px; }
+  .track-sub { font-size:9px; }
+  .style-buttons { grid-template-columns:repeat(2,1fr); }
+  .presets { grid-template-columns:repeat(3,1fr); }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">♫</div>
+    <div>
+      <h1>GROOVE<span style="color:var(--cyan)">MACHINE</span></h1>
+      <div class="subtitle">ATOMIC FORGE / SONG BUILDER</div>
+    </div>
+  </div>
+  <a class="back" href="../">← Atomic Forge</a>
+</header>
+
+<main>
+  <div class="intro">
+    <div>
+      <div class="eyebrow">Build the band around your riff</div>
+      <h2>Find your <span style="color:var(--cyan)">groove.</span></h2>
+      <p>Load a guitar idea, set the feel, and build a backing band. Play along with your original riff, then export the accompaniment on its own to practise offline.</p>
+    </div>
+    <div class="status"><span class="dot"></span><span id="statusText">Ready to create</span></div>
+  </div>
+
+  <div class="layout">
+    <aside>
+      <section class="panel">
+        <div class="panel-head">
+          <h3>01 / Your guitar idea</h3><span class="tag">AUDIO INPUT</span>
+        </div>
+
+        <label class="drop" id="dropZone" for="fileInput">
+          <div class="upload-icon">⇧</div>
+          <strong>Drop your riff here</strong>
+          <span>Or click to browse your Mac<br>MP3 · M4A · WAV · AIFF · WMA*</span>
+        </label>
+        <input id="fileInput" type="file" accept="audio/*,.mp3,.m4a,.wav,.aiff,.aif,.wma">
+
+        <div class="filebox" id="fileBox">
+          <div class="filetop">
+            <div class="fileicon">♫</div>
+            <div>
+              <div class="filename" id="fileName">No guitar file loaded</div>
+              <div class="filemeta" id="fileMeta">Your riff stays separate from the backing mix.</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="riffPlayBtn" disabled>▶ Play riff</button>
+            <button class="btn" id="riffStopBtn" disabled>■ Stop riff</button>
+            <button class="btn danger" id="clearFileBtn" disabled>Clear</button>
+          </div>
+        </div>
+
+        <div class="small" style="margin-top:12px">*WMA decoding depends on browser support. If it fails, convert the file to WAV, MP3, or M4A first.</div>
+
+        <div class="analysis" id="analysisBox">
+          <strong>Song analysis</strong><br>
+          No automatic musical analysis has been run. Choose a style and tempo, then audition the generated backing arrangement.
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>02 / Starting points</h3><span class="tag">QUICK START</span></div>
+        <div class="presets">
+          <button class="preset" data-preset="rock"><span>🥁</span>Rock</button>
+          <button class="preset" data-preset="funk"><span>🎸</span>Funk</button>
+          <button class="preset" data-preset="lofi"><span>🌙</span>Lo-fi</button>
+        </div>
+        <p class="small" style="margin:12px 0 0">Presets adjust the backing arrangement. They do not invent or analyse your guitar recording.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>03 / Arrangement</h3><span class="tag">MUSICAL SETUP</span></div>
+        <div class="control-grid">
+          <div class="control">
+            <label for="bpm">Tempo <span class="value" id="bpmValue">100 BPM</span></label>
+            <input id="bpm" type="range" min="55" max="180" value="100">
+          </div>
+          <div class="control">
+            <label for="keySelect">Root note</label>
+            <select id="keySelect">
+              <option>C</option><option>C#</option><option>D</option><option>D#</option>
+              <option>E</option><option>F</option><option>F#</option><option>G</option>
+              <option>G#</option><option>A</option><option>A#</option><option>B</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="feelSelect">Feel</label>
+            <select id="feelSelect">
+              <option value="straight">Straight</option>
+              <option value="shuffle">Shuffle / swung</option>
+              <option value="half">Half-time</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="barsSelect">Arrangement length</label>
+            <select id="barsSelect">
+              <option value="4">4 bars</option>
+              <option value="8" selected>8 bars</option>
+              <option value="16">16 bars</option>
+              <option value="32">32 bars</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:17px">
+          <label class="small" style="display:block;margin-bottom:10px">Style</label>
+          <div class="style-buttons">
+            <button class="style-btn active" data-style="rock">Rock</button>
+            <button class="style-btn" data-style="metal">Heavy</button>
+            <button class="style-btn" data-style="funk">Funk</button>
+            <button class="style-btn" data-style="lofi">Lo-fi</button>
+          </div>
+        </div>
+        <div class="transport">
+          <button class="btn primary" id="playBtn">▶ Play band</button>
+          <button class="btn" id="stopBtn">■ Stop</button>
+          <div class="beat-leds" aria-label="Beat indicator">
+            <span class="led"></span><span class="led"></span><span class="led"></span><span class="led"></span>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <div>
+      <section class="panel">
+        <div class="panel-head">
+          <h3>04 / Backing band mixer</h3><span class="tag">LIVE LEVELS</span>
+        </div>
+        <p class="small" style="margin-top:-5px;margin-bottom:15px">Mute or balance each instrument. Guitar input is not part of the backing export.</p>
+
+        <div class="track-list">
+          <div class="track" data-track="drums">
+            <div class="track-icon">🥁</div>
+            <div><div class="track-name">Drums</div><div class="track-sub">Kick · snare · hi-hat</div></div>
+            <input aria-label="Drum volume" type="range" min="0" max="100" value="78">
+            <button class="mute" title="Mute drums">M</button>
+          </div>
+          <div class="track" data-track="bass">
+            <div class="track-icon">🎸</div>
+            <div><div class="track-name">Bass</div><div class="track-sub">Sampled bass when available</div></div>
+            <input aria-label="Bass volume" type="range" min="0" max="100" value="72">
+            <button class="mute" title="Mute bass">M</button>
+          </div>
+          <div class="track" data-track="piano">
+            <div class="track-icon">🎹</div>
+            <div><div class="track-name">Keys / Piano</div><div class="track-sub">Chord accents</div></div>
+            <input aria-label="Piano volume" type="range" min="0" max="100" value="38">
+            <button class="mute" title="Mute piano">M</button>
+          </div>
+          <div class="track" data-track="strings">
+            <div class="track-icon">🎻</div>
+            <div><div class="track-name">Strings / Pad</div><div class="track-sub">Sustained harmonic layer</div></div>
+            <input aria-label="Strings volume" type="range" min="0" max="100" value="22">
+            <button class="mute" title="Mute strings">M</button>
+          </div>
+        </div>
+        <div class="notice info show" style="margin-top:14px">
+          Sampled piano, bass, and strings load from an online soundfont when available. Drum sounds are synthesized. An internet connection is needed to load the app's external libraries and instrument samples.
+        </div>
+      </section>
+
+      <section class="panel export-panel">
+        <div class="export-title"><span>⬇</span><div><h3>05 / Export backing track</h3><div class="small">Download an accompaniment-only MP3</div></div></div>
+        <div class="export-options">
+          <label class="checkline"><input type="checkbox" id="includeCount" checked> Include one-bar count-in</label>
+          <label class="checkline"><input type="checkbox" id="fadeOut" checked> Fade out at the end</label>
+          <span class="tag">MP3 · 192 KBPS</span>
+        </div>
+        <button class="btn primary full" id="exportBtn">⬇ Render & download backing MP3</button>
+        <div class="progress" id="progress"><div id="progressBar"></div></div>
+        <div class="notice" id="notice"></div>
+        <p class="small" style="margin:12px 0 0">Export runs in real time, recording the backing bus only. Keep this tab open until the download starts. The original riff is not mixed into the export.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>How this version works</h3><span class="tag">V1</span></div>
+        <div class="small">
+          <p>• Upload a riff for playback alongside the band.</p>
+          <p>• Choose a style, root note, tempo, feel, and length.</p>
+          <p>• Change the mixer levels and mute individual instruments.</p>
+          <p>• Render a separate accompaniment MP3 for offline practice.</p>
+          <p>• This version generates a repeating accompaniment pattern. It does not yet transcribe your riff, detect chords, or automatically compose a song structure from the uploaded audio.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>ATOMIC FORGE · GROOVEMACHINE<br>Keep creating. Keep playing.</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const fileInput = $("fileInput");
+  const dropZone = $("dropZone");
+  const bpmInput = $("bpm");
+  const keySelect = $("keySelect");
+  const styleButtons = [...document.querySelectorAll("[data-style]")];
+  const trackElements = [...document.querySelectorAll(".track")];
+
+  const state = {
+    style: "rock",
+    audioBuffer: null,
+    riffSource: null,
+    riffPlaying: false,
+    instruments: {},
+    muted: { drums:false, bass:false, piano:false, strings:false },
+    volumes: { drums:.78, bass:.72, piano:.38, strings:.22 },
+    started: false,
+    scheduleIds: [],
+    beatTimer: null,
+    exporting: false
+  };
+
+  let backingBus, recordDestination, synths = {};
+  let soundfontReady = false;
+  let audioContext = null;
+  let activeNotes = [];
+  let lastBeat = -1;
+
+  const midiRoot = {
+    "C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,
+    "F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11
+  };
+  const keyNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+  function setStatus(text) { $("statusText").textContent = text; }
+
+  function notify(message, type="info") {
+    const el = $("notice");
+    el.textContent = message;
+    el.className = "notice show " + type;
+  }
+
+  function hideNotice() {
+    $("notice").className = "notice";
+  }
+
+  function updateProgress(percent, visible=true) {
+    $("progress").style.display = visible ? "block" : "none";
+    $("progressBar").style.width = percent + "%";
+  }
+
+  function setAnalysis(html) { $("analysisBox").innerHTML = html; }
+
+  async function initAudio() {
+    if (state.started) {
+      await Tone.start();
+      return;
+    }
+
+    await Tone.start();
+    audioContext = Tone.context.rawContext;
+
+    backingBus = new Tone.Gain(0.85);
+    backingBus.toDestination();
+
+    // Only this bus is captured by the export recorder.
+    recordDestination = audioContext.createMediaStreamDestination();
+    backingBus.connect(recordDestination);
+
+    const drumsOut = new Tone.Gain(0.78).connect(backingBus);
+    const bassOut = new Tone.Gain(0.72).connect(backingBus);
+
+    synths.kick = new Tone.MembraneSynth({
+      pitchDecay:.025, octaves:5, oscillator:{type:"sine"},
+      envelope:{attack:.001,decay:.32,sustain:0,release:.05}
+    }).connect(drumsOut);
+
+    synths.snare = new Tone.NoiseSynth({
+      noise:{type:"white"},
+      envelope:{attack:.001,decay:.15,sustain:0}
+    }).connect(drumsOut);
+
+    synths.hat = new Tone.MetalSynth({
+      frequency:220, envelope:{attack:.001,decay:.045,release:.01},
+      harmonicity:5.1, modulationIndex:32, resonance:4000, octaves:1.5
+    }).connect(drumsOut);
+
+    synths.bass = new Tone.MonoSynth({
+      oscillator:{type:"sawtooth"},
+      filter:{Q:1,type:"lowpass",rolloff:-24},
+      envelope:{attack:.01,decay:.15,sustain:.5,release:.15},
+      filterEnvelope:{attack:.01,decay:.2,sustain:.25,release:.15,baseFrequency:90,octaves:2}
+    }).connect(bassOut);
+
+    synths.bass.volume.value = -7;
+    synths.kick.volume.value = -2;
+    synths.snare.volume.value = -9;
+    synths.hat.volume.value = -19;
+
+    state.started = true;
+    await loadSoundfonts();
+  }
+
+  async function loadSoundfonts() {
+    if (soundfontReady || !window.Soundfont) return;
+
+    const ctx = Tone.context.rawContext;
+    const instrumentNames = {
+      bass:"electric_bass_finger",
+      piano:"acoustic_grand_piano",
+      strings:"string_ensemble_1"
+    };
+
+    const results = await Promise.allSettled(
+      Object.entries(instrumentNames).map(async ([name, instrument]) => {
+        const inst = await Soundfont.instrument(ctx, instrument, {
+          soundfont:"FluidR3_GM",
+          destination:backingBus.input,
+          gain:1
+        });
+        state.instruments[name] = inst;
+        return name;
+      })
+    );
+
+    soundfontReady = true;
+    const loaded = results.filter(r => r.status === "fulfilled").length;
+    if (loaded) {
+      setAnalysis(
+        "<strong>Soundfont instruments ready</strong><br>" +
+        loaded + " of 3 sampled instruments loaded. Drum sounds use the built-in drum synthesizers. " +
+        "Set your arrangement below and press Play band."
+      );
+    } else {
+      setAnalysis(
+        "<strong>Synth fallback mode</strong><br>" +
+        "Sampled instruments could not be loaded. The backing arrangement will use the available synthesized sounds."
+      );
+    }
+  }
+
+  function applyVolumes() {
+    for (const track of trackElements) {
+      const name = track.dataset.track;
+      const slider = track.querySelector('input[type="range"]');
+      state.volumes[name] = Number(slider.value) / 100;
+      track.classList.toggle("disabled", state.muted[name]);
+    }
+
+    if (synths.kick) {
+      const drumGain = state.muted.drums ? 0 : state.volumes.drums;
+      // Keep the drum synths' individual balance while controlling the track.
+      for (const name of ["kick","snare","hat"]) {
+        synths[name].volume.value = name === "kick" ? -2 : name === "snare" ? -9 : -19;
+        synths[name].mute = state.muted.drums || drumGain === 0;
+      }
+    }
+    if (synths.bass) synths.bass.mute = state.muted.bass || state.volumes.bass === 0;
+
+    if (backingBus) {
+      // Sampled instruments share the backing bus, so use individual instrument gain
+      // where available; keep the bus master at a fixed level for clean capture.
+      for (const name of ["bass","piano","strings"]) {
+        const inst = state.instruments[name];
+        if (inst && inst.gain && typeof inst.gain.gain === "number") {
+          inst.gain.gain = state.muted[name] ? 0 : state.volumes[name];
+        }
+      }
+    }
+  }
+
+  function rootMidi() { return 48 + midiRoot[keySelect.value]; }
+
+  function noteName(midi) {
+    return Tone.Frequency(midi, "midi").toNote();
+  }
+
+  function chordNotes(root) {
+    const third = state.style === "funk" ? 3 : 4;
+    return [root, root + third, root + 7, root + 12];
+  }
+
+  function styleConfig() {
+    const styles = {
+      rock:{kick:[0,2],snare:[1,3],hat:[0,.5,1,1.5,2,2.5,3,3.5],bass:[0,1,2,3],chord:[0,2]},
+      metal:{kick:[0,1.5,2,2.75],snare:[1,3],hat:[0,.5,1,1.5,2,2.5,3,3.5],bass:[0,.5,1,1.5,2,2.5,3,3.5],chord:[0,2]},
+      funk:{kick:[0,1.5,2.5],snare:[1,3],hat:[0,.5,1,1.5,2,2.5,3,3.5],bass:[0,.75,1.5,2,2.75,3.5],chord:[.5,1.5,2.5,3.5]},
+      lofi:{kick:[0,2],snare:[1,3],hat:[0,1,2,3],bass:[0,2],chord:[0,2]}
+    };
+    return styles[state.style] || styles.rock;
+  }
+
+  function clearSchedule() {
+    state.scheduleIds.forEach(id => {
+      try { Tone.Transport.clear(id); } catch (_) {}
+    });
+    state.scheduleIds = [];
+    Tone.Transport.stop();
+    Tone.Transport.position = "0:0:0";
+    Tone.Transport.cancel(0);
+    if (state.beatTimer) clearInterval(state.beatTimer);
+    state.beatTimer = null;
+    document.querySelectorAll(".led").forEach(led => led.classList.remove("on"));
+    lastBeat = -1;
+  }
+
+  function playSoundfont(name, midi, time, duration, velocity=0.8) {
+    if (state.muted[name] || state.volumes[name] <= 0) return;
+    const instrument = state.instruments[name];
+
+    if (instrument && typeof instrument.play === "function") {
+      try {
+        const node = instrument.play(noteName(midi), time, {
+          duration,
+          gain:velocity * state.volumes[name]
+        });
+        if (node) activeNotes.push(node);
+        return;
+      } catch (e) {
+        console.warn("Soundfont note could not be played", e);
+      }
+    }
+
+    // Safe fallback if a sampled instrument did not load.
+    if (name === "bass" && synths.bass) {
+      synths.bass.triggerAttackRelease(noteName(midi), duration, time, velocity);
+    }
+  }
+
+  function scheduleArrangement() {
+    clearSchedule();
+    applyVolumes();
+
+    const bpm = Number(bpmInput.value);
+    Tone.Transport.bpm.value = bpm;
+    Tone.Transport.swing = $("feelSelect").value === "shuffle" ? 0.18 : 0;
+    Tone.Transport.timeSignature = 4;
+
+    const pattern = styleConfig();
+    const bars = Number($("barsSelect").value);
+    const beat = 60 / bpm;
+    const barLength = beat * 4;
+    const root = rootMidi();
+    const chord = chordNotes(root + 12);
+    const halfTime = $("feelSelect").value === "half";
+
+    const repeatId = Tone.Transport.scheduleRepeat((time) => {
+      const barNumber = Math.floor(Tone.Transport.position.split(":")[0] || 0);
+
+      for (const beatNo of pattern.kick) {
+        if (state.muted.drums) continue;
+        synths.kick.triggerAttackRelease(
+          state.style === "metal" ? "C1" : "C2",
+          "8n", time + beatNo * beat, 0.9
+        );
+      }
+
+      for (const beatNo of pattern.snare) {
+        if (state.muted.drums) continue;
+        const actualBeat = halfTime ? beatNo === 1 ? 2 : beatNo === 3 ? 3 : beatNo : beatNo;
+        synths.snare.triggerAttackRelease("16n", time + actualBeat * beat, 0.65);
+      }
+
+      for (const beatNo of pattern.hat) {
+        if (state.muted.drums) continue;
+        synths.hat.triggerAttackRelease("C6", "32n", time + beatNo * beat, 0.22);
+      }
+
+      for (let i = 0; i < pattern.bass.length; i++) {
+        const beatNo = pattern.bass[i];
+        const midi = root + (i % 4 === 2 ? 7 : 0);
+        playSoundfont("bass", midi, time + beatNo * beat, beat * .72, .8);
+      }
+
+      for (const beatNo of pattern.chord) {
+        const chordVelocity = state.style === "lofi" ? .34 : .48;
+        for (let i = 0; i < chord.length; i++) {
+          playSoundfont("piano", chord[i], time + beatNo * beat, beat * .6, chordVelocity);
+        }
+      }
+
+      if (barNumber % 2 === 0) {
+        for (const midi of chord) {
+          playSoundfont("strings", midi + 12, time, barLength * 1.8, .28);
+        }
+      }
+    }, "1m", 0);
+
+    state.scheduleIds.push(repeatId);
+    Tone.Transport.loop = true;
+    Tone.Transport.loopStart = 0;
+    Tone.Transport.loopEnd = bars + "m";
+  }
+
+  function startBeatLights() {
+    if (state.beatTimer) clearInterval(state.beatTimer);
+    const beatMs = 60000 / Number(bpmInput.value);
+    const leds = [...document.querySelectorAll(".led")];
+    let index = 0;
+    state.beatTimer = setInterval(() => {
+      leds.forEach((led, i) => led.classList.toggle("on", i === index));
+      index = (index + 1) % 4;
+    }, beatMs);
+  }
+
+  async function startBand() {
+    try {
+      await initAudio();
+      if (Tone.Transport.state === "started") {
+        Tone.Transport.pause();
+        setStatus("Band paused");
+        $("playBtn").textContent = "▶ Resume band";
+        if (state.beatTimer) clearInterval(state.beatTimer);
+        return;
+      }
+
+      scheduleArrangement();
+      await Tone.start();
+      Tone.Transport.start("+0.05");
+      startBeatLights();
+      setStatus("Backing band playing");
+      $("playBtn").textContent = "Ⅱ Pause band";
+    } catch (e) {
+      console.error(e);
+      notify("Audio could not start. Check your browser permissions and try again.", "error");
+    }
+  }
+
+  function stopBand() {
+    clearSchedule();
+    setStatus("Ready to create");
+    $("playBtn").textContent = "▶ Play band";
+  }
+
+  async function loadAudioFile(file) {
+    if (!file) return;
+    hideNotice();
+    setStatus("Loading guitar audio…");
+    $("fileName").textContent = file.name;
+    $("fileMeta").textContent = "Reading audio file…";
+
+    try {
+      await initAudio();
+      const arrayBuffer = await file.arrayBuffer();
+      const decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+
+      state.audioBuffer = decoded;
+      $("fileName").textContent = file.name;
+      $("fileMeta").textContent =
+        `${decoded.duration.toFixed(1)} seconds · ${decoded.numberOfChannels} channel(s) · ${Math.round(decoded.sampleRate / 1000)} kHz`;
+
+      $("riffPlayBtn").disabled = false;
+      $("riffStopBtn").disabled = false;
+      $("clearFileBtn").disabled = false;
+      setStatus("Guitar riff loaded");
+      setAnalysis(
+        "<strong>Guitar audio loaded</strong><br>" +
+        "Duration: " + decoded.duration.toFixed(1) + " seconds. " +
+        "The recording is ready for playback. Musical key, chords, and tempo are not automatically detected in this version."
+      );
+    } catch (e) {
+      console.error(e);
+      state.audioBuffer = null;
+      $("fileName").textContent = file.name;
+      $("fileMeta").textContent = "Could not decode this audio format.";
+      $("riffPlayBtn").disabled = true;
+      $("riffStopBtn").disabled = true;
+      $("clearFileBtn").disabled = false;
+      setStatus("Unsupported audio format");
+      notify("This browser could not decode that file. Try converting it to WAV, MP3, or M4A and upload it again.", "error");
+    }
+  }
+
+  function playRiff() {
+    if (!state.audioBuffer) return;
+    stopRiff();
+    try {
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      gain.gain.value = 0.9;
+      source.buffer = state.audioBuffer;
+      source.connect(gain);
+      // Riff goes to the speakers, not the backing recording bus.
+      gain.connect(audioContext.destination);
+      source.onended = () => {
+        if (state.riffSource === source) {
+          state.riffSource = null;
+          state.riffPlaying = false;
+        }
+      };
+      source.start();
+      state.riffSource = source;
+      state.riffPlaying = true;
+    } catch (e) {
+      console.error(e);
+      notify("Could not play the uploaded riff.", "error");
+    }
+  }
+
+  function stopRiff() {
+    if (state.riffSource) {
+      try { state.riffSource.stop(); } catch (_) {}
+      try { state.riffSource.disconnect(); } catch (_) {}
+    }
+    state.riffSource = null;
+    state.riffPlaying = false;
+  }
+
+  function clearFile() {
+    stopRiff();
+    state.audioBuffer = null;
+    fileInput.value = "";
+    $("fileName").textContent = "No guitar file loaded";
+    $("fileMeta").textContent = "Your riff stays separate from the backing mix.";
+    $("riffPlayBtn").disabled = true;
+    $("riffStopBtn").disabled = true;
+    $("clearFileBtn").disabled = true;
+    setStatus("Ready to create");
+    setAnalysis("<strong>Song analysis</strong><br>No guitar file loaded. The backing band can still be generated and exported.");
+  }
+
+  function setStyle(style) {
+    state.style = style;
+    styleButtons.forEach(button => button.classList.toggle("active", button.dataset.style === style));
+  }
+
+  function usePreset(preset) {
+    setStyle(preset);
+    const values = {rock:100,metal:125,funk:105,lofi:78};
+    bpmInput.value = values[preset] || 100;
+    $("bpmValue").textContent = bpmInput.value + " BPM";
+    keySelect.value = preset === "lofi" ? "A" : preset === "funk" ? "E" : "E";
+    if (Tone.Transport.state === "started") {
+      scheduleArrangement();
+      Tone.Transport.start("+0.05");
+      startBeatLights();
+    }
+  }
+
+  function updateTempo() {
+    $("bpmValue").textContent = bpmInput.value + " BPM";
+    if (Tone.Transport.state === "started") {
+      Tone.Transport.bpm.rampTo(Number(bpmInput.value), .08);
+      startBeatLights();
+    }
+  }
+
+  async function exportBacking() {
+    if (state.exporting) return;
+    hideNotice();
+
+    if (!window.MediaRecorder || !audioContext || !recordDestination) {
+      try { await initAudio(); }
+      catch (e) {
+        notify("Audio could not initialize. Try pressing Play band first, then export.", "error");
+        return;
+      }
+    }
+
+    if (!window.MediaRecorder || !window.lamejs) {
+      notify("This browser is missing a required recording or MP3 encoder feature. Try an up-to-date version of Chrome or Edge.", "error");
+      return;
+    }
+
+    if (Tone.Transport.state === "started") {
+      notify("Stop the live band before exporting so the render starts cleanly.", "info");
+      return;
+    }
+
+    state.exporting = true;
+    $("exportBtn").disabled = true;
+    $("exportBtn").textContent = "Rendering backing track…";
+    updateProgress(0);
+
+    let recorder, chunks = [];
+    try {
+      await initAudio();
+      applyVolumes();
+      scheduleArrangement();
+
+      const bpm = Number(bpmInput.value);
+      const bars = Number($("barsSelect").value);
+      const countIn = $("includeCount").checked ? 1 : 0;
+      const totalBars = bars + countIn;
+      const durationMs = totalBars * 4 * (60000 / bpm);
+      const fade = $("fadeOut").checked;
+
+      // Recorder taps the accompaniment-only bus. The uploaded riff is routed
+      // directly to the speaker output and is never connected to this bus.
+      recorder = new MediaRecorder(recordDestination.stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus" : ""
+      });
+
+      recorder.ondataavailable = event => {
+        if (event.data && event.data.size) chunks.push(event.data);
+      };
+
+      const startedAt = performance.now();
+      recorder.start(250);
+
+      // Optional count-in: one bar of kick/hat before the main arrangement.
+      if (countIn) {
+        const beat = 60 / bpm;
+        for (let i = 0; i < 4; i++) {
+          const when = Tone.now() + .12 + i * beat;
+          if (!state.muted.drums) {
+            synths.kick.triggerAttackRelease("C2", "8n", when, .55);
+            synths.hat.triggerAttackRelease("C6", "32n", when, .18);
+          }
+        }
+      }
+
+      Tone.Transport.start("+0.05");
+      startBeatLights();
+
+      const progressTimer = setInterval(() => {
+        const elapsed = performance.now() - startedAt;
+        const pct = Math.min(95, elapsed / durationMs * 100);
+        updateProgress(pct);
+      }, 200);
+
+      await new Promise(resolve => setTimeout(resolve, durationMs));
+      clearInterval(progressTimer);
+      clearSchedule();
+
+      // Brief tail lets the last sampled notes ring out.
+      await new Promise(resolve => setTimeout(resolve, 700));
+      recorder.stop();
+
+      await new Promise((resolve, reject) => {
+        recorder.onstop = resolve;
+        recorder.onerror = reject;
+      });
+
+      if (!chunks.length) throw new Error("No audio data was recorded.");
+
+      updateProgress(97);
+      const recordedBlob = new Blob(chunks, {type:recorder.mimeType || "audio/webm"});
+      const arrayBuffer = await recordedBlob.arrayBuffer();
+      const decoded = await audioContext.decodeAudioData(arrayBuffer);
+
+      // Convert the captured accompaniment to MP3 using lamejs.
+      const sampleRate = decoded.sampleRate;
+      const channels = Math.min(2, decoded.numberOfChannels);
+      const encoder = new lamejs.Mp3Encoder(channels, sampleRate, 192);
+      const left = decoded.getChannelData(0);
+      const right = channels > 1 ? decoded.getChannelData(1) : left;
+      const blockSize = 1152;
+      const mp3Chunks = [];
+
+      function toInt16(floatArray, start, end, fadeEnd) {
+        const result = new Int16Array(end - start);
+        for (let i = start; i < end; i++) {
+          let sample = floatArray[i];
+          if (fade && fadeEnd > 0) {
+            const fadeStart = Math.max(0, fadeEnd - sampleRate * 2);
+            if (i > fadeStart) sample *= Math.max(0, (fadeEnd - i) / (fadeEnd - fadeStart));
+          }
+          sample = Math.max(-1, Math.min(1, sample));
+          result[i - start] = sample < 0 ? sample * 32768 : sample * 32767;
+        }
+        return result;
+      }
+
+      for (let i = 0; i < left.length; i += blockSize) {
+        const end = Math.min(i + blockSize, left.length);
+        const l = toInt16(left, i, end, left.length);
+        const r = channels > 1 ? toInt16(right, i, end, right.length) : null;
+        const encoded = channels > 1 ? encoder.encodeBuffer(l, r) : encoder.encodeBuffer(l);
+        if (encoded.length) mp3Chunks.push(new Uint8Array(encoded));
+        if (i % (blockSize * 80) === 0) {
+          updateProgress(97 + 2 * i / left.length);
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+
+      const finalChunk = encoder.flush();
+      if (finalChunk.length) mp3Chunks.push(new Uint8Array(finalChunk));
+      const mp3 = new Blob(mp3Chunks, {type:"audio/mpeg"});
+      const url = URL.createObjectURL(mp3);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `GrooveMachine_${state.style}_${bpm}BPM_${keySelect.value}.mp3`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+      updateProgress(100);
+      notify("MP3 export complete. The file contains the generated backing band, not your uploaded guitar riff.", "success");
+      setStatus("Export complete");
+    } catch (e) {
+      console.error(e);
+      if (recorder && recorder.state !== "inactive") {
+        try { recorder.stop(); } catch (_) {}
+      }
+      clearSchedule();
+      notify("Export failed: " + (e.message || "the browser could not render or encode the recording.") +
+        " Try a shorter arrangement or use a recent Chrome/Edge browser.", "error");
+      updateProgress(0, false);
+      setStatus("Export failed");
+    } finally {
+      state.exporting = false;
+      $("exportBtn").disabled = false;
+      $("exportBtn").textContent = "⬇ Render & download backing MP3";
+      if (Tone.Transport.state === "started") clearSchedule();
+    }
+  }
+
+  fileInput.addEventListener("change", e => loadAudioFile(e.target.files[0]));
+  $("riffPlayBtn").addEventListener("click", async () => {
+    try { await initAudio(); playRiff(); } catch (e) { console.error(e); }
+  });
+  $("riffStopBtn").addEventListener("click", stopRiff);
+  $("clearFileBtn").addEventListener("click", clearFile);
+  $("playBtn").addEventListener("click", startBand);
+  $("stopBtn").addEventListener("click", stopBand);
+  $("exportBtn").addEventListener("click", exportBacking);
+  bpmInput.addEventListener("input", updateTempo);
+
+  styleButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      setStyle(button.dataset.style);
+      if (Tone.Transport.state === "started") {
+        scheduleArrangement();
+        Tone.Transport.start("+0.05");
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(button => {
+    button.addEventListener("click", () => usePreset(button.dataset.preset));
+  });
+
+  trackElements.forEach(track => {
+    const name = track.dataset.track;
+    track.querySelector('input[type="range"]').addEventListener("input", applyVolumes);
+    track.querySelector(".mute").addEventListener("click", event => {
+      state.muted[name] = !state.muted[name];
+      event.currentTarget.classList.toggle("off", state.muted[name]);
+      event.currentTarget.textContent = state.muted[name] ? "×" : "M";
+      applyVolumes();
+    });
+  });
+
+  $("barsSelect").addEventListener("change", () => {
+    if (Tone.Transport.state === "started") {
+      scheduleArrangement();
+      Tone.Transport.start("+0.05");
+    }
+  });
+
+  $("feelSelect").addEventListener("change", () => {
+    if (Tone.Transport.state === "started") {
+      scheduleArrangement();
+      Tone.Transport.start("+0.05");
+    }
+  });
+
+  keySelect.addEventListener("change", () => {
+    if (Tone.Transport.state === "started") {
+      scheduleArrangement();
+      Tone.Transport.start("+0.05");
+    }
+  });
+
+  dropZone.addEventListener("dragover", event => {
+    event.preventDefault();
+    dropZone.classList.add("drag");
+  });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+  dropZone.addEventListener("drop", event => {
+    event.preventDefault();
+    dropZone.classList.remove("drag");
+    const file = event.dataTransfer.files[0];
+    if (file) loadAudioFile(file);
+  });
+
+  window.addEventListener("beforeunload", () => {
+    stopRiff();
+    clearSchedule();
+  });
+})();
+</script>
+</body>
+</html>
+

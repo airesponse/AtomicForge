@@ -1,0 +1,5 @@
+.DS_Store
+.pnpm-store/
+_site/
+**/node_modules/
+**/dist/

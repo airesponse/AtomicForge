@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Chord Studio - Songwriter Progression Tool</title>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --card-bg: #1a1a1e;
+      --card-hover: #242429;
+      --accent: #f39c12;
+      --accent-glow: rgba(243, 156, 18, 0.2);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --border: #2c2c2e;
+      --danger: #ff453a;
+      --success: #30d158;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      max-width: 800px;
+      padding: 20px 0 16px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .main-container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-width: 130px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    select, button {
+      background: #2c2c2e;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      height: 42px;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    button.btn-accent {
+      background: var(--accent);
+      color: #000;
+      border: none;
+    }
+
+    button.btn-accent:active {
+      opacity: 0.8;
+    }
+
+    .toggle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #2c2c2e;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0 12px;
+      flex: 1;
+    }
+
+    .toggle-btn.active {
+      border-color: var(--success);
+      color: var(--success);
+      background: rgba(48, 209, 88, 0.12);
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #2c2c2e;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 0 14px;
+    }
+
+    .refresh-btn:active {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .progression-slots {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      min-height: 100px;
+      align-items: center;
+    }
+
+    .chord-slot {
+      min-width: 85px;
+      height: 90px;
+      background: #121214;
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--accent);
+      position: relative;
+      flex-shrink: 0;
+      transition: transform 0.1s ease, background-color 0.1s ease;
+      cursor: pointer;
+    }
+
+    .chord-slot.active {
+      border-style: solid;
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .chord-slot.playing {
+      background: var(--accent);
+      color: #000;
+      transform: scale(1.06);
+    }
+
+    .remove-chord {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 2px 6px;
+      height: auto;
+    }
+
+    .empty-msg {
+      color: var(--muted);
+      font-size: 0.9rem;
+      width: 100%;
+      text-align: center;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 12px;
+    }
+
+    .preset-card {
+      background: #121214;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .preset-card:hover, .preset-card:active {
+      border-color: var(--accent);
+      background: var(--card-hover);
+    }
+
+    .preset-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .preset-chords {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .preset-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .category-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 16px 0 8px;
+      grid-column: 1 / -1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .category-title:first-child {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🎸 Chord Studio</h1>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Builder & Synth Panel -->
+    <section class="panel">
+      <div class="panel-title">
+        <span>Progression Builder</span>
+        <span id="current-key-label" style="color: var(--accent); font-size: 0.85rem;">Key: C Major</span>
+      </div>
+
+      <!-- Instrument & Tempo Controls -->
+      <div class="controls-row">
+        <div class="input-group">
+          <label for="instrument-select">Sound Instrument</label>
+          <select id="instrument-select">
+            <optgroup label="Guitars & Keyboard">
+              <option value="acoustic">Acoustic Guitar (Picked)</option>
+              <option value="strummed">Strummed Acoustic Guitar</option>
+              <option value="electric">Electric Clean Guitar</option>
+              <option value="piano">8-Bit Piano</option>
+              <option value="doubled_piano" selected>Doubled Piano (Two-Handed)</option>
+              <option value="toy_piano">Toy Piano</option>
+            </optgroup>
+            <optgroup label="Orchestral & Strings">
+              <option value="violin">Violin</option>
+              <option value="viola">Viola</option>
+              <option value="cello">Cello</option>
+              <option value="bassoon">Bassoon</option>
+              <option value="strings">String Section</option>
+              <option value="orchestra">Full Orchestra</option>
+              <option value="pad">Warm Synth Pad</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="bpm-select">Tempo (BPM)</label>
+          <select id="bpm-select">
+            <option value="70">70 BPM (Slow)</option>
+            <option value="95" selected>95 BPM (Medium)</option>
+            <option value="120">120 BPM (Upbeat)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Root & Quality Selector -->
+      <div class="controls-row">
+        <div class="input-group">
+          <label for="root-select">Root Note</label>
+          <select id="root-select">
+            <option value="C" selected>C</option>
+            <option value="C#">C# / Db</option>
+            <option value="D">D</option>
+            <option value="D#">D# / Eb</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="F#">F# / Gb</option>
+            <option value="G">G</option>
+            <option value="G#">G# / Ab</option>
+            <option value="A">A</option>
+            <option value="A#">A# / Bb</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="quality-select">Quality</label>
+          <select id="quality-select">
+            <option value="maj">Major</option>
+            <option value="min">Minor</option>
+            <option value="7">Dom 7</option>
+            <option value="maj7">Maj 7</option>
+            <option value="m7">Min 7</option>
+            <option value="dim">Dim</option>
+            <option value="sus4">Sus4</option>
+          </select>
+        </div>
+
+        <button class="refresh-btn" id="sync-btn" title="Sync example progressions to current root">
+          🔄 Sync Presets
+        </button>
+
+        <button class="btn-accent" id="add-chord-btn">+ Add</button>
+      </div>
+
+      <!-- Progression Display Slots -->
+      <div class="progression-slots" id="slots-container"></div>
+
+      <!-- Action Controls -->
+      <div class="controls-row" style="margin-top: 16px; margin-bottom: 0;">
+        <button class="btn-accent" id="play-btn" style="flex: 2;">▶ Play Progression</button>
+        <button class="toggle-btn" id="loop-btn">🔁 Loop: OFF</button>
+        <button id="clear-btn" style="flex: 1; color: var(--danger);">Clear</button>
+      </div>
+    </section>
+
+    <!-- Presets List -->
+    <section class="panel">
+      <div class="panel-title">
+        <span>Songwriting Progressions (<span id="preset-root-display">Key: C</span>)</span>
+      </div>
+      <div class="presets-grid" id="presets-grid"></div>
+    </section>
+
+  </main>
+
+  <script>
+    const CHROMATIC_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    const NOTE_FREQS = {
+      'C2': 65.41, 'C#2': 69.30, 'D2': 73.42, 'D#2': 77.78, 'E2': 82.41, 'F2': 87.31, 'F#2': 92.50, 'G2': 98.00, 'G#2': 103.83, 'A2': 110.00, 'A#2': 116.54, 'B2': 123.47,
+      'C3': 130.81, 'C#3': 138.59, 'D3': 146.83, 'D#3': 155.56, 'E3': 164.81, 'F3': 174.61, 'F#3': 185.00, 'G3': 196.00, 'G#3': 207.65, 'A3': 220.00, 'A#3': 233.08, 'B3': 246.94,
+      'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13, 'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+      'C5': 523.25, 'C#5': 554.37, 'D5': 587.33, 'D#5': 622.25, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99
+    };
+
+    const CHORD_FORMULAS = {
+      'maj': [0, 4, 7],
+      'min': [0, 3, 7],
+      '7': [0, 4, 7, 10],
+      'maj7': [0, 4, 7, 11],
+      'm7': [0, 3, 7, 10],
+      'dim': [0, 3, 6],
+      'sus4': [0, 5, 7]
+    };
+
+    const PRESETS = [
+      { cat: "Essential Pop & Rock", name: "Pop Progression (I-V-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Let It Be, No Woman No Cry, Don't Stop Believin'" },
+      { cat: "Essential Pop & Rock", name: "Sensitive Female Pop (vi-IV-I-V)", numerals: ["vi", "IV", "I", "V"], desc: "Despacito, Grenade, Complicated" },
+      { cat: "Essential Pop & Rock", name: "Classic Rock (I-vi-IV-V)", numerals: ["I", "vi", "IV", "V"], desc: "Stand By Me, Every Breath You Take, Earth Angel" },
+      { cat: "Essential Pop & Rock", name: "3-Chord Rock (I-IV-V)", numerals: ["I", "IV", "V"], desc: "Wild Thing, Twist and Shout, Blitzkrieg Bop" },
+      { cat: "Essential Pop & Rock", name: "Doo-Wop / Ballad (I-vi-ii-V)", numerals: ["I", "vi", "ii", "V"], desc: "Heart and Soul, Blue Moon" },
+      { cat: "Essential Pop & Rock", name: "Acoustic Pop Verse (I-V-IV)", numerals: ["I", "V", "IV"], desc: "Sweet Home Alabama, Learning to Fly" },
+      { cat: "Essential Pop & Rock", name: "50s Rock n Roll (I-IV-I-V)", numerals: ["I", "IV", "I", "V"], desc: "Johnny B. Goode, Hound Dog" },
+      { cat: "Essential Pop & Rock", name: "Subdominant Lift (IV-I-V-vi)", numerals: ["IV", "I", "V", "vi"], desc: "Umbrella, Firework" },
+
+      { cat: "Blues, Soul & Funk", name: "12-Bar Blues (I7-IV7-V7)", numerals: ["I7", "IV7", "I7", "V7"], desc: "Pride and Joy, Crossroad Blues" },
+      { cat: "Blues, Soul & Funk", name: "Minor Blues (i-iv-V7)", numerals: ["i", "iv", "i", "V7"], desc: "The Thrill Is Gone, Black Magic Woman" },
+      { cat: "Blues, Soul & Funk", name: "Gospel Cadence (I-I7-IV-iv)", numerals: ["I", "I7", "IV", "iv"], desc: "In My Life, Georgia On My Mind" },
+      { cat: "Blues, Soul & Funk", name: "Andalusian Cadence (i-VII-VI-V)", numerals: ["i", "VII", "VI", "V"], desc: "Sultans of Swing, Smooth, Stray Cat Strut" },
+      { cat: "Blues, Soul & Funk", name: "Soul Turnaround (I-iii-IV-V)", numerals: ["I", "iii", "IV", "V"], desc: "Sitting on the Dock of the Bay" },
+
+      { cat: "Jazz & Modal Fusion", name: "Major ii-V-I", numerals: ["ii7", "V7", "Imaj7"], desc: "Autumn Leaves, Tune Up, All The Things You Are" },
+      { cat: "Jazz & Modal Fusion", name: "Minor ii-V-i", numerals: ["iim7b5", "V7", "im7"], desc: "Black Orpheus, Softly As In A Morning Sunrise" },
+      { cat: "Jazz & Modal Fusion", name: "Jazz Turnaround (I-vi-ii-V)", numerals: ["Imaj7", "vim7", "iim7", "V7"], desc: "Rhythm Changes, Ain't Misbehavin'" },
+      { cat: "Jazz & Modal Fusion", name: "Dorian Funk Vamp (i7-IV7)", numerals: ["im7", "IV7"], desc: "Oye Como Va, Chameleon, Breeze" },
+
+      { cat: "Modern & Cinematic", name: "Royal Road / J-Pop (IV-V-iii-vi)", numerals: ["IV", "V", "iii", "vi"], desc: "Anime themes, modern acoustic pop" },
+      { cat: "Modern & Cinematic", name: "Epic Hero (vi-VII-i)", numerals: ["vi", "VII", "i"], desc: "Hans Zimmer style, movie trailers" },
+      { cat: "Modern & Cinematic", name: "Lydian Float (I-II)", numerals: ["I", "II"], desc: "Dreams (Fleetwood Mac), Space Oddity" },
+      { cat: "Modern & Cinematic", name: "Sus4 Resolution (Isus4-I-V)", numerals: ["Isus4", "I", "V"], desc: "Pinball Wizard, Free Fallin'" },
+      { cat: "Modern & Cinematic", name: "Folk Pluck (I-V-vi-IV)", numerals: ["I", "V", "vi", "IV"], desc: "Dust in the Wind, Blackbird" },
+      { cat: "Modern & Cinematic", name: "Minor Plunge (i-bVI-bIII-bVII)", numerals: ["i", "bVI", "bIII", "bVII"], desc: "Wonderwall, Boulevard of Broken Dreams" },
+      { cat: "Modern & Cinematic", name: "Nostalgic Minor (i-bVII-bVI-bVII)", numerals: ["i", "bVII", "bVI", "bVII"], desc: "All Along the Watchtower, Stairway to Heaven" },
+      { cat: "Modern & Cinematic", name: "Sad Indie Vibe (i-IV-v)", numerals: ["i", "IV", "v"], desc: "Mad World, Radiohead style" }
+    ];
+
+    let currentProgression = ['C', 'G', 'Am', 'F'];
+    let selectedRoot = 'C';
+    let audioCtx = null;
+    let isPlaying = false;
+    let isLooping = false;
+    let playbackStepTimeout = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function getChordNotes(chordName, baseOctave = 3) {
+      let root = chordName.replace(/m7b5|maj7|sus4|dim|m7|7|m/g, '');
+      let quality = 'maj';
+      if (chordName.endsWith('m7b5')) quality = 'dim';
+      else if (chordName.endsWith('maj7')) quality = 'maj7';
+      else if (chordName.endsWith('m7')) quality = 'm7';
+      else if (chordName.endsWith('7')) quality = '7';
+      else if (chordName.endsWith('sus4')) quality = 'sus4';
+      else if (chordName.endsWith('dim')) quality = 'dim';
+      else if (chordName.endsWith('m')) quality = 'min';
+
+      const rootIdx = CHROMATIC_SCALE.indexOf(root);
+      const intervals = CHORD_FORMULAS[quality] || [0, 4, 7];
+
+      return intervals.map(semitone => {
+        const index = (rootIdx + semitone) % 12;
+        const octave = baseOctave + Math.floor((rootIdx + semitone) / 12);
+        const noteName = CHROMATIC_SCALE[index] + octave;
+        return NOTE_FREQS[noteName] || 261.63;
+      });
+    }
+
+    function playChordSynth(frequencies, duration = 1.2) {
+      initAudio();
+      const inst = document.getElementById('instrument-select').value;
+
+      let activeFrequencies = [...frequencies];
+      if (inst === 'doubled_piano') {
+        const bassFreq = frequencies[0] / 2;
+        activeFrequencies = [bassFreq, ...frequencies];
+      }
+
+      activeFrequencies.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+        let delay = 0;
+
+        let oscType = 'sawtooth';
+        let filterFreq = null;
+        let filterType = 'lowpass';
+        let attack = 0.02;
+        let decay = duration;
+
+        switch (inst) {
+          case 'acoustic':
+            oscType = 'triangle';
+            delay = idx * 0.02;
+            attack = 0.02;
+            decay = duration;
+            break;
+          case 'strummed':
+            oscType = 'triangle';
+            delay = idx * 0.045;
+            attack = 0.02;
+            decay = duration * 1.1;
+            break;
+          case 'electric':
+            oscType = 'sine';
+            attack = 0.01;
+            decay = duration * 0.8;
+            break;
+          case 'piano':
+            oscType = 'square';
+            attack = 0.01;
+            decay = duration * 0.7;
+            break;
+          case 'doubled_piano':
+            oscType = 'triangle';
+            attack = 0.01;
+            decay = duration * 0.9;
+            break;
+          case 'toy_piano':
+            oscType = 'sine';
+            attack = 0.01;
+            decay = 0.5;
+            break;
+          case 'cello':
+            oscType = 'sawtooth';
+            filterFreq = 450;
+            attack = 0.2;
+            decay = duration;
+            break;
+          case 'viola':
+            oscType = 'sawtooth';
+            filterFreq = 800;
+            attack = 0.15;
+            decay = duration;
+            break;
+          case 'violin':
+            oscType = 'sawtooth';
+            filterFreq = 1600;
+            attack = 0.12;
+            decay = duration;
+            break;
+          case 'bassoon':
+            oscType = 'sawtooth';
+            filterFreq = 500;
+            filterType = 'bandpass';
+            attack = 0.1;
+            decay = duration;
+            break;
+          case 'strings':
+            oscType = 'sawtooth';
+            filterFreq = 1200;
+            attack = 0.25;
+            decay = duration * 1.1;
+            break;
+          case 'orchestra':
+            oscType = 'sawtooth';
+            filterFreq = 1800;
+            attack = 0.2;
+            decay = duration * 1.1;
+            break;
+          case 'pad':
+          default:
+            oscType = 'sawtooth';
+            filterFreq = 1000;
+            attack = 0.3;
+            decay = duration;
+            break;
+        }
+
+        osc.type = oscType;
+        osc.frequency.setValueAtTime(freq, now + delay);
+
+        gain.gain.setValueAtTime(0.0001, now + delay);
+        gain.gain.linearRampToValueAtTime(0.15 / activeFrequencies.length, now + delay + attack);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + decay);
+
+        if (filterFreq) {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = filterType;
+          filter.frequency.setValueAtTime(filterFreq, now + delay);
+          osc.connect(filter);
+          filter.connect(gain);
+        } else {
+          osc.connect(gain);
+        }
+
+        gain.connect(audioCtx.destination);
+        osc.start(now + delay);
+        osc.stop(now + delay + decay + 0.1);
+      });
+    }
+
+    function numeralToChord(numeral, rootNote) {
+      const rootIndex = CHROMATIC_SCALE.indexOf(rootNote);
+      let semitones = 0;
+      let quality = 'maj';
+
+      if (numeral.includes('bVI')) { semitones = 8; quality = 'maj'; }
+      else if (numeral.includes('bVII')) { semitones = 10; quality = 'maj'; }
+      else if (numeral.includes('bIII')) { semitones = 3; quality = 'maj'; }
+      else if (numeral.includes('iim7b5')) { semitones = 2; quality = 'm7'; }
+      else if (numeral.startsWith('Imaj7')) { semitones = 0; quality = 'maj7'; }
+      else if (numeral.startsWith('Isus4')) { semitones = 0; quality = 'sus4'; }
+      else if (numeral.startsWith('I7')) { semitones = 0; quality = '7'; }
+      else if (numeral.startsWith('I')) { semitones = 0; quality = 'maj'; }
+      else if (numeral.startsWith('im7')) { semitones = 0; quality = 'm7'; }
+      else if (numeral.startsWith('i')) { semitones = 0; quality = 'min'; }
+      else if (numeral.startsWith('iim7')) { semitones = 2; quality = 'm7'; }
+      else if (numeral.startsWith('ii')) { semitones = 2; quality = 'min'; }
+      else if (numeral.startsWith('iii')) { semitones = 4; quality = 'min'; }
+      else if (numeral.startsWith('IV7')) { semitones = 5; quality = '7'; }
+      else if (numeral.startsWith('IV')) { semitones = 5; quality = 'maj'; }
+      else if (numeral.startsWith('iv')) { semitones = 5; quality = 'min'; }
+      else if (numeral.startsWith('V7')) { semitones = 7; quality = '7'; }
+      else if (numeral.startsWith('V')) { semitones = 7; quality = 'maj'; }
+      else if (numeral.startsWith('v')) { semitones = 7; quality = 'min'; }
+      else if (numeral.startsWith('vim7')) { semitones = 9; quality = 'm7'; }
+      else if (numeral.startsWith('vi')) { semitones = 9; quality = 'min'; }
+      else if (numeral.startsWith('VI')) { semitones = 8; quality = 'maj'; }
+      else if (numeral.startsWith('VII')) { semitones = 11; quality = 'maj'; }
+
+      const note = CHROMATIC_SCALE[(rootIndex + semitones) % 12];
+      const suffix = quality === 'maj' ? '' : (quality === 'min' ? 'm' : quality);
+      return note + suffix;
+    }
+
+    function renderSlots() {
+      const container = document.getElementById('slots-container');
+      container.innerHTML = '';
+
+      if (currentProgression.length === 0) {
+        container.innerHTML = `<div class="empty-msg">No chords added yet. Tap "+ Add" or select a preset below!</div>`;
+        return;
+      }
+
+      currentProgression.forEach((chord, index) => {
+        const slot = document.createElement('div');
+        slot.className = 'chord-slot active';
+        slot.id = `slot-${index}`;
+        slot.innerHTML = `
+          ${chord}
+          <button class="remove-chord" onclick="removeChord(event, ${index})">✕</button>
+        `;
+        slot.onclick = (e) => {
+          if (!e.target.classList.contains('remove-chord')) {
+            playChordSynth(getChordNotes(chord));
+          }
+        };
+        container.appendChild(slot);
+      });
+    }
+
+    function renderPresets() {
+      const grid = document.getElementById('presets-grid');
+      grid.innerHTML = '';
+      let currentCat = '';
+
+      PRESETS.forEach(p => {
+        if (p.cat !== currentCat) {
+          currentCat = p.cat;
+          const catTitle = document.createElement('div');
+          catTitle.className = 'category-title';
+          catTitle.innerText = currentCat;
+          grid.appendChild(catTitle);
+        }
+
+        const chords = p.numerals.map(num => numeralToChord(num, selectedRoot));
+        const card = document.createElement('div');
+        card.className = 'preset-card';
+        card.onclick = () => {
+          currentProgression = [...chords];
+          renderSlots();
+          stopPlayback();
+          startPlayback();
+        };
+
+        card.innerHTML = `
+          <div class="preset-name">${p.name}</div>
+          <div class="preset-chords">${chords.join(' – ')}</div>
+          <div class="preset-desc">${p.desc}</div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('preset-root-display').innerText = `Key: ${selectedRoot}`;
+      document.getElementById('current-key-label').innerText = `Key: ${selectedRoot}`;
+    }
+
+    function removeChord(event, index) {
+      event.stopPropagation();
+      currentProgression.splice(index, 1);
+      renderSlots();
+    }
+
+    function stopPlayback() {
+      isPlaying = false;
+      if (playbackStepTimeout) clearTimeout(playbackStepTimeout);
+      document.querySelectorAll('.chord-slot').forEach(s => s.classList.remove('playing'));
+      document.getElementById('play-btn').innerText = '▶ Play Progression';
+    }
+
+    function startPlayback() {
+      if (currentProgression.length === 0) return;
+      isPlaying = true;
+      document.getElementById('play-btn').innerText = '⏹ Stop';
+
+      let stepIndex = 0;
+
+      const playStep = () => {
+        if (!isPlaying || currentProgression.length === 0) {
+          stopPlayback();
+          return;
+        }
+
+        document.querySelectorAll('.chord-slot').forEach(s => s.classList.remove('playing'));
+
+        const slot = document.getElementById(`slot-${stepIndex}`);
+        if (slot) slot.classList.add('playing');
+
+        const bpm = parseInt(document.getElementById('bpm-select').value, 10);
+        const stepDuration = (60 / bpm) * 1000;
+
+        const freqs = getChordNotes(currentProgression[stepIndex]);
+        playChordSynth(freqs, stepDuration / 1000);
+
+        stepIndex++;
+
+        if (stepIndex >= currentProgression.length) {
+          if (isLooping) {
+            stepIndex = 0;
+            playbackStepTimeout = setTimeout(playStep, stepDuration);
+          } else {
+            playbackStepTimeout = setTimeout(() => {
+              stopPlayback();
+            }, stepDuration);
+          }
+        } else {
+          playbackStepTimeout = setTimeout(playStep, stepDuration);
+        }
+      };
+
+      playStep();
+    }
+
+    // Event Listeners
+    document.getElementById('sync-btn').onclick = () => {
+      selectedRoot = document.getElementById('root-select').value;
+      renderPresets();
+    };
+
+    document.getElementById('add-chord-btn').onclick = () => {
+      const root = document.getElementById('root-select').value;
+      const q = document.getElementById('quality-select').value;
+      const suffix = q === 'maj' ? '' : (q === 'min' ? 'm' : q);
+      const newChord = root + suffix;
+      currentProgression.push(newChord);
+      renderSlots();
+      playChordSynth(getChordNotes(newChord));
+    };
+
+    document.getElementById('clear-btn').onclick = () => {
+      stopPlayback();
+      currentProgression = [];
+      renderSlots();
+    };
+
+    document.getElementById('play-btn').onclick = () => {
+      if (isPlaying) {
+        stopPlayback();
+      } else {
+        startPlayback();
+      }
+    };
+
+    document.getElementById('loop-btn').onclick = () => {
+      isLooping = !isLooping;
+      const loopBtn = document.getElementById('loop-btn');
+      if (isLooping) {
+        loopBtn.classList.add('active');
+        loopBtn.innerText = '🔁 Loop: ON';
+      } else {
+        loopBtn.classList.remove('active');
+        loopBtn.innerText = '🔁 Loop: OFF';
+      }
+    };
+
+    // Init
+    renderSlots();
+    renderPresets();
+  </script>
+</body>
+</html>
