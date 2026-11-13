@@ -374,6 +374,14 @@
     .root-stepper { display:flex; align-items:center; gap:4px; }
     .root-step-btn { min-height:36px; padding:6px 9px; }
     .root-selector .popup-menu { min-width:72px; }
+    .chord-builder { position:relative; }
+    .chord-builder-popup { width:min(440px,calc(100vw - 32px)); max-height:min(70vh,560px); padding:12px; gap:10px; }
+    .chord-builder-section { display:flex; flex-direction:column; gap:5px; }
+    .chord-builder-heading { color:var(--text-muted); font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .chord-builder-options { display:flex; flex-wrap:wrap; gap:5px; }
+    .chord-builder-options .btn-toggle { padding:5px 8px; }
+    .chord-builder-options .btn-toggle.active { background:var(--accent-primary); border-color:var(--accent-primary); color:#fff; }
+    .chord-builder-help { color:var(--text-muted); font-size:10px; line-height:1.4; }
     .theory-board-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
     .progression-player { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 10px; background:var(--panel-bg); border:1px solid var(--panel-border); border-radius:8px; }
     .progression-player .ctrl-item { gap:6px; }
@@ -965,7 +973,69 @@
         </div>
         <button class="btn btn-secondary root-step-btn" id="devKeyNextBtn" aria-label="Next key"><i class="fa-solid fa-chevron-right"></i></button>
       </div>
-      <div class="ctrl-item"><select id="devMode" aria-label="Chord mode"><option value="major">Major</option><option value="minor">Natural minor</option></select></div>
+      <div class="ctrl-item chord-builder">
+        <button class="btn-toggle" id="devChordTypeBtn" aria-haspopup="true" aria-expanded="false">Chord: Major 7 <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i></button>
+        <div class="popup-menu chord-builder-popup" id="devChordBuilderPopup" role="group" aria-label="Custom chord builder">
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Progression key mode</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle active" data-chord-group="mode" data-chord-value="major">Major key</button>
+              <button type="button" class="btn-toggle" data-chord-group="mode" data-chord-value="minor">Minor key</button>
+            </div>
+          </div>
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Root alteration</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle" data-chord-group="root" data-chord-value="-1">♭ Root</button>
+              <button type="button" class="btn-toggle active" data-chord-group="root" data-chord-value="0">Natural</button>
+              <button type="button" class="btn-toggle" data-chord-group="root" data-chord-value="1">♯ Root</button>
+            </div>
+          </div>
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Chord quality</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle active" data-chord-group="quality" data-chord-value="major">Major</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="minor">Minor</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="diminished">Diminished</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="augmented">Augmented</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="sus2">Sus2</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="sus4">Sus4</button>
+              <button type="button" class="btn-toggle" data-chord-group="quality" data-chord-value="power">Power (5)</button>
+            </div>
+          </div>
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Seventh</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle active" data-chord-group="seventh" data-chord-value="none">None</button>
+              <button type="button" class="btn-toggle" data-chord-group="seventh" data-chord-value="maj7">Maj7</button>
+              <button type="button" class="btn-toggle" data-chord-group="seventh" data-chord-value="7">7</button>
+              <button type="button" class="btn-toggle" data-chord-group="seventh" data-chord-value="dim7">Dim7</button>
+            </div>
+          </div>
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Add tones (select any)</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle" data-chord-add="6">6</button>
+              <button type="button" class="btn-toggle" data-chord-add="9">9</button>
+              <button type="button" class="btn-toggle" data-chord-add="11">11</button>
+              <button type="button" class="btn-toggle" data-chord-add="13">13</button>
+            </div>
+          </div>
+          <div class="chord-builder-section">
+            <div class="chord-builder-heading">Alterations (select any)</div>
+            <div class="chord-builder-options">
+              <button type="button" class="btn-toggle" data-chord-add="b5">♭5</button>
+              <button type="button" class="btn-toggle" data-chord-add="#5">♯5</button>
+              <button type="button" class="btn-toggle" data-chord-add="b9">♭9</button>
+              <button type="button" class="btn-toggle" data-chord-add="#9">♯9</button>
+              <button type="button" class="btn-toggle" data-chord-add="#11">♯11</button>
+              <button type="button" class="btn-toggle" data-chord-add="b13">♭13</button>
+            </div>
+          </div>
+          <div class="chord-builder-help">Changes apply to the selected progression chord. Close this menu to select another chord card.</div>
+          <button type="button" class="btn btn-secondary" id="devChordBuilderDoneBtn">Done</button>
+        </div>
+      </div>
       <div class="ctrl-item"><label for="devSize">Chord structure:</label><select id="devSize"><option value="3">Triads</option><option value="4" selected>7th chords</option><option value="5">9th chords</option></select></div>
       <div class="ctrl-item"><label for="devChordCount">Chords:</label><select id="devChordCount"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
       <div class="ctrl-item"><label for="devProgression">Progression:</label><select id="devProgression">
@@ -989,7 +1059,7 @@
         <div class="theory-legend">
           <span><i class="theory-dot" style="background:#ef4444"></i> Root</span><span><i class="theory-dot" style="background:#22c55e"></i> 3rd</span>
           <span><i class="theory-dot" style="background:#f97316"></i> 5th</span><span><i class="theory-dot" style="background:#a855f7"></i> 7th</span>
-          <span><i class="theory-dot" style="background:#06b6d4"></i> 9th</span>
+          <span><i class="theory-dot" style="background:#06b6d4"></i> Extensions</span>
         </div>
         <div class="theory-board-controls">
           <div class="toggle-group" role="group" aria-label="Fretboard view">
@@ -2174,6 +2244,7 @@
 
     function closeAllPopups() {
       document.querySelectorAll('.popup-menu').forEach(menu => menu.classList.remove('show'));
+      document.getElementById('devChordTypeBtn')?.setAttribute('aria-expanded','false');
     }
 
     function setupPopups() {
@@ -2504,27 +2575,37 @@
       '1456':[1,5,6,4], '251':[2,5,1], '1645':[1,6,4,5], '1625':[1,6,2,5],
       '1b63b7':[1,-6,-3,-7], 'modal':[1,-7,1,-7]
     };
-    let devTonic=7, devSelected=0, devCustom=[1];
+    let devTonic=7, devSelected=0, devCustom=[1], devMode='major';
+    const devChordOverrides=new Map();
     let devView='full', devPositionIndex=0, devExcludeOpenStrings=false;
     let devLoopOn=false, devPlaybackTimer=null;
     const DEV_POSITIONS=[0,2,4,5,7,9,12];
     const devCanvas=document.getElementById('devCanvas'), devCtx=devCanvas.getContext('2d');
+    const DEV_QUALITIES={
+      major:{third:4,fifth:7,suffix:''}, minor:{third:3,fifth:7,suffix:'m'},
+      diminished:{third:3,fifth:6,suffix:'dim'}, augmented:{third:4,fifth:8,suffix:'aug'},
+      sus2:{third:2,fifth:7,suffix:'sus2'}, sus4:{third:5,fifth:7,suffix:'sus4'},
+      power:{third:null,fifth:7,suffix:'5'}
+    };
+    const DEV_SEVENTHS={none:null,maj7:11,'7':10,dim7:9};
+    const DEV_TONES={'6':9,'9':14,'11':17,'13':21,b5:6,'#5':8,b9:13,'#9':15,'#11':18,b13:20};
+    const DEV_TONE_LABELS={'6':'6','9':'9','11':'11','13':'13',b5:'♭5','#5':'♯5',b9:'♭9','#9':'♯9','#11':'♯11',b13:'♭13'};
+    const DEV_TONE_ORDER=['6','9','11','13','b5','#5','b9','#9','#11','b13'];
     function initTheorySelects(){
       setupRootSelector('devKey',()=>devTonic,pc=>{devTonic=pc;devSelected=0;devPositionIndex=0;updateChordDevelopment();});
       setupRootSelector('scaleRoot',()=>scaleRootPc,pc=>{scaleRootPc=pc;updateScaleExplorer();});
     }
     function devDegrees(){
-      const minor=document.getElementById('devMode').value==='minor';
-      return minor?[0,2,3,5,7,8,10]:MAJOR_SCALE;
+      return devMode==='minor'?[0,2,3,5,7,8,10]:MAJOR_SCALE;
     }
     function devRoman(degree,minor){
       const names=minor?['i','ii°','III','iv','v','VI','VII']:['I','ii','iii','IV','V','vi','vii°'];
       const numeral=names[(Math.abs(degree)-1)%7]||'I';
       return degree<0?'♭'+numeral:numeral;
     }
-    function devChordAt(degree){
+    function diatonicDevChordAt(degree){
       const size=Number(document.getElementById('devSize').value);
-      const minor=document.getElementById('devMode').value==='minor';
+      const minor=devMode==='minor';
       const scale=devDegrees(), d=(Math.abs(degree)-1)%7, root=(devTonic+scale[d]+(degree<0?11:0))%12;
       const ints=[];
       for(let j=0;j<size;j++){
@@ -2539,6 +2620,77 @@
       if(size===5) ext+='(9)';
       const roman=devRoman(degree,minor);
       return {degree,root,intervals,roman,symbol:spelled(root)+suffix+ext,quality,minor};
+    }
+    function inferChordBuilderConfig(chord,size=Number(document.getElementById('devSize').value)){
+      const quality=({'0,4,7':'major','0,3,7':'minor','0,3,6':'diminished','0,4,8':'augmented'})[chord.quality]||'major';
+      const seventh=size>=4?({11:'maj7',10:'7',9:'dim7'})[chord.intervals[3]]||'none':'none';
+      return {rootShift:0,quality,seventh,tones:size>=5?['9']:[],mode:devMode};
+    }
+    function customChordAt(chord,config){
+      const quality=DEV_QUALITIES[config.quality]||DEV_QUALITIES.major;
+      const root=(chord.root+Number(config.rootShift||0)+12)%12;
+      const intervals=[0],labels=['R'];
+      if(quality.third!==null){intervals.push(quality.third);labels.push(quality.third===3?'♭3':quality.third===2?'2':quality.third===5?'4':'3');}
+      const fifthTone=config.tones.includes('b5')?6:config.tones.includes('#5')?8:quality.fifth;
+      intervals.push(fifthTone);labels.push(fifthTone===6?'♭5':fifthTone===8?'♯5':'5');
+      const seventh=DEV_SEVENTHS[config.seventh];
+      if(seventh!==null&&seventh!==undefined){intervals.push(seventh);labels.push(config.seventh==='maj7'?'Maj7':config.seventh==='dim7'?'dim7':'♭7');}
+      const toneOrder=DEV_TONE_ORDER.filter(tone=>config.tones.includes(tone));
+      toneOrder.forEach(tone=>{
+        if(tone==='b5'||tone==='#5')return;
+        intervals.push(DEV_TONES[tone]);labels.push(DEV_TONE_LABELS[tone]);
+      });
+      const intervalColors=labels.map(label=>{
+        if(label==='R')return '#ef4444';
+        if(['3','♭3','2','4'].includes(label))return '#22c55e';
+        if(['5','♭5','♯5'].includes(label))return '#f97316';
+        if(['Maj7','♭7','dim7'].includes(label))return '#a855f7';
+        return '#06b6d4';
+      });
+      const rootName=config.rootShift<0?SPELL_FLAT[root]:config.rootShift>0?SPELL_SHARP[root]:spelled(chord.root);
+      let suffix=quality.suffix;
+      if(config.quality==='power'&&config.seventh!=='none'){
+        suffix=config.seventh==='maj7'?'maj7(no3)':config.seventh==='7'?'7(no3)':'dim7(no3)';
+      }else if(config.seventh==='maj7')suffix+=config.quality==='minor'?'Maj7':'maj7';
+      else if(config.seventh==='7')suffix=config.quality==='diminished'?'m7♭5':`${suffix}7`;
+      else if(config.seventh==='dim7')suffix=config.quality==='diminished'?'dim7':`${suffix}dim7`;
+      const addedExtensions=toneOrder.filter(tone=>['6','9','11','13'].includes(tone));
+      const alterations=toneOrder.filter(tone=>['b5','#5','b9','#9','#11','b13'].includes(tone));
+      if(addedExtensions.length){
+        const extText=addedExtensions.join(',');
+        suffix+=config.seventh==='none'?(addedExtensions.length===1&&addedExtensions[0]==='6'?'6':`add${extText}`):`(${extText})`;
+      }
+      if(alterations.length)suffix+=`(${alterations.map(tone=>DEV_TONE_LABELS[tone]).join(',')})`;
+      return {...chord,root,intervals,intervalLabels:labels,intervalColors,symbol:rootName+suffix,quality:intervals.slice(0,3).join(',')};
+    }
+    function devChordAt(degree,index){
+      const chord=diatonicDevChordAt(degree),config=devChordOverrides.get(index);
+      return config?customChordAt(chord,config):chord;
+    }
+    function activeChordBuilderConfig(degree,index){
+      return devChordOverrides.get(index)||inferChordBuilderConfig(diatonicDevChordAt(degree));
+    }
+    function renderChordBuilder(config){
+      document.querySelectorAll('#devChordBuilderPopup [data-chord-group]').forEach(button=>{
+        const group=button.dataset.chordGroup;
+        const current=group==='mode'?(config.mode||devMode):config[group];
+        const selected=button.dataset.chordValue===String(current);
+        button.classList.toggle('active',selected);
+        button.setAttribute('aria-pressed',String(selected));
+      });
+      document.querySelectorAll('#devChordBuilderPopup [data-chord-add]').forEach(button=>{
+        const selected=config.tones.includes(button.dataset.chordAdd);
+        button.classList.toggle('active',selected);
+        button.setAttribute('aria-pressed',String(selected));
+      });
+      const qualityNames={major:'Major',minor:'Minor',diminished:'Diminished',augmented:'Augmented',sus2:'Sus2',sus4:'Sus4',power:'Power'};
+      const seventhNames={none:'',maj7:'Maj7','7':'7',dim7:'dim7'};
+      const additions=DEV_TONE_ORDER.filter(tone=>config.tones.includes(tone)).map(tone=>DEV_TONE_LABELS[tone]);
+      const rootName=config.rootShift<0?'♭':config.rootShift>0?'♯':'';
+      const parts=[`${rootName}${qualityNames[config.quality]||'Major'}`,seventhNames[config.seventh],...additions].filter(Boolean);
+      const button=document.getElementById('devChordTypeBtn');
+      button.innerHTML=`Chord: ${parts.join(' ')} <i class="fa-solid fa-chevron-down" style="font-size:9px;"></i>`;
+      button.setAttribute('aria-expanded',String(document.getElementById('devChordBuilderPopup').classList.contains('show')));
     }
     function currentDevDegrees(){
       const key=document.getElementById('devProgression').value;
@@ -2555,21 +2707,23 @@
       document.getElementById('devAddChordBtn').disabled=devCustom.length>=Number(document.getElementById('devChordCount').value);
       document.getElementById('devRemoveChordBtn').disabled=devCustom.length<=1;
       prog.forEach((degree,i)=>{
-        const chord=devChordAt(degree), card=document.createElement('button');
+        const chord=devChordAt(degree,i), card=document.createElement('button');
         card.className='dev-degree'+(i===devSelected?' active':'');
         card.innerHTML=`<strong>${chord.roman} · ${chord.symbol}</strong><small>Chord ${i+1} of ${prog.length} · ${chord.intervals.length} tones</small>`;
         card.addEventListener('click',()=>{devSelected=i;updateChordDevelopment();});
         container.appendChild(card);
       });
-      const chord=devChordAt(prog[devSelected]||1);
+      const chord=devChordAt(prog[devSelected]||1,devSelected);
       document.getElementById('devChordTitle').textContent=chord.symbol;
-      const next=devChordAt(prog[(devSelected+1)%prog.length]||1);
+      const nextIndex=(devSelected+1)%prog.length;
+      const next=devChordAt(prog[nextIndex]||1,nextIndex);
       const common=chord.intervals.map(v=>(chord.root+v)%12).filter(pc=>next.intervals.some(v=>(next.root+v)%12===pc)).map(spelled);
       const functionText=chord.degree===1?'Tonic: establishes or returns to the tonal centre.':
         [2,7].includes(Math.abs(chord.degree))?'Predominant or predominant-function area: creates forward motion toward dominant harmony.':
         Math.abs(chord.degree)===5?'Dominant: creates strong tension and typically resolves to tonic.':
         'Pre-dominant, tonic-substitute or colour function depends on context, voicing and phrase position.';
       document.getElementById('devAnalysis').textContent=`${chord.roman} (${chord.symbol}) · ${functionText} Next chord: ${next.symbol}. Common tones retained: ${common.length?common.join(', '):'none in this pitch-class voicing'}. Try keeping common tones in the same voice and moving other voices by the smallest interval.`;
+      renderChordBuilder(activeChordBuilderConfig(prog[devSelected]||1,devSelected));
       updateRootSelector('devKey',devTonic);
       document.getElementById('devFullBtn').classList.toggle('active',devView==='full');
       document.getElementById('devSingleBtn').classList.toggle('active',devView==='single');
@@ -2581,7 +2735,7 @@
       const startFret=DEV_POSITIONS[devPositionIndex];
       document.getElementById('devSwapBtn').setAttribute('aria-label',`Swap chord position, currently frets ${startFret} to ${Math.min(15,startFret+4)}`);
       renderTheoryBoard(devCanvas,devCtx,chord.root,chord.intervals,'chord',{
-        singlePosition:devView==='single',startFret,excludeOpenStrings:devExcludeOpenStrings
+        singlePosition:devView==='single',startFret,excludeOpenStrings:devExcludeOpenStrings,labels:chord.intervalLabels,colors:chord.intervalColors
       });
     }
     function renderTheoryBoard(canvas,ctx,root,intervals,kind,options={}){
@@ -2610,17 +2764,47 @@
         const pc=(TUNING[s]+f)%12, idx=intervals.findIndex(v=>v%12===((pc-root+12)%12));
         if(idx<0)continue;
         const x=f===0?mx-18:mx+(f-.5)*fw,y=my+s*ss;
-        ctx.fillStyle=palette[Math.min(idx,palette.length-1)];ctx.beginPath();ctx.arc(x,y,13,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=options.colors?.[idx]||palette[Math.min(idx,palette.length-1)];ctx.beginPath();ctx.arc(x,y,13,0,Math.PI*2);ctx.fill();
         ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.5;ctx.stroke();
-        const labels=kind==='chord'?['R','3','5','7','9']:['1','2','3','4','5','6','7','8'];
+        const labels=options.labels||(kind==='chord'?['R','3','5','7','9']:['1','2','3','4','5','6','7','8']);
         ctx.fillStyle='#fff';ctx.font='700 10px Inter';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(kind==='scale'?(scaleDisplay==='note'?spelled(pc):(SCALE_LIBRARY[document.getElementById('scaleType').value].formula.split(' ')[idx]||String(idx+1))):(state.labelMode==='note'?spelled(pc):(labels[idx]||String(idx+1))),x,y);
       }
     }
     document.getElementById('devAddChordBtn').addEventListener('click',()=>{if(devCustom.length<Number(document.getElementById('devChordCount').value)){devCustom.push(Number(document.getElementById('devAddDegree').value));devSelected=devCustom.length-1;updateChordDevelopment();}});
-    document.getElementById('devRemoveChordBtn').addEventListener('click',()=>{if(devCustom.length>1){devCustom.pop();devSelected=Math.min(devSelected,devCustom.length-1);updateChordDevelopment();}});
-    ['devMode','devSize','devProgression'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
+    document.getElementById('devRemoveChordBtn').addEventListener('click',()=>{if(devCustom.length>1){devChordOverrides.delete(devCustom.length-1);devCustom.pop();devSelected=Math.min(devSelected,devCustom.length-1);updateChordDevelopment();}});
+    ['devSize','devProgression'].forEach(id=>document.getElementById(id).addEventListener('change',e=>{
       devSelected=0;updateChordDevelopment();
     }));
+    document.getElementById('devChordTypeBtn').addEventListener('click',event=>{
+      togglePopup(event,'devChordBuilderPopup');
+      event.currentTarget.setAttribute('aria-expanded',String(document.getElementById('devChordBuilderPopup').classList.contains('show')));
+    });
+    document.getElementById('devChordBuilderDoneBtn').addEventListener('click',event=>{
+      event.stopPropagation();
+      document.getElementById('devChordBuilderPopup').classList.remove('show');
+      document.getElementById('devChordTypeBtn').setAttribute('aria-expanded','false');
+    });
+    document.getElementById('devChordBuilderPopup').addEventListener('click',event=>{
+      event.stopPropagation();
+      const option=event.target.closest('button[data-chord-group],button[data-chord-add]');
+      if(!option)return;
+      const progression=currentDevDegrees(),degree=progression[devSelected]||1;
+      const config={...activeChordBuilderConfig(degree,devSelected),tones:[...activeChordBuilderConfig(degree,devSelected).tones]};
+      if(option.dataset.chordGroup){
+        const group=option.dataset.chordGroup,value=option.dataset.chordValue;
+        if(group==='mode')devMode=value;
+        else if(group==='root')config.rootShift=Number(value);
+        else config[group]=value;
+      }else{
+        const tone=option.dataset.chordAdd;
+        config.tones=config.tones.includes(tone)?config.tones.filter(item=>item!==tone):[...config.tones,tone];
+        if(tone==='b5')config.tones=config.tones.filter(item=>item!=='#5');
+        if(tone==='#5')config.tones=config.tones.filter(item=>item!=='b5');
+      }
+      const {mode,...chordConfig}=config;
+      devChordOverrides.set(devSelected,chordConfig);
+      updateChordDevelopment();
+    });
     document.getElementById('devChordCount').addEventListener('change',e=>{
       const count=Number(e.target.value);
       if(devCustom.length>count)devCustom=devCustom.slice(0,count);
@@ -2933,7 +3117,7 @@
           const progression=currentDevDegrees();
           const start=audioCtx.currentTime+0.05;
           progression.forEach((degree,index)=>{
-            const chord=devChordAt(degree);
+            const chord=devChordAt(degree,index);
             const chordStart=start+index*duration;
             const rootMidi=48+chord.root;
             chord.intervals.forEach(interval=>{
