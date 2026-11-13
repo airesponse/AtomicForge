@@ -36,12 +36,15 @@
     .home-logo-link{display:block;flex:0 0 58px;border-radius:15px}
     .home-logo-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     .hero h1{margin:0;font-size:clamp(24px,3.8vw,42px);line-height:1.12;letter-spacing:-.04em}
+    .visualizer-container{position:relative;z-index:1;width:100%;height:60px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,42,.6);box-shadow:inset 0 0 20px #000c;overflow:hidden}
+    .visualizer-canvas{display:block;width:100%;height:100%}
     @media(max-width:600px){.hero-title{gap:10px}.home-logo,.home-logo-link{width:46px;height:46px;flex-basis:46px}.home-logo{border-radius:12px}.home-logo-link{border-radius:12px}.hero h1{font-size:clamp(21px,6vw,32px)}}
   </style>
 </head>
 <body>
 <div class="shell">
   <section class="hero"><div><div class="hero-title"><a class="home-logo-link" href="index.html" aria-label="Return to Atomic Forge"><img class="home-logo" src="AtomicForgeIcon.png" alt="Atomic Forge"></a><h1>The Atomic StormWorks Chord Wheel</h1></div><p>Turn the wheel to line up a key with its diatonic chords. Major and relative minor keys stay paired while the chord layer shows each scale degree and its harmonic role.</p></div><div class="hero-note"><strong>Diatonic chord map</strong><br>The green I slice connects the rings. I, IV and V sit inside; ii, iii and vi are highlighted on the minor-key ring, with vii° beside V.</div></section>
+  <div class="visualizer-container"><canvas id="wheelAudioCanvas" class="visualizer-canvas" aria-hidden="true"></canvas></div>
   <section class="controls" aria-label="Chord wheel settings">
     <div class="key-picker" aria-label="Home key">
       <button class="key-step" id="keyPrev" type="button" aria-label="Previous key">‹</button>
@@ -83,6 +86,9 @@
   <footer class="footer">Atomic Forge · Chord Wheel · Progressions and settings stay in this browser.</footer>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+(()=>{const canvas=document.getElementById('wheelAudioCanvas'),ctx=canvas.getContext('2d'),reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');let width=0,height=0,frame=0;function draw(time){if(!width||!height)return;ctx.clearRect(0,0,width,height);ctx.beginPath();ctx.lineWidth=2;ctx.strokeStyle='#38bdf8';const centerY=height/2,phase=time*.003;for(let x=0;x<width;x++){const y=centerY+Math.sin(x*.01+phase)*3;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}function animate(time){draw(time);frame=requestAnimationFrame(animate)}function resize(){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;width=rect.width;height=rect.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw(reducedMotion.matches?0:performance.now())}function motionChange(){cancelAnimationFrame(frame);frame=0;draw(reducedMotion.matches?0:performance.now());if(!reducedMotion.matches)frame=requestAnimationFrame(animate)}window.addEventListener('resize',resize);if(reducedMotion.addEventListener)reducedMotion.addEventListener('change',motionChange);else reducedMotion.addListener(motionChange);resize();if(!reducedMotion.matches)frame=requestAnimationFrame(animate)})();
+</script>
 <script>
 (()=>{'use strict';
 const FIFTHS=['C','G','D','A','E','B','F♯','D♭','A♭','E♭','B♭','F'];
