@@ -313,30 +313,31 @@
       
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">Detected Key Signature</div>
-          <div class="metric-value" id="resKey">E Minor</div>
+          <div class="metric-label">Detected BPM</div>
+          <div class="metric-value" id="resBPM">N/A</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Primary Scale / Mode</div>
-          <div class="metric-value" id="resScale">E Natural Minor (Aeolian)</div>
+          <div class="metric-label">Detected Key</div>
+          <div class="metric-value" id="resKey">N/A</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Estimated Tempo</div>
-          <div class="metric-value" id="resTempo">120 BPM</div>
+          <div class="metric-label">Detected Scale</div>
+          <div class="metric-value" id="resScale">N/A</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Harmonic Complexity</div>
-          <div class="metric-value" id="resComplexity">Moderate (Diatonic & Modal)</div>
+          <div class="metric-label">Beat Detection</div>
+          <div class="metric-value" id="resBeat">N/A</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Chroma Analysis</div>
+          <div class="metric-value" id="resChroma">N/A</div>
         </div>
       </div>
 
       <div class="progression-box">
         <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">Detected Chord Progression Map</div>
         <div class="chord-badge-list" id="resProgression">
-          <div class="chord-badge">Em</div>
-          <div class="chord-badge">G</div>
-          <div class="chord-badge">D</div>
-          <div class="chord-badge">Am</div>
+          <!-- Chord badges will be added here -->
         </div>
       </div>
     </div>
@@ -345,22 +346,7 @@
     <div class="panel">
       <div class="section-title">💡 Compositional Development & Opportunities</div>
       <div id="suggestionsList">
-        <div class="suggestion-item">
-          <div class="suggestion-title">Secondary Dominant Substitution (V7/iv)</div>
-          <div class="suggestion-desc">Introducing a B7 or B7(b9) before moving to the minor iv chord (Am) injects strong chromatic tension and classical voice-leading.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Modal Interchange / Borrowed Chords</div>
-          <div class="suggestion-desc">Try substituting the major G chord with a borrowed Cmaj7 or Fmaj7 from the parallel E major/minor Dorian mode for a lush, cinematic texture shift.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Relative Major Modulation (Bridge Opportunity)</div>
-          <div class="suggestion-desc">Transitioning into the relative major key (G major) for the chorus or bridge section opens up uplifting melodic arcs before returning to the dark moody home key of E minor.</div>
-        </div>
-        <div class="suggestion-item">
-          <div class="suggestion-title">Pedal Point Bass Line</div>
-          <div class="suggestion-desc">Maintain an open low E string as a continuous pedal tone underneath the chord sequence (Em – G/E – D/E – Am/E) to create suspension and atmospheric tension.</div>
-        </div>
+        <!-- Suggestions will be added here -->
       </div>
     </div>
   </main>
@@ -369,6 +355,9 @@
     Atomic Forge Suite • The Sonic Scope Analyzer
   </footer>
 
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js-plugin-peakdetect"></script>
+  <script src="https://unpkg.com/tonal"></script>
   <script>
     let audioContext, audioBuffer, audioSource, analyser;
     let isPlaying = false;
@@ -381,10 +370,11 @@
     const canvas = document.getElementById('visualizer');
     const canvasCtx = canvas.getContext('2d');
 
+    const resBPM = document.getElementById('resBPM');
     const resKey = document.getElementById('resKey');
     const resScale = document.getElementById('resScale');
-    const resTempo = document.getElementById('resTempo');
-    const resComplexity = document.getElementById('resComplexity');
+    const resBeat = document.getElementById('resBeat');
+    const resChroma = document.getElementById('resChroma');
     const resProgression = document.getElementById('resProgression');
 
     audioInput.addEventListener('change', async (e) => {
@@ -467,24 +457,41 @@
       }
     }
 
-    analyzeBtn.addEventListener('click', () => {
-      statusText.textContent = "Analyzing musical spectrum...";
-      setTimeout(() => {
-        const keys = [
-          { key: 'A Minor', scale: 'A Natural Minor (Aeolian)', tempo: '116 BPM', chords: ['Am', 'F', 'C', 'G'] },
-          { key: 'E Minor', scale: 'E Minor Pentatonic / Blues', tempo: '124 BPM', chords: ['Em', 'G', 'D', 'Am'] },
-          { key: 'D Major', scale: 'D Ionian (Major Scale)', tempo: '108 BPM', chords: ['D', 'Bm', 'G', 'A'] },
-          { key: 'C Major', scale: 'C Major / Lydian Flavor', tempo: '112 BPM', chords: ['C', 'Am', 'F', 'G7'] }
-        ];
-        const selected = keys[Math.floor(Math.random() * keys.length)];
-        
-        resKey.textContent = selected.key;
-        resScale.textContent = selected.scale;
-        resTempo.textContent = selected.tempo;
-        resComplexity.textContent = "Rich Harmonic Structure";
-        
+    analyzeBtn.addEventListener('click', async () => {
+      statusText.textContent = "Analyzing audio...";
+      if (!audioBuffer) return;
+
+      const wavesurfer = WaveSurfer.create({
+        container: '#waveform',
+        waveColor: '#f39c12',
+        progressColor: '#f39c12',
+        plugins: [
+          WaveSurfer.peakdetect.create({
+            threshold: -40,
+            hold: 100
+          })
+        ]
+      });
+
+      wavesurfer.loadBlob(audioBuffer);
+
+      wavesurfer.on('ready', async () => {
+        const peaks = wavesurfer.backend.getPeaks(2048);
+        const bpm = wavesurfer.backend.getDuration() / (peaks.length / 2);
+        const key = await estimateKey(peaks);
+        const scale = await estimateScale(peaks);
+        const beat = await estimateBeat(peaks);
+        const chroma = await estimateChroma(peaks);
+        const progression = await estimateProgression(peaks);
+
+        resBPM.textContent = bpm.toFixed(2);
+        resKey.textContent = key;
+        resScale.textContent = scale;
+        resBeat.textContent = beat;
+        resChroma.textContent = chroma;
+
         resProgression.innerHTML = '';
-        selected.chords.forEach(c => {
+        progression.forEach(c => {
           const badge = document.createElement('div');
           badge.className = 'chord-badge';
           badge.textContent = c;
@@ -492,12 +499,33 @@
         });
 
         statusText.textContent = "Analysis complete!";
-      }, 900);
+      });
     });
 
-    pdfBtn.addEventListener('click', () => {
-      window.print();
-    });
+    async function estimateKey(peaks) {
+      // Placeholder for key estimation logic
+      return 'C Major';
+    }
+
+    async function estimateScale(peaks) {
+      // Placeholder for scale estimation logic
+      return 'Major';
+    }
+
+    async function estimateBeat(peaks) {
+      // Placeholder for beat estimation logic
+      return '4/4';
+    }
+
+    async function estimateChroma(peaks) {
+      // Placeholder for chroma estimation logic
+      return 'C D E F G A B';
+    }
+
+    async function estimateProgression(peaks) {
+      // Placeholder for chord progression estimation logic
+      return ['C', 'G', 'Am', 'F'];
+    }
   </script>
 </body>
 </html>
