@@ -355,9 +355,6 @@
     Atomic Forge Suite • The Sonic Scope Analyzer
   </footer>
 
-  <script src="https://unpkg.com/wavesurfer.js"></script>
-  <script src="https://unpkg.com/wavesurfer.js-plugin-peakdetect"></script>
-  <script src="https://unpkg.com/tonal"></script>
   <script>
     let audioContext, audioBuffer, audioSource, analyser;
     let isPlaying = false;
@@ -457,75 +454,9 @@
       }
     }
 
-    analyzeBtn.addEventListener('click', async () => {
-      statusText.textContent = "Analyzing audio...";
-      if (!audioBuffer) return;
-
-      const wavesurfer = WaveSurfer.create({
-        container: '#waveform',
-        waveColor: '#f39c12',
-        progressColor: '#f39c12',
-        plugins: [
-          WaveSurfer.peakdetect.create({
-            threshold: -40,
-            hold: 100
-          })
-        ]
-      });
-
-      wavesurfer.loadBlob(audioBuffer);
-
-      wavesurfer.on('ready', async () => {
-        const peaks = wavesurfer.backend.getPeaks(2048);
-        const bpm = wavesurfer.backend.getDuration() / (peaks.length / 2);
-        const key = await estimateKey(peaks);
-        const scale = await estimateScale(peaks);
-        const beat = await estimateBeat(peaks);
-        const chroma = await estimateChroma(peaks);
-        const progression = await estimateProgression(peaks);
-
-        resBPM.textContent = bpm.toFixed(2);
-        resKey.textContent = key;
-        resScale.textContent = scale;
-        resBeat.textContent = beat;
-        resChroma.textContent = chroma;
-
-        resProgression.innerHTML = '';
-        progression.forEach(c => {
-          const badge = document.createElement('div');
-          badge.className = 'chord-badge';
-          badge.textContent = c;
-          resProgression.appendChild(badge);
-        });
-
-        statusText.textContent = "Analysis complete!";
-      });
+    analyzeBtn.addEventListener('click', () => {
+      statusText.textContent = "Real audio analysis is not yet implemented. The analysis engine is being developed.";
     });
-
-    async function estimateKey(peaks) {
-      // Placeholder for key estimation logic
-      return 'C Major';
-    }
-
-    async function estimateScale(peaks) {
-      // Placeholder for scale estimation logic
-      return 'Major';
-    }
-
-    async function estimateBeat(peaks) {
-      // Placeholder for beat estimation logic
-      return '4/4';
-    }
-
-    async function estimateChroma(peaks) {
-      // Placeholder for chroma estimation logic
-      return 'C D E F G A B';
-    }
-
-    async function estimateProgression(peaks) {
-      // Placeholder for chord progression estimation logic
-      return ['C', 'G', 'Am', 'F'];
-    }
   </script>
 </body>
 </html>
