@@ -34,6 +34,12 @@
         .fret-line { stroke: #3f3f46; stroke-width: 2; }
         .string-line { stroke: #a1a1aa; }
     </style>
+  <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
+  <style>
+    .atomic-forge-mark { display: block; flex: none; object-fit: contain; border-radius: 22%; }
+    .atomic-forge-home { display: inline-block; flex: none; border-radius: 22%; }
+  </style>
 </head>
 <body class="bg-chorddark-900 text-gray-100 font-sans min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
@@ -41,9 +47,7 @@
     <header class="bg-chorddark-800 border-b border-chorddark-700 sticky top-0 z-50 no-print backdrop-blur-md bg-opacity-90">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="bg-gradient-to-tr from-brand-600 to-sky-400 p-2 rounded-xl text-white shadow-lg shadow-sky-500/20">
-                    <i class="fa-solid fa-guitar text-xl"></i>
-                </div>
+                <a class="atomic-forge-home" href="index.html" aria-label="Back to Atomic Forge"><img class="atomic-forge-mark" src="atomic-forge-logo.png" width="36" height="36" alt=""></a>
                 <div>
                     <h1 class="font-black text-lg tracking-wider text-white">CHORD!<span class="text-brand-400 text-xs ml-1 px-2 py-0.5 bg-brand-900/40 rounded-full border border-brand-500/30">PRO ENGINE</span></h1>
                     <p class="text-[10px] text-gray-400">AtomicForge Suite &bull; Inspired by Thomas Grapperon</p>

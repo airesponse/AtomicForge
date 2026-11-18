@@ -231,12 +231,19 @@
             .fretboard-container { height: calc(100svh - 58px); padding: 3px; }
         }
     </style>
+  <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
+  <style>
+    .atomic-forge-mark { display: block; flex: none; object-fit: contain; border-radius: 22%; }
+    .atomic-forge-home { display: inline-block; flex: none; border-radius: 22%; }
+  </style>
 </head>
 <body>
     <div class="orientation-prompt" role="status" aria-live="polite">Turn your iPhone sideways to use Fretboard Art.</div>
 
     <!-- Controls -->
     <div class="toolbar">
+            <a class="atomic-forge-home" href="index.html" aria-label="Back to Atomic Forge"><img class="atomic-forge-mark" src="atomic-forge-logo.png" width="32" height="32" alt=""></a>
         <div class="color-palette">
             <div class="color-btn btn-red active" data-color="#ff3b30"></div>
             <div class="color-btn btn-blue" data-color="#007aff"></div>
