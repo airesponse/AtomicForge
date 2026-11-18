@@ -66,11 +66,18 @@ footer{padding:2px 2px 12px}
  .key.black{flex-basis:22px;margin-left:-11px;margin-right:-11px}
 }
 </style>
+  <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
+  <style>
+    .atomic-forge-mark { display: block; flex: none; object-fit: contain; border-radius: 22%; }
+    .atomic-forge-home { display: inline-block; flex: none; border-radius: 22%; }
+    .atomic-forge-title { display: flex; align-items: center; gap: .45em; }
+  </style>
 </head>
 <body>
 <header>
   <div>
-    <h1>🎸 Atomic Forge · Note Studio</h1>
+    <h1 class="atomic-forge-title"><a class="atomic-forge-home" href="index.html" aria-label="Back to Atomic Forge"><img class="atomic-forge-mark" src="atomic-forge-logo.png" width="36" height="36" alt=""></a> Atomic Forge · Note Studio</h1>
     <p>Hear it. Notate it. Drag notes. Edit rhythm.</p>
   </div>
   <div class="muted">Browser-based music sketchpad</div>
