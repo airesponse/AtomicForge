@@ -296,7 +296,7 @@
   <main>
     <!-- Audio Import Panel -->
     <div class="panel">
-      <div class="upload-zone" id="dropZone" onclick="document.getElementById('audioInput').click();">
+      <div class="upload-zone" id="dropZone" role="button" tabindex="0" aria-label="Choose or drop an audio file">
         <div style="font-size: 2rem; margin-bottom: 8px;">🎵</div>
         <div style="font-weight: 600; font-size: 1rem;">Click or Drag Audio File to Analyze</div>
         <div style="font-size: 0.85rem; color: var(--muted); margin-top: 4px;">Supports M4A, MP3, WAV, AAC</div>
@@ -305,12 +305,13 @@
 
       <div class="controls-row">
         <button class="btn" id="playBtn" disabled>▶ Play Audio</button>
-        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Run Harmonic Analysis</button>
-        <button class="btn btn-secondary" id="pdfBtn">📄 Export Report (PDF)</button>
+        <button class="btn btn-secondary" id="stopBtn" disabled>■ Stop</button>
+        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Run Harmonic Analysis — Coming Soon</button>
+        <button class="btn btn-secondary" id="pdfBtn" disabled title="Available after harmonic analysis is implemented">📄 Export Report (PDF) — Coming Soon</button>
         <span id="statusText" style="font-size: 0.85rem; color: var(--muted); margin-left: auto;">No audio loaded</span>
       </div>
 
-      <canvas id="visualizer"></canvas>
+      <canvas id="visualizer" aria-label="Live audio frequency visualizer"></canvas>
     </div>
 
     <!-- Harmonic Analysis Report Section -->
@@ -362,167 +363,240 @@
   </footer>
 
   <script>
-    let audioContext, audioBuffer, audioSource, analyser;
+    'use strict';
+
+    // Milestone 1: reliable audio playback. Harmonic analysis and PDF export
+    // remain disabled until real analysis results are available.
+    let audioContext = null;
+    let audioBuffer = null;
+    let audioSource = null;
+    let analyser = null;
     let isPlaying = false;
     let isPaused = false;
-    let playbackPosition = 0; // in samples
-    let playbackStartTime = 0; // in seconds (relative to audioContext time)
+    let playbackOffset = 0; // seconds into the current file
+    let playbackStartTime = 0; // AudioContext time corresponding to offset
+    let animationId = null;
+    let loadGeneration = 0;
 
     const audioInput = document.getElementById('audioInput');
+    const dropZone = document.getElementById('dropZone');
     const playBtn = document.getElementById('playBtn');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const pdfBtn = document.getElementById('pdfBtn');
+    const stopBtn = document.getElementById('stopBtn');
     const statusText = document.getElementById('statusText');
     const canvas = document.getElementById('visualizer');
     const canvasCtx = canvas.getContext('2d');
 
-    const resBPM = document.getElementById('resBPM');
-    const resKey = document.getElementById('resKey');
-    const resScale = document.getElementById('resScale');
-    const resBeat = document.getElementById('resBeat');
-    const resChroma = document.getElementById('resChroma');
-    const resProgression = document.getElementById('resProgression');
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
 
-    audioInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    function updateControls() {
+      playBtn.disabled = !audioBuffer;
+      stopBtn.disabled = !audioBuffer || (!isPlaying && !isPaused);
+      playBtn.textContent = isPlaying ? '⏸ Pause Audio' : isPaused ? '▶ Resume Audio' : '▶ Play Audio';
+    }
 
-      statusText.textContent = "Loading audio...";
-      const arrayBuffer = await file.arrayBuffer();
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      audioContext.decodeAudioData(arrayBuffer, (buffer) => {
-        audioBuffer = buffer;
-        playBtn.disabled = false;
-        analyzeBtn.disabled = false;
-        pdfBtn.disabled = false;
-        statusText.textContent = `Loaded (${Math.round(buffer.duration * 1000)}ms)`;
-      }, () => {
-        statusText.textContent = "Error decoding audio file.";
-      });
-    });
-
-    playBtn.addEventListener('click', () => {
-      if (isPlaying) {
-        pauseAudio();
-      } else if (isPaused) {
-        resumeAudio();
-      } else {
-        startAudio();
+    function resetAnalysisDisplay() {
+      for (const id of ['resBPM', 'resKey', 'resScale', 'resBeat', 'resChroma']) {
+        document.getElementById(id).textContent = 'N/A';
       }
+      document.getElementById('resProgression').replaceChildren();
+      document.getElementById('suggestionsList').replaceChildren();
+    }
+
+    function stopVisualizer() {
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+    }
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      if (!isPlaying) stopVisualizer();
     });
+    resizeCanvas();
 
-    function startAudio() {
-      if (!audioBuffer) return;
-      
-      // Create context and source once
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
-      audioSource = audioContext.createBufferSource();
-      audioSource.buffer = audioBuffer;
-      
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      
-      audioSource.connect(analyser);
-      analyser.connect(audioContext.destination);
-      
-      // Start at time 0 of the context
-      audioSource.start(0);
-      
-      isPlaying = true;
+    function stopSource() {
+      const source = audioSource;
+      audioSource = null;
+      if (source) {
+        source.onended = null; // Ignore expected onended from manual stop/pause.
+        try { source.stop(); } catch (error) {
+          // A source may already have ended; no action required.
+        }
+        source.disconnect();
+      }
+    }
+
+    function stopAudio(message = 'Stopped') {
+      stopSource();
+      isPlaying = false;
       isPaused = false;
-      playbackPosition = 0; // samples at start
-      playbackStartTime = audioContext.currentTime; // context time when started
-      
-      playBtn.textContent = "⏸ Pause Audio";
-      statusText.textContent = "Playing...";
+      playbackOffset = 0;
+      stopVisualizer();
+      updateControls();
+      setStatus(message);
+    }
 
-      drawVisualizer();
-      // No onended callback needed; stop is handled via stopAudio() and UI
+    async function ensureAudioContext() {
+      if (!audioContext || audioContext.state === 'closed') {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.connect(audioContext.destination);
+      }
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+    }
+
+    async function startAt(offsetSeconds) {
+      if (!audioBuffer) return;
+      try {
+        await ensureAudioContext();
+        if (offsetSeconds >= audioBuffer.duration) offsetSeconds = 0;
+        stopSource();
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(analyser);
+        audioSource = source;
+        playbackOffset = offsetSeconds;
+        playbackStartTime = audioContext.currentTime;
+        source.onended = () => {
+          if (audioSource !== source) return;
+          audioSource = null;
+          source.disconnect();
+          isPlaying = false;
+          isPaused = false;
+          playbackOffset = 0;
+          stopVisualizer();
+          updateControls();
+          setStatus('Playback finished');
+        };
+        source.start(0, offsetSeconds);
+        isPlaying = true;
+        isPaused = false;
+        updateControls();
+        setStatus('Playing…');
+        drawVisualizer();
+      } catch (error) {
+        stopAudio('Unable to start playback: ' + error.message);
+      }
     }
 
     function pauseAudio() {
-      if (!audioSource) return;
-      
-      const currentTime = audioContext.currentTime;
-      // Calculate playback position in samples based on elapsed time since start
-      playbackPosition = Math.floor((currentTime - playbackStartTime) * audioBuffer.sampleRate);
-      
-      // Stop the source; keep audioSource reference for resume
-      audioSource.stop();
-      
+      if (!isPlaying || !audioBuffer || !audioContext) return;
+      playbackOffset = Math.min(audioBuffer.duration,
+        playbackOffset + Math.max(0, audioContext.currentTime - playbackStartTime));
+      stopSource();
       isPlaying = false;
       isPaused = true;
-      playBtn.textContent = "▶ Play Audio";
-      statusText.textContent = "Paused";
+      stopVisualizer();
+      updateControls();
+      setStatus('Paused');
     }
 
-    function resumeAudio() {
-      if (!audioBuffer) return;
-      
-      if (!audioSource) {
-        // Fallback: if source was lost (e.g., context closed), restart
-        startAudio();
-        return;
+    playBtn.addEventListener('click', async () => {
+      if (isPlaying) {
+        pauseAudio();
+      } else {
+        await startAt(isPaused ? playbackOffset : 0);
       }
-      
-      const currentTime = audioContext.currentTime;
-      // offset in seconds to resume from playbackPosition samples
-      const offsetSeconds = playbackPosition / audioBuffer.sampleRate;
-      
-      // Resume the SAME audioSource at the calculated offset
-      // audioSource.start(time, offset, duration) - time is when to start relative to context clock
-      audioSource.start(currentTime, offsetSeconds);
-      
-      isPlaying = true;
-      isPaused = false;
-      playBtn.textContent = "⏸ Pause Audio";
-      statusText.textContent = "Playing";
-      
-      drawVisualizer();
-    }
-
-    function stopAudio() {
-      if (!audioSource) return;
-      
-      audioSource.stop();
-      isPlaying = false;
-      isPaused = false;
-      playbackPosition = 0;
-      playBtn.textContent = "▶ Play Audio";
-      statusText.textContent = "Stopped";
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Clear source reference; next startAudio() will recreate
-      audioSource = null;
-    }
+    });
+    stopBtn.addEventListener('click', () => stopAudio());
 
     function drawVisualizer() {
-      if (!isPlaying) return;
-      requestAnimationFrame(drawVisualizer);
-
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteFrequencyData(dataArray);
-
-      canvasCtx.fillStyle = '#111114';
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = (canvas.width / bufferLength) * 2.5;
-      let barX = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * canvas.height;
+      if (!isPlaying || !analyser) return;
+      if (animationId !== null) cancelAnimationFrame(animationId);
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+      const frame = () => {
+        if (!isPlaying) { animationId = null; return; }
+        analyser.getByteFrequencyData(bins);
+        canvasCtx.fillStyle = '#111114';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+        const count = Math.min(80, bins.length);
+        const barWidth = canvas.width / count;
         canvasCtx.fillStyle = '#f39c12';
-        canvasCtx.fillRect(barX, canvas.height - barHeight, barWidth, barHeight);
-        barX += barWidth + 1;
+        for (let i = 0; i < count; i++) {
+          const from = Math.floor(i * bins.length / count);
+          const to = Math.max(from + 1, Math.floor((i + 1) * bins.length / count));
+          let peak = 0;
+          for (let j = from; j < to; j++) peak = Math.max(peak, bins[j]);
+          const height = peak / 255 * canvas.height;
+          canvasCtx.fillRect(i * barWidth, canvas.height - height,
+            Math.max(1, barWidth - 2), height);
+        }
+        animationId = requestAnimationFrame(frame);
+      };
+      frame();
+    }
+
+    async function loadAudioFile(file) {
+      if (!file) return;
+      const generation = ++loadGeneration;
+      stopAudio('Loading audio…');
+      audioBuffer = null;
+      updateControls();
+      resetAnalysisDisplay();
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        if (generation !== loadGeneration) return;
+        // Decode using the same context used for playback.
+        if (!audioContext || audioContext.state === 'closed') {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.connect(audioContext.destination);
+        }
+        const decoded = await audioContext.decodeAudioData(arrayBuffer);
+        if (generation !== loadGeneration) return;
+        audioBuffer = decoded;
+        updateControls();
+        setStatus(`Loaded: ${file.name} (${decoded.duration.toFixed(1)} s)`);
+      } catch (error) {
+        if (generation !== loadGeneration) return;
+        audioBuffer = null;
+        updateControls();
+        setStatus('Could not decode this audio file. Try WAV or MP3.');
+        console.error('Audio load failed:', error);
       }
     }
 
-    analyzeBtn.addEventListener('click', () => {
-      statusText.textContent = "Real audio analysis is not yet implemented. The analysis engine is being developed.";
+    audioInput.addEventListener('change', () => {
+      const file = audioInput.files && audioInput.files[0];
+      loadAudioFile(file);
+      audioInput.value = ''; // Allows re-selecting the same file.
     });
+    dropZone.addEventListener('click', () => audioInput.click());
+    dropZone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        audioInput.click();
+      }
+    });
+    dropZone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropZone.style.borderColor = 'var(--accent)';
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = '';
+    });
+    dropZone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropZone.style.borderColor = '';
+      const file = event.dataTransfer && event.dataTransfer.files[0];
+      loadAudioFile(file);
+    });
+
+    updateControls();
   </script>
 </body>
 </html>
