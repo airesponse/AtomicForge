@@ -306,7 +306,7 @@
       <div class="controls-row">
         <button class="btn" id="playBtn" disabled>▶ Play Audio</button>
         <button class="btn btn-secondary" id="stopBtn" disabled>■ Stop</button>
-        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Run Harmonic Analysis — Coming Soon</button>
+        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Analyze Tempo & Beats</button>
         <button class="btn btn-secondary" id="pdfBtn" disabled title="Available after harmonic analysis is implemented">📄 Export Report (PDF) — Coming Soon</button>
         <span id="statusText" style="font-size: 0.85rem; color: var(--muted); margin-left: auto;">No audio loaded</span>
       </div>
@@ -320,7 +320,7 @@
       
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">Detected BPM</div>
+          <div class="metric-label">Estimated BPM</div>
           <div class="metric-value" id="resBPM">N/A</div>
         </div>
         <div class="metric-card">
@@ -332,7 +332,7 @@
           <div class="metric-value" id="resScale">N/A</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Beat Detection</div>
+          <div class="metric-label">Beat / Tempo Confidence</div>
           <div class="metric-value" id="resBeat">N/A</div>
         </div>
         <div class="metric-card">
@@ -377,11 +377,13 @@
     let playbackStartTime = 0; // AudioContext time corresponding to offset
     let animationId = null;
     let loadGeneration = 0;
+    let analysisGeneration = 0;
 
     const audioInput = document.getElementById('audioInput');
     const dropZone = document.getElementById('dropZone');
     const playBtn = document.getElementById('playBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
     const statusText = document.getElementById('statusText');
     const canvas = document.getElementById('visualizer');
     const canvasCtx = canvas.getContext('2d');
@@ -393,6 +395,7 @@
     function updateControls() {
       playBtn.disabled = !audioBuffer;
       stopBtn.disabled = !audioBuffer || (!isPlaying && !isPaused);
+      analyzeBtn.disabled = !audioBuffer || analyzeBtn.dataset.busy === 'true';
       playBtn.textContent = isPlaying ? '⏸ Pause Audio' : isPaused ? '▶ Resume Audio' : '▶ Play Audio';
     }
 
@@ -542,6 +545,9 @@
     async function loadAudioFile(file) {
       if (!file) return;
       const generation = ++loadGeneration;
+      ++analysisGeneration;
+      analyzeBtn.dataset.busy = 'false';
+      analyzeBtn.textContent = '🔬 Analyze Tempo & Beats';
       stopAudio('Loading audio…');
       audioBuffer = null;
       updateControls();
@@ -594,6 +600,138 @@
       dropZone.style.borderColor = '';
       const file = event.dataTransfer && event.dataTransfer.files[0];
       loadAudioFile(file);
+    });
+
+
+    // Milestone 2A: approximate tempo from transient/onset strength.
+    // This is a heuristic, not a transcription or a guaranteed beat grid.
+    function estimateTempo(buffer) {
+      const sampleRate = buffer.sampleRate;
+      const channels = buffer.numberOfChannels;
+      const maxSeconds = Math.min(buffer.duration, 120);
+      const hop = Math.max(1, Math.round(sampleRate / 200)); // ~200 envelope frames/sec
+      const frameCount = Math.floor(maxSeconds * sampleRate / hop);
+      if (frameCount < 600) return null;
+
+      const channelData = Array.from({length: channels},
+        (_, index) => buffer.getChannelData(index));
+      const energy = new Float32Array(frameCount);
+
+      // Mean-square energy in non-overlapping short windows.
+      for (let frame = 0; frame < frameCount; frame++) {
+        const start = frame * hop;
+        const end = Math.min(start + hop, buffer.length);
+        let sum = 0;
+        for (let i = start; i < end; i++) {
+          let mono = 0;
+          for (let ch = 0; ch < channels; ch++) mono += channelData[ch][i];
+          mono /= channels;
+          sum += mono * mono;
+        }
+        energy[frame] = Math.sqrt(sum / Math.max(1, end - start));
+      }
+
+      const onsets = new Float32Array(frameCount);
+      let totalOnset = 0;
+      for (let i = 2; i < frameCount; i++) {
+        // Positive energy change highlights attacks over sustained notes.
+        const rise = Math.max(0, energy[i] - energy[i - 2]);
+        onsets[i] = rise;
+        totalOnset += rise;
+      }
+      if (totalOnset < 0.0005) return null;
+
+      const fps = sampleRate / hop;
+      // Reduce very slow/fast pulse ambiguity to a practical 65–190 BPM range.
+      const minBpm = 65;
+      const maxBpm = 190;
+      const minLag = Math.round(fps * 60 / maxBpm);
+      const maxLag = Math.round(fps * 60 / minBpm);
+
+      // Subtract local background so loud sections don't dominate the correlation.
+      const window = Math.max(1, Math.round(fps * 0.4));
+      const prefix = new Float64Array(frameCount + 1);
+      for (let i = 0; i < frameCount; i++) prefix[i + 1] = prefix[i] + onsets[i];
+      const novelty = new Float32Array(frameCount);
+      let norm = 0;
+      for (let i = 0; i < frameCount; i++) {
+        const lo = Math.max(0, i - window);
+        const hi = Math.min(frameCount, i + window + 1);
+        const baseline = (prefix[hi] - prefix[lo]) / (hi - lo);
+        novelty[i] = Math.max(0, onsets[i] - baseline);
+        norm += novelty[i] * novelty[i];
+      }
+      if (norm < 1e-9) return null;
+
+      let bestLag = 0;
+      let bestScore = 0;
+      const scores = [];
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let correlation = 0;
+        let aNorm = 0;
+        let bNorm = 0;
+        for (let i = lag; i < frameCount; i++) {
+          const a = novelty[i], b = novelty[i - lag];
+          correlation += a * b;
+          aNorm += a * a;
+          bNorm += b * b;
+        }
+        const score = correlation / (Math.sqrt(aNorm * bNorm) + 1e-12);
+        scores[lag] = score;
+        if (score > bestScore) {
+          bestScore = score;
+          bestLag = lag;
+        }
+      }
+      if (!bestLag || bestScore < 0.08) return null;
+
+      // Parabolic interpolation improves resolution between envelope frames.
+      const left = scores[bestLag - 1] ?? bestScore;
+      const right = scores[bestLag + 1] ?? bestScore;
+      const curvature = left - 2 * bestScore + right;
+      const shift = Math.abs(curvature) > 1e-10
+        ? Math.max(-0.5, Math.min(0.5, 0.5 * (left - right) / curvature))
+        : 0;
+      const bpm = 60 * fps / (bestLag + shift);
+
+      // The score is a periodicity indicator, not a calibrated probability.
+      const strength = bestScore >= 0.35 ? 'Strong' :
+        bestScore >= 0.18 ? 'Moderate' : 'Weak';
+      return { bpm, strength, score: bestScore, seconds: maxSeconds };
+    }
+
+    analyzeBtn.addEventListener('click', async () => {
+      if (!audioBuffer || analyzeBtn.dataset.busy === 'true') return;
+      const generation = ++analysisGeneration;
+      const buffer = audioBuffer;
+      analyzeBtn.dataset.busy = 'true';
+      analyzeBtn.textContent = 'Analyzing…';
+      updateControls();
+      setStatus('Estimating tempo from audio transients…');
+      // Yield a frame so Safari can display the working status.
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      try {
+        const result = estimateTempo(buffer);
+        if (generation !== analysisGeneration || buffer !== audioBuffer) return;
+        document.getElementById('resBPM').textContent =
+          result ? `${Math.round(result.bpm)} BPM` : 'Undetermined';
+        document.getElementById('resBeat').textContent =
+          result ? `${result.strength} pulse` : 'No clear pulse';
+        setStatus(result
+          ? `Tempo estimate: ${Math.round(result.bpm)} BPM (${result.strength.toLowerCase()} periodicity; analyzed ${result.seconds.toFixed(0)} s). Half/double-time interpretations are possible.`
+          : 'No reliable tempo found. Try a longer recording with clear rhythmic attacks.');
+      } catch (error) {
+        if (generation === analysisGeneration) {
+          setStatus('Tempo analysis failed: ' + error.message);
+          console.error('Tempo analysis failed:', error);
+        }
+      } finally {
+        if (generation === analysisGeneration) {
+          analyzeBtn.dataset.busy = 'false';
+          analyzeBtn.textContent = '🔬 Analyze Tempo & Beats';
+          updateControls();
+        }
+      }
     });
 
     updateControls();
