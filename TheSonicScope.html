@@ -493,6 +493,8 @@
     let analyser = null;
     let isPlaying = false;
     let isPaused = false;
+    let playbackEnd = null;
+    let playbackRequest = 0;
     let playbackOffset = 0; // seconds into the current file
     let playbackStartTime = 0; // AudioContext time corresponding to offset
     let animationId = null;
@@ -579,6 +581,8 @@
     }
 
     function stopAudio(message = 'Stopped') {
+      playbackRequest++;
+      playbackEnd = null;
       stopSource();
       isPlaying = false;
       isPaused = false;
@@ -600,10 +604,13 @@
       }
     }
 
-    async function startAt(offsetSeconds) {
-      if (!audioBuffer) return;
+    async function startAt(offsetSeconds, endSeconds = null) {
+      const buffer = audioBuffer;
+      if (!buffer) return;
+      const request = ++playbackRequest;
       try {
         await ensureAudioContext();
+        if (request !== playbackRequest || buffer !== audioBuffer) return;
         if (offsetSeconds >= audioBuffer.duration) offsetSeconds = 0;
         stopSource();
         const source = audioContext.createBufferSource();
@@ -621,22 +628,25 @@
           playbackOffset = 0;
           stopVisualizer();
           updateControls();
+          playbackEnd = null;
           setStatus('Playback finished');
         };
-        source.start(0, offsetSeconds);
+        playbackEnd = endSeconds === null ? null : Math.min(endSeconds, buffer.duration);
+        if (playbackEnd === null) source.start(0, offsetSeconds);
+        else source.start(0, offsetSeconds, playbackEnd - offsetSeconds);
         isPlaying = true;
         isPaused = false;
         updateControls();
         setStatus('Playing…');
         drawVisualizer();
       } catch (error) {
-        stopAudio('Unable to start playback: ' + error.message);
+        if (request === playbackRequest) stopAudio('Unable to start playback: ' + error.message);
       }
     }
 
     function pauseAudio() {
       if (!isPlaying || !audioBuffer || !audioContext) return;
-      playbackOffset = Math.min(audioBuffer.duration,
+      playbackOffset = Math.min(playbackEnd ?? audioBuffer.duration,
         playbackOffset + Math.max(0, audioContext.currentTime - playbackStartTime));
       stopSource();
       isPlaying = false;
@@ -650,7 +660,7 @@
       if (isPlaying) {
         pauseAudio();
       } else {
-        await startAt(isPaused ? playbackOffset : 0);
+        await startAt(isPaused ? playbackOffset : 0, isPaused ? playbackEnd : null);
       }
     });
     stopBtn.addEventListener('click', () => stopAudio());
@@ -1346,7 +1356,7 @@
     const onsetCanvas=document.getElementById('onsetCanvas');
     const onsetStatus=document.getElementById('onsetStatus');
     const onsetRows=document.getElementById('onsetRows');
-    let onsetTimes=[], onsetPlayback=null, onsetDrag=-1;
+    let onsetTimes=[], onsetDrag=-1;
     function onsetAudioMono(buffer){
       const a=buffer.getChannelData(0),b=buffer.numberOfChannels>1?buffer.getChannelData(1):null;
       return {a,b};
@@ -1410,15 +1420,7 @@
         const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.83rem;';
         const label=document.createElement('span');label.textContent=`${i+1}. ${labels[i]||'(name missing)'}  ${t.toFixed(3)}–${end.toFixed(3)}s`;
         const play=document.createElement('button');play.type='button';play.textContent='▶ Play';play.style.cssText='padding:5px 9px;border-radius:5px;border:1px solid #678;background:#253538;color:white;';
-        play.addEventListener('click',async()=>{
-          if(!audioBuffer)return;
-          if(!audioContext||audioContext.state==='closed')audioContext=new (window.AudioContext||window.webkitAudioContext)();
-          await audioContext.resume();
-          if(onsetPlayback){try{onsetPlayback.stop();}catch(_){}}
-          const src=audioContext.createBufferSource();src.buffer=audioBuffer;src.connect(audioContext.destination);
-          const dur=Math.max(.01,end-t);src.start(0,t,dur);onsetPlayback=src;
-          src.onended=()=>{if(onsetPlayback===src)onsetPlayback=null;};
-        });
+        play.addEventListener('click', () => startAt(t, end));
         line.append(label,play);onsetRows.append(line);
       });
       onsetWaveform();
@@ -2987,7 +2989,7 @@
           differenceReference: '2E.18 MIDI predictions on the same events',
           ...comparison.comparePredictions(polyReportRows, result.notes, buffer.duration)
         };
-        comparison.renderComparison(basicPitchResults, report, basicPitchChordView.value);
+        comparison.renderComparison(basicPitchResults, report, basicPitchChordView.value, startAt);
         basicPitchComparison = comparison;
         basicPitchReport = report;
         basicPitchExport.disabled = false;
@@ -3005,7 +3007,7 @@
     });
 
     basicPitchChordView.addEventListener('change', () => {
-      if (basicPitchReport) basicPitchComparison.renderComparison(basicPitchResults, basicPitchReport, basicPitchChordView.value);
+      if (basicPitchReport) basicPitchComparison.renderComparison(basicPitchResults, basicPitchReport, basicPitchChordView.value, startAt);
     });
 
     basicPitchCopy.addEventListener('click', () => {

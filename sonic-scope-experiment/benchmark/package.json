@@ -1,0 +1,9 @@
+{
+  "name": "sonic-scope-chordino-benchmark",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@audio/mir-chordino": "1.0.0",
+    "@audio/mir-nnls-chroma": "1.0.0"
+  }
+}

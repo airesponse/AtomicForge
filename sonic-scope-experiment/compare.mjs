@@ -220,7 +220,7 @@ export function buildComparisonReport(report) {
   return [...header, ...rows].join('\n');
 }
 
-export function renderComparison(container, report, chordView = 'summary') {
+export function renderComparison(container, report, chordView = 'summary', playInterval) {
   const table = document.createElement('table');
   table.className = 'comparison-table';
   const body = document.createElement('tbody');
@@ -235,7 +235,17 @@ export function renderComparison(container, report, chordView = 'summary') {
     table.append(body);
     for (const event of report.events) {
       const row = body.insertRow();
-      for (const value of [times(event.start, event.end), event.basicPitch.summaryChord?.chord ?? 'Uncertain', evidenceText(event, event.basicPitch.summaryChord?.chord)]) {
+      const timing = times(event.start, event.end);
+      const intervalCell = row.insertCell();
+      if (playInterval) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = '▶ ' + timing;
+        button.setAttribute('aria-label', 'Play chord from ' + event.start.toFixed(2) + ' to ' + event.end.toFixed(2) + ' seconds');
+        button.addEventListener('click', () => playInterval(event.start, event.end));
+        intervalCell.append(button);
+      } else intervalCell.textContent = timing;
+      for (const value of [event.basicPitch.summaryChord?.chord ?? 'Uncertain', evidenceText(event, event.basicPitch.summaryChord?.chord)]) {
         row.insertCell().textContent = value;
       }
     }

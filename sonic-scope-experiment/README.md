@@ -45,3 +45,27 @@ Use **Reference timing and validation** to audition and check attack boundaries.
 
 - [Spotify Basic Pitch TypeScript](https://github.com/spotify/basic-pitch-ts) is Apache-2.0. The pinned package supplies the note model and JavaScript inference. Preserve the applicable licence texts and notices if redistributing the generated assets.
 - [Essentia.js](https://github.com/MTG/essentia.js/) is AGPL-3.0. Its Spectrum/SpectralPeaks can provide independent spectral evidence, HPCP/KeyExtractor can check tonal estimates, and [RhythmExtractor2013](https://essentia.upf.edu/reference/std_RhythmExtractor2013.html) can compare tempo and beat positions with 44.1 kHz input. These are candidate feature checks. They do not establish the sounded pitches in each guitar voicing. An MIT-licensed project can contain MIT code in an AGPL-covered combined distribution, but distributing a combined work would require applicable AGPL terms and source availability. This branch keeps its MIT distribution and does not bundle or call Essentia.js. An independent Essentia.js benchmark with known chord and beat timings remains future work.
+
+## Independent Chordino benchmark
+
+The timestamp in each **Chord summary** row plays that interval. Use the usual playback controls to pause, resume or stop. The quick report and JSON export still include both browser detectors.
+
+The optional local benchmark runs the audioJS implementation of Chordino and NNLS Chroma, both version 1.0.0. It uses bass and treble pitch-class features and a chord-sequence model. Those features provide an independent comparison with Basic Pitch's note transcription. Upstream credits Matthias Mauch and Chris Cannam for the reference plugin. Both JavaScript packages declare GPL-2.0-or-later. The optional CLI installs them from npm. Their implementation, model profiles and assets are excluded from the browser build. [Original Chordino](https://isophonics.net/nnls-chroma) · [JavaScript implementation and licence](https://audio.js.org/modules/mir-chordino/)
+
+Run from the experimental checkout with FFmpeg on PATH (or set FFMPEG to the executable) and Node 22:
+
+```sh
+cd sonic-scope-experiment/benchmark
+npm ci --ignore-scripts
+node benchmark.mjs "/path/to/recording.mp3" "/path/to/comparison.json" > result.json
+```
+
+The export is optional. With audio alone, the CLI returns the independent chord sequence. With the matching Sonic Scope export it also reports the Chordino label covering the most time in each existing event, and recomputes the Basic Pitch summary on Chordino's boundaries. The latter reuses the exported note predictions. Short windows near changes may include notes from the adjacent chord. Intervals and confidence are model estimates.
+
+| Recording | Independent benchmark |
+| --- | --- |
+| zoom006-mixture.mp3 | After a brief opening no-chord interval, Chordino returned G, Am, B, C, D, E, F. All seven roots matched the supplied order. Three of seven chord qualities matched. Reusing the saved Basic Pitch predictions on these boundaries gave G, Am, B5, C, D, E, F. |
+| Testfile1.m4a | Chordino returned E, D, A, E as major chords. Basic Pitch on the same windows returned the four expected power chords. |
+| GodDamn002.m4a | Chordino produced 15 labeled spans after the initial no-chord interval. The recording has no independently supplied chord sequence for scoring. |
+
+These runs use FFmpeg mono decoding at 22050 Hz and the packages' default parameters. The known chord order was used only when comparing results. Changing event boundaries alone did not recover the three dominant sevenths in the seven-chord take.

@@ -117,3 +117,33 @@ test('surfaces brief seventh evidence only when the defining notes overlap', () 
   assert.equal(chord.summaryChord.chord, 'D major');
   assert.equal(events([...triad, predict(60, 0.2, 0.16)]).summaryChord.chord, 'D7');
 });
+
+test('interval auditions pause and resume to the same endpoint and stop the previous source', async () => {
+  const html = await readFile(new URL('../TheSonicScope.html', import.meta.url), 'utf8');
+  const starts = [];
+  const stopped = [];
+  const element = {
+    getContext: () => ({clearRect() {}}), addEventListener() {}, dataset: {},
+    getBoundingClientRect: () => ({width: 320, height: 155})
+  };
+  const ctx = createContext({
+    starts, stopped, document: {getElementById: () => Object.create(element)}, window: {addEventListener() {}}
+  });
+  runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1], ctx);
+  await runInContext(`(async () => {
+    drawVisualizer = () => {};
+    audioBuffer = {duration: 10};
+    audioContext = {state: 'running', currentTime: 0, createBufferSource: () => ({
+      connect() {}, disconnect() {}, start(...args) { starts.push([...args]); }, stop() { stopped.push(true); }
+    })};
+    await startAt(2, 4);
+    audioContext.currentTime = 0.5;
+    pauseAudio();
+    await startAt(playbackOffset, playbackEnd);
+    await startAt(5, 6);
+    audioSource.onended();
+    await startAt(0);
+  })()`, ctx);
+  assert.deepEqual(starts.map(args => Array.from(args)), [[0, 2, 2], [0, 2.5, 1.5], [0, 5, 1], [0, 0]]);
+  assert.equal(stopped.length, 2);
+});
