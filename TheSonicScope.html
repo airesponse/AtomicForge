@@ -272,6 +272,20 @@
       font-size: 0.8rem;
       text-align: center;
     }
+
+    .chord-test-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 8px; }
+    .chord-test-status { color: var(--muted); font-size: .82rem; margin: 8px 0; }
+    .chord-test-status:empty { display: none; }
+    .chord-test-results { overflow-x: auto; }
+    .chord-test-drawer { margin-top: 12px; }
+    .chord-test-drawer > summary { cursor: pointer; margin-bottom: 8px; }
+    #basicPitchChordView { background: var(--panel-bg); color: inherit; padding: 4px; }
+    .comparison-table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+    .comparison-table th, .comparison-table td { text-align: left; vertical-align: top; padding: 6px; border-bottom: 1px solid var(--border); }
+    .comparison-table th, .comparison-table td:first-child, .comparison-table summary { white-space: nowrap; }
+    .comparison-table summary { cursor: pointer; }
+    .comparison-table details p, .comparison-table details ul { margin-block: 6px; }
+    .comparison-table details ul { padding-inline-start: 18px; }
   </style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
@@ -361,37 +375,45 @@
     </div>
 
 
-    <!-- 2E.6: predictions only, no user-provided reference or claimed ground truth -->
-    <div class="panel" id="automaticChordPanel">
-      <div class="section-title">🎸 Milestone 2E.18 — Root Recovery & Pitch-Class Verification</div>
-      <p style="color:var(--muted);font-size:.88rem;line-height:1.55;">No chord names, counts, or timestamps to enter. Sonic Scope preserves the 2E.11 power-chord baseline and adds experimental multi-pitch analysis for single notes, double-stops and small chords. The new detector separates candidate fundamentals from their harmonics; ambiguous events remain explicitly uncertain. These are <strong>audio-derived predictions, not verified ground truth</strong>; agreement between detectors does not establish accuracy.</p>
-      <button class="btn btn-secondary" type="button" id="runAutomaticChords">Analyze chords automatically</button>
-      <span id="automaticChordStatus" role="status" style="display:block;margin-top:10px;color:var(--muted);font-size:.85rem;">Load audio and run the main analysis; automatic chord discovery will then run.</span>
-      <canvas id="automaticChordCanvas" height="155" style="display:block;width:100%;height:155px;margin-top:12px;border:1px solid #455;border-radius:7px;background:#101719;" aria-label="Waveform with automatically detected chord attacks"></canvas>
-      <div id="automaticChordResults" aria-live="polite" style="margin-top:12px;overflow-x:auto;"></div>
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid #455;">
-        <h3 style="margin:0 0 8px;font-size:1.06rem;">2E.18 — Independent notes and root recovery</h3>
-        <p style="color:var(--muted);font-size:.84rem;line-height:1.5;">Track guitar-register harmonic families across attack and sustain, test root/fifth alternatives, and compare single-note and polyphonic hypotheses. Ambiguous evidence remains uncertain. The 2E.11 baseline is unchanged.</p>
-        <button type="button" class="btn btn-secondary" id="runPolyphonic">Analyze notes, double-stops &amp; chords</button>
-        <button type="button" class="btn btn-secondary" id="copyDiagnosticReport" style="margin-left:6px;">Copy complete diagnostic report</button>
-        <span id="copyDiagnosticStatus" role="status" style="display:block;color:var(--muted);font-size:.8rem;margin-top:6px;">Copies 2E.18 results, 2E.17 comparison, evidence metrics and baseline for sharing. No manual transcription needed.</span>
-        <span id="polyStatus" role="status" style="display:block;color:var(--muted);font-size:.84rem;margin-top:8px;">Run the main audio analysis first.</span>
-        <div id="polyResults" style="margin-top:12px;overflow-x:auto;"></div>
-      </div>
-      <div id="basicPitchPanel" style="margin-top:18px;padding-top:14px;border-top:1px solid #455;">
-        <h3 style="margin:0 0 8px;font-size:1.06rem;">Basic Pitch comparison</h3>
-        <p style="color:var(--muted);font-size:.84rem;line-height:1.5;">Compare notes on the same event boundaries. The two right columns show disagreements between engines. Basic Pitch activation and 2E.18 persistence use different scales.</p>
+    <section class="panel" id="automaticChordPanel">
+      <h2 class="section-title">Chord testing</h2>
+      <div class="chord-test-actions">
         <button type="button" class="btn btn-secondary" id="runBasicPitch">Compare 2E.18 and Basic Pitch</button>
-        <button type="button" class="btn btn-secondary" id="exportBasicPitch" disabled>Export comparison JSON</button>
-        <p id="basicPitchStatus" role="status" style="color:var(--muted);font-size:.84rem;">Load a recording and run the main audio analysis first.</p>
-        <div id="basicPitchResults" style="overflow-x:auto;"></div>
+        <button type="button" class="btn btn-secondary" id="copyBasicPitch" disabled>Copy comparison report</button>
+        <button type="button" class="btn btn-secondary" id="exportBasicPitch" disabled>Export JSON</button>
       </div>
-      <details style="margin-top:14px;"><summary style="cursor:pointer;color:#f0ba6b;">Advanced: manual reference validation (optional)</summary>
-      <p style="color:var(--muted);font-size:.8rem;line-height:1.5;">The original manual validation tools remain below for independent testing. Automatically predicted labels must not be used as ground truth for scoring the same detectors.</p></details>
-    </div>
+      <p id="basicPitchStatus" class="chord-test-status" role="status">Load a recording and run the main audio analysis first.</p>
+      <div id="basicPitchView" hidden>
+        <label for="basicPitchChordView">Basic Pitch chord view</label>
+        <select id="basicPitchChordView">
+          <option value="sustained">Sustained overlap</option>
+          <option value="pooled">Whole event</option>
+        </select>
+        <p class="chord-test-status">Sustained overlap shows the longest recognized chord held for at least 150 ms. Expand a row for raw notes and differences.</p>
+      </div>
+      <div id="basicPitchResults" class="chord-test-results"></div>
+      <p id="copyBasicPitchStatus" class="chord-test-status" role="status"></p>
+      <details id="eventDiagnostics" class="chord-test-drawer">
+        <summary>Waveform and automatic event diagnostics</summary>
+        <button class="btn btn-secondary" type="button" id="runAutomaticChords">Reanalyze chord events</button>
+        <p id="automaticChordStatus" class="chord-test-status" role="status">Load audio and run the main analysis to detect chord events.</p>
+        <canvas id="automaticChordCanvas" height="155" style="display:block;width:100%;height:155px;border:1px solid #455;border-radius:7px;background:#101719" aria-label="Waveform with automatically detected chord attacks"></canvas>
+        <div id="automaticChordResults" class="chord-test-results" aria-live="polite"></div>
+      </details>
+      <details class="chord-test-drawer">
+        <summary>2E.18 note diagnostics</summary>
+        <div class="chord-test-actions">
+          <button type="button" class="btn btn-secondary" id="runPolyphonic">Analyze 2E.18 notes</button>
+          <button type="button" class="btn btn-secondary" id="copyDiagnosticReport">Copy 2E.18 report</button>
+        </div>
+        <p id="copyDiagnosticStatus" class="chord-test-status" role="status"></p>
+        <p id="polyStatus" class="chord-test-status" role="status">Run the main audio analysis first.</p>
+        <div id="polyResults" class="chord-test-results"></div>
+      </details>
+    </section>
 
     <!-- Milestone 2E: independent ground-truth validation; no changes to detection DSP -->
-    <details class="panel" id="validationPanel" style="padding:18px;"><summary style="font-weight:700;cursor:pointer;">Advanced — Manual Ground Truth &amp; Detector Validation (optional)</summary><div style="margin-top:16px;">
+    <details class="panel" id="validationPanel" style="padding:18px;"><summary style="font-weight:700;cursor:pointer;">Reference timing and validation</summary><div style="margin-top:16px;">
       <div class="section-title">🧪 Chord Detector Validation Mode</div>
       <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">Record a known progression, load the recording above, and enter the <strong>actual chord and start/end times</strong> below. Times must match the audio file. This measures the existing detector without teaching it the answers.</p>
 
@@ -426,7 +448,9 @@
     </div>
 
     </div></details>
-    <div class="panel" id="comparisonPanel">
+    <details class="panel" style="padding:18px;">
+      <summary style="font-weight:700;cursor:pointer">Older detector comparisons</summary>
+    <div class="progression-box" id="comparisonPanel">
       <div class="section-title">🎸 Milestone 2E.2 — Side-by-Side Chord Detector</div>
       <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">Compare the original 2D.8 detector against an independent experimental attack-aware, bass-supported power-chord detector. The experimental detector uses audio only, never the reference labels. Original results remain unchanged.</p>
       <button class="btn btn-secondary" id="compareDetectorsBtn" type="button">Run both detectors &amp; compare</button>
@@ -434,13 +458,15 @@
       <div id="comparisonResults" aria-live="polite" style="margin-top:14px;"></div>
     </div>
 
-    <div class="panel" id="candidatePanel">
+    <div class="progression-box" id="candidatePanel">
       <div class="section-title">🎸 Milestone 2E.3 — Octave &amp; Root/Fifth Candidate</div>
       <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">A third, independent power-chord candidate tests octave-aware fundamentals, root/fifth pairing, and attack-weighted chord tracking. Compare all three detectors on identical frame times. Reference labels are used only to score results.</p>
       <button class="btn btn-secondary" id="compareThreeBtn" type="button">Compare all three detectors</button>
       <div id="candidateStatus" role="status" style="margin-top:10px;color:var(--muted);font-size:.85rem;">Load audio and run analysis first.</div>
       <div id="candidateResults" aria-live="polite" style="margin-top:14px;"></div>
     </div>
+
+    </details>
 
     <!-- Compositional Development & Suggestions Section -->
     <div class="panel">
@@ -495,7 +521,10 @@
     function resetAnalysisDisplay() {
       clearBasicPitchComparison();
       latestChordFrames = null;
-      if(typeof automaticSegments!=='undefined')automaticSegments=[];
+      automaticSegments = [];
+      rejectedAutomaticSegments = [];
+      clearNoteDiagnostics();
+      drawAutoWave();
       if(typeof autoResults!=='undefined')autoResults.replaceChildren();
       if(typeof autoStatus!=='undefined')autoStatus.textContent='Load audio and analyze to discover chords automatically.';
       validationResults.replaceChildren();
@@ -678,7 +707,6 @@
         onsetWaveform();
         updateControls();
         lastAudioFilename=file.name;
-        polyReportRows=[];
         setStatus(`Loaded: ${file.name} (${decoded.duration.toFixed(1)} s)`);
       } catch (error) {
         if (generation !== loadGeneration) return;
@@ -2348,6 +2376,7 @@
         const classified=autoSegments(b,[baseline,second,third]);
         const segs=classified.accepted;
         clearBasicPitchComparison();
+        clearNoteDiagnostics();
         automaticSegments=segs;
         rejectedAutomaticSegments=classified.rejected;
         autoResults.replaceChildren();
@@ -2377,7 +2406,7 @@
         const note=document.createElement('p');note.style.cssText='font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:10px;';
         note.textContent='Audio-derived predictions only. Measured guitar-register fundamentals and root/fifth evidence drive the result; a conservative sustained-energy gate can flag opening transients; older detectors provide diagnostics; chord labels cannot move or merge timing boundaries. Ambiguous roots are flagged. Agreement is not verified accuracy, and weak or missed strums can still cause errors.';
         autoResults.append(note);
-        autoStatus.textContent=`Estimated ${segs.length} accepted tonal chord events; ${rejectedAutomaticSegments.length} opening transient candidate(s) flagged. No manual values required. Orange markers show estimated chord changes; timing and labels may be wrong.`;
+        autoStatus.textContent=`${segs.length} chord events · ${rejectedAutomaticSegments.length} opening transients flagged`;
         drawAutoWave();
       }catch(e){autoStatus.textContent='Automatic chord analysis failed: '+e.message;console.error(e);}
     }
@@ -2826,7 +2855,7 @@
         lines.push([r.start.toFixed(3),r.end.toFixed(3),r.type,r.notes,r.persistence,r.fit,r.oldType,r.oldNotes,r.baseline,r.measuredRoot,(r.peaks||[]).join(' | '),...(r.legacy||['—','—','—']),r.evidence,r.reason].map(v=>String(v??'').replace(/[\t\r\n]/g,' ')).join('\t'));
       }
       if(!polyReportRows.length){
-        lines.push('Polyphonic analysis has not run. Click Analyze notes, double-stops & chords first.');
+        lines.push('Polyphonic analysis has not run. Click Analyze 2E.18 notes first.');
         for(const seg of automaticSegments)lines.push([seg.start.toFixed(3),seg.end.toFixed(3),seg.chord,seg.measuredRoot,(seg.peaks||[]).join(' | ')].join('\t'));
       }
       if(rejectedAutomaticSegments.length){
@@ -2835,22 +2864,37 @@
       }
       return lines.join('\n');
     }
-    document.getElementById('copyDiagnosticReport').addEventListener('click',async()=>{
-      const status=document.getElementById('copyDiagnosticStatus');
-      if(!automaticSegments.length){status.textContent='Run automatic chord analysis first.';return;}
-      const report=buildDiagnosticReport();
-      try{
-        if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(report);status.textContent='Copied '+polyReportRows.length+' event rows to clipboard.';return;}
-        throw new Error('Clipboard API unavailable');
-      }catch(err){
-        // Fallback for local files and browsers that block Clipboard API.
-        const ta=document.createElement('textarea');ta.value=report;ta.style.cssText='position:fixed;top:10px;left:10px;width:85vw;height:40vh;z-index:99999;';
-        document.body.appendChild(ta);ta.focus();ta.select();
-        let ok=false;try{ok=document.execCommand('copy');}catch(e){}
-        if(ok){ta.remove();status.textContent='Copied report to clipboard.';}
-        else{status.textContent='Clipboard permission blocked. Report selected: use Copy in the selection menu.';}
+    async function copyReport(report, status) {
+      try {
+        await navigator.clipboard.writeText(report);
+        status.textContent = 'Report copied.';
+      } catch {
+        const text = document.createElement('textarea');
+        text.value = report;
+        text.setAttribute('aria-label', 'Report text');
+        text.style.cssText = 'display:block;width:100%;height:8em;margin-top:8px;';
+        status.textContent = 'Clipboard unavailable. Select and copy the report below.';
+        status.append(text);
+        text.focus();
+        text.select();
       }
+    }
+
+    document.getElementById('copyDiagnosticReport').addEventListener('click', () => {
+      const status = document.getElementById('copyDiagnosticStatus');
+      if (!automaticSegments.length) {
+        status.textContent = 'Run the main audio analysis first.';
+        return;
+      }
+      return copyReport(buildDiagnosticReport(), status);
     });
+    function clearNoteDiagnostics() {
+      polyReportRows = [];
+      document.getElementById('polyResults').replaceChildren();
+      document.getElementById('polyStatus').textContent = 'Run the main audio analysis first.';
+      document.getElementById('copyDiagnosticStatus').replaceChildren();
+    }
+
     function runPolyphonic(){
       const status=document.getElementById('polyStatus'),out=document.getElementById('polyResults');
       if(!audioBuffer||!automaticSegments.length){status.textContent='Load audio and run automatic chord analysis first.';return;}
@@ -2884,6 +2928,11 @@
     const basicPitchResults = document.getElementById('basicPitchResults');
     const basicPitchButton = document.getElementById('runBasicPitch');
     const basicPitchExport = document.getElementById('exportBasicPitch');
+    const basicPitchCopy = document.getElementById('copyBasicPitch');
+    const basicPitchCopyStatus = document.getElementById('copyBasicPitchStatus');
+    const basicPitchView = document.getElementById('basicPitchView');
+    const basicPitchChordView = document.getElementById('basicPitchChordView');
+    let basicPitchComparison = null;
     let basicPitchRun = null;
     let basicPitchReport = null;
 
@@ -2893,6 +2942,9 @@
       basicPitchReport = null;
       basicPitchResults.replaceChildren();
       basicPitchExport.disabled = true;
+      basicPitchCopy.disabled = true;
+      basicPitchView.hidden = true;
+      basicPitchCopyStatus.replaceChildren();
       basicPitchButton.disabled = false;
       basicPitchStatus.textContent = 'Run the main audio analysis, then compare engines.';
     }
@@ -2921,7 +2973,7 @@
         }, run.signal);
         if (run.signal.aborted) return;
         const report = {
-          schemaVersion: 1,
+          schemaVersion: 2,
           recording: lastAudioFilename,
           durationSeconds: buffer.duration,
           decodedSampleRate: buffer.sampleRate,
@@ -2934,11 +2986,13 @@
           differenceReference: '2E.18 MIDI predictions on the same events',
           ...comparison.comparePredictions(polyReportRows, result.notes, buffer.duration)
         };
-        comparison.renderComparison(basicPitchResults, report);
+        comparison.renderComparison(basicPitchResults, report, basicPitchChordView.value);
+        basicPitchComparison = comparison;
         basicPitchReport = report;
         basicPitchExport.disabled = false;
-        basicPitchStatus.textContent = report.events.length + ' events compared. ' +
-          report.unassignedBasicPitchNoteIndices.length + ' Basic Pitch notes outside the comparison windows are included in the JSON.';
+        basicPitchCopy.disabled = false;
+        basicPitchView.hidden = false;
+        basicPitchStatus.textContent = `${report.events.length} events compared · ${report.basicPitchNotes.length} Basic Pitch note predictions · ${report.unassignedBasicPitchNoteIndices.length} outside windows`;
       } catch (error) {
         if (!run.signal.aborted) basicPitchStatus.textContent = 'Comparison failed: ' + error.message;
       } finally {
@@ -2947,6 +3001,14 @@
           basicPitchButton.disabled = false;
         }
       }
+    });
+
+    basicPitchChordView.addEventListener('change', () => {
+      if (basicPitchReport) basicPitchComparison.renderComparison(basicPitchResults, basicPitchReport, basicPitchChordView.value);
+    });
+
+    basicPitchCopy.addEventListener('click', () => {
+      if (basicPitchReport) return copyReport(basicPitchComparison.buildComparisonReport(basicPitchReport), basicPitchCopyStatus);
     });
 
     basicPitchExport.addEventListener('click', () => {
@@ -2964,6 +3026,9 @@
     });
 
     document.getElementById('runAutomaticChords').addEventListener('click',discoverAutomaticChords);
+    document.getElementById('eventDiagnostics').addEventListener('toggle', event => {
+      if (event.currentTarget.open) drawAutoWave();
+    });
     window.addEventListener('resize',drawAutoWave);
 
     analyzeBtn.addEventListener('click', async () => {

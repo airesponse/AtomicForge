@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { createContext, runInContext } from 'node:vm';
-import { comparePredictions, noteName } from './compare.mjs';
+import { buildComparisonReport, comparePredictions, noteName } from './compare.mjs';
 
 const predict = (pitchMidi, startTimeSeconds, durationSeconds, amplitude = 0.72) => ({
   pitchMidi, startTimeSeconds, durationSeconds, amplitude
@@ -34,6 +34,28 @@ test('preserves uncertain rows, short events, and notes spanning adjacent events
   assert.deepEqual(results.events[1].basicPitch.midi, [58]);
   assert.deepEqual(results.events[1].baseline.midi, [58]);
   assert.deepEqual(results.events[1].missingFromBasicPitch, []);
+});
+
+test('finds a sustained chord after a transient and keeps the pooled predictions', () => {
+  const baseline = { start: 1.55, end: 3.03, type: 'Double-stop', notes: 'D3 + A3', baseline: 'D5' };
+  const notes = [
+    predict(95, 1.57, 0.10), predict(40, 1.59, 0.07),
+    predict(50, 1.94, 0.6), predict(62, 1.94, 0.61), predict(57, 1.95, 0.65)
+  ];
+  const report = comparePredictions([baseline], notes, 3.03);
+  const [event] = report.events;
+  assert.equal(event.basicPitch.chordCandidate, null);
+  assert.deepEqual(event.basicPitch.sustainedChord, { chord: 'D5', start: 1.95, end: 2.55 });
+  assert.deepEqual(event.additionalInBasicPitch, [40, 62, 95]);
+  assert.match(buildComparisonReport({ ...report, recording: 'test.m4a' }), /D5 \(1.950–2.550 s\)/);
+});
+
+test('requires continuous overlap and does not assemble a chord from successive notes', () => {
+  const baseline = { start: 0, end: 1, type: 'Uncertain', notes: '' };
+  const notes = [predict(52, 0, 0.4), predict(59, 0.38, 0.5)];
+  const [event] = comparePredictions([baseline], notes, 1).events;
+  assert.equal(event.basicPitch.chordCandidate, 'E5');
+  assert.equal(event.basicPitch.sustainedChord, null);
 });
 
 test('runs the actual 2E.18 detector on a synthetic guitar-register tone', async () => {

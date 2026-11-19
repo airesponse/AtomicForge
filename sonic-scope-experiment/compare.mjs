@@ -26,6 +26,41 @@ function chordCandidate(midis) {
   return null;
 }
 
+const minimumChordSeconds = 0.15;
+
+function sustainedChord(notes, start, end) {
+  const edges = notes.flatMap(note => [
+    { time: Math.max(start, note.start), pitch: note.midi % 12, change: 1 },
+    { time: Math.min(end, note.end), pitch: note.midi % 12, change: -1 }
+  ]).sort((a, b) => a.time - b.time);
+  const active = new Array(12).fill(0);
+  let span = null;
+  let best = null;
+
+  for (let index = 0; index < edges.length;) {
+    const { time } = edges[index];
+    while (index < edges.length && edges[index].time === time) {
+      const { pitch, change } = edges[index++];
+      active[pitch] += change;
+    }
+    const nextTime = edges[index]?.time ?? end;
+    const classes = active.flatMap((count, pitch) => count > 0 ? [pitch] : []);
+    const chord = chordCandidate(classes);
+    if (!chord) {
+      span = null;
+      continue;
+    }
+    if (span?.chord === chord) span.end = nextTime;
+    else span = { chord, start: time, end: nextTime };
+
+    const duration = span.end - span.start;
+    if (duration + 1e-9 >= minimumChordSeconds && (!best || duration > best.end - best.start)) {
+      best = { ...span };
+    }
+  }
+  return best;
+}
+
 export function comparePredictions(baseline, modelNotes, duration) {
   const basicPitchNotes = modelNotes.map(note => {
     const start = Math.max(0, note.startTimeSeconds);
@@ -53,13 +88,15 @@ export function comparePredictions(baseline, modelNotes, duration) {
         spectralFit: row.fit / 100, chordCandidate: chordCandidate(baselineMidi),
         legacyChord: row.baseline
       },
-      basicPitch: { midi: basicPitchMidi, chordCandidate: chordCandidate(basicPitchMidi), noteIndices: basicPitchNoteIndices },
+      basicPitch: { midi: basicPitchMidi, chordCandidate: chordCandidate(basicPitchMidi), noteIndices: basicPitchNoteIndices,
+        sustainedChord: sustainedChord(basicPitchNoteIndices.map(index => basicPitchNotes[index]), row.start, row.end) },
       missingFromBasicPitch: baselineMidi.filter(midi => !basicPitchMidi.includes(midi)),
       additionalInBasicPitch: basicPitchMidi.filter(midi => !baselineMidi.includes(midi))
     };
   });
   return {
     events, basicPitchNotes,
+    sustainedChordMinimumSeconds: minimumChordSeconds,
     unassignedBasicPitchNoteIndices: basicPitchNotes.flatMap((_, index) => assigned.has(index) ? [] : [index])
   };
 }
@@ -132,37 +169,71 @@ export function transcribe(samples, onProgress, signal) {
   });
 }
 
-export function renderComparison(container, report) {
+
+const names = midis => midis.map(noteName).join(', ') || '—';
+const times = (start, end, decimals = 2) => `${start.toFixed(decimals)}–${end.toFixed(decimals)}`;
+const chordWithTime = (chord, decimals) => chord
+  ? `${chord.chord} (${times(chord.start, chord.end, decimals)} s)`
+  : '—';
+
+export function buildComparisonReport(report) {
+  const header = [
+    'SONIC SCOPE — CHORD COMPARISON',
+    'Recording: ' + report.recording,
+    `Events: ${report.events.length} · Basic Pitch note predictions: ${report.basicPitchNotes.length} · Outside windows: ${report.unassignedBasicPitchNoteIndices.length}`,
+    `Sustained chord: longest recognized pitch set overlapping for at least ${report.sustainedChordMinimumSeconds * 1000} ms`,
+    'Event (s)\tConsolidated\t2E.18 notes\tBasic Pitch sustained chord\tBasic Pitch pooled chord\tBasic Pitch raw pitches\t2E.18 only\tBasic Pitch only'
+  ];
+  const rows = report.events.map(event => [
+    times(event.start, event.end, 3), event.baseline.legacyChord ?? '—', names(event.baseline.midi),
+    chordWithTime(event.basicPitch.sustainedChord, 3), event.basicPitch.chordCandidate ?? '—',
+    names(event.basicPitch.midi), names(event.missingFromBasicPitch), names(event.additionalInBasicPitch)
+  ].join('\t'));
+  return [...header, ...rows].join('\n');
+}
+
+export function renderComparison(container, report, chordView = 'sustained') {
   const table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:.84rem';
+  table.className = 'comparison-table';
   const body = document.createElement('tbody');
   const head = table.createTHead().insertRow();
-  for (const label of ['Event (s)', '2E.18', 'Basic Pitch', '2E.18 only', 'Basic Pitch only']) {
+  const modelLabel = chordView === 'sustained' ? 'Basic Pitch sustained' : 'Basic Pitch pooled';
+  for (const label of ['Event (s)', 'Consolidated', '2E.18 notes', modelLabel, 'Details']) {
     const cell = document.createElement('th');
     cell.scope = 'col';
     cell.textContent = label;
     head.append(cell);
   }
   table.append(body);
-  const names = midis => midis.map(noteName).join(', ') || '—';
   for (const event of report.events) {
     const { start, end, baseline, basicPitch, missingFromBasicPitch, additionalInBasicPitch } = event;
-    const modelNotes = basicPitch.noteIndices.map(index => {
-      const note = report.basicPitchNotes[index];
-      const score = note.confidence === null ? 'score unavailable' : note.confidence.toFixed(2);
-      return `${noteName(note.midi)} ${note.start.toFixed(2)}–${note.end.toFixed(2)}s (${score})`;
-    });
     const row = body.insertRow();
     for (const text of [
-      `${start.toFixed(2)}–${end.toFixed(2)}`,
-      `${names(baseline.midi)} · ${baseline.chordCandidate ?? baseline.type} · ${Math.round(baseline.confidence * 100)}% persistence`,
-      [basicPitch.chordCandidate, ...modelNotes].filter(Boolean).join(' · ') || '—',
-      names(missingFromBasicPitch), names(additionalInBasicPitch)
+      times(start, end), baseline.legacyChord ?? '—', names(baseline.midi),
+      chordView === 'sustained' ? chordWithTime(basicPitch.sustainedChord) : basicPitch.chordCandidate ?? '—'
     ]) {
-      const cell = row.insertCell();
-      cell.style.cssText = 'padding:8px 6px;border-bottom:1px solid #333;vertical-align:top';
-      cell.textContent = text;
+      row.insertCell().textContent = text;
     }
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = `${basicPitch.noteIndices.length} notes`;
+    details.append(summary);
+    details.addEventListener('toggle', () => {
+      if (!details.open || details.childElementCount > 1) return;
+      const differences = document.createElement('p');
+      differences.textContent = `2E.18 only: ${names(missingFromBasicPitch)} · Basic Pitch only: ${names(additionalInBasicPitch)}`;
+      const evidence = document.createElement('p');
+      evidence.textContent = `2E.18 persistence: ${Math.round(baseline.confidence * 100)}% · Spectral fit: ${Math.round(baseline.spectralFit * 100)}%`;
+      const list = document.createElement('ul');
+      for (const index of basicPitch.noteIndices) {
+        const { midi, start, end, confidence } = report.basicPitchNotes[index];
+        const item = document.createElement('li');
+        item.textContent = `${noteName(midi)} · ${times(start, end)} s · Activation ${confidence?.toFixed(2) ?? '—'}`;
+        list.append(item);
+      }
+      details.append(differences, evidence, list);
+    });
+    row.insertCell().append(details);
   }
   container.replaceChildren(table);
 }
