@@ -13,7 +13,7 @@ npm --prefix sonic-scope-experiment test
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Open [The Sonic Scope on localhost](http://127.0.0.1:8765/TheSonicScope.html). Select a recording and click **Analyze Tempo, Chroma, Key & Chords**. Under **Guitar chord analysis**, click **Analyze guitar chords**. The three-column summary opens first. **Copy chord chart** copies one line per event with the time range and guitar chord symbol. Parentheses with a question mark indicate an alternative to audition, such as F (F7?). **Copy comparison report** copies a compact table for sharing. **Export JSON** includes all note predictions and timing. Open **2E.18 note diagnostics** for the full 2E.18 report.
+Open [The Sonic Scope on localhost](http://127.0.0.1:8765/TheSonicScope.html). Select a recording and click **Analyze song**. The editable song chart opens below the player. Use **Needs review** to focus on alternatives, pitch-only rows and unresolved events. **Copy chord chart** copies one line per event with the time range and guitar chord symbol. Parentheses with a question mark indicate an alternative to audition, such as F (F7?). **Copy comparison report** copies a compact table for sharing. **Export JSON** includes all note predictions and timing. Open **2E.18 note diagnostics** for the full 2E.18 report.
 
 The initial npm install needs internet. The bundle and model files then load from localhost. The browser decodes the audio and downmixes to mono at 22.05 kHz, then sends the PCM to a local web worker for inference. The worker ends after each run or when the recording or event boundaries change. Transitive dependency resolution is currently unlocked. The bundle and model files are generated locally and excluded from Git.
 
@@ -77,3 +77,13 @@ A major chord estimate now triggers a local check of the decoded waveform. The s
 On the development recording zoom006, both the saved browser boundaries and fresh local replay boundaries produced E7 (D4) and F7 (E♭4), with no attack candidate for D7 or the other four played chords. D7 retained brief Basic Pitch evidence in the browser export. Testfile1 retained four power chords with no seventh candidates. These checks reuse the development recordings; performance on other players, tones and voicings is unmeasured.
 
 On zoom005-mixture.mp3, the 8.69–9.22 s event had a C major summary and a C7 attack candidate. The player described the strum as muddled and leaning toward C7. The B♭3 evidence window began at 8.63 s and crossed the estimated boundary. Keep this event as an ambiguous listening example and exclude it from accuracy counts and threshold tuning.
+
+## Song chart and tab preparation
+
+When sustained notes establish a chord, the song chart uses that estimate. A matching attack seventh and transcribed seventh can promote a dominant chord. Otherwise, on unclassified events the song reader scores simultaneous pitch-class templates by overlap duration, activation and the share of active pitch-class strength. It also shows octave-specific notes supported by both detectors when chord quality remains ambiguous. Individual notes in a mixed recording can belong to another instrument. The source is visible beside each reading.
+
+Edit a chart label after auditioning its interval. Edits are local to the browser, file name, file size, modification time and millisecond event boundaries. Clearing the field restores the estimate. Copying the chart or exporting saves the current edits outside browser storage. Raw predictions remain available for comparison.
+
+**Export tab draft** saves JSON with the event times, original readings, edited labels, and indices into one list of timed MIDI notes. Each note includes activation and all playable string/fret positions in standard six-string tuning through fret 24. An empty list indicates an out-of-range pitch. Actual fingering, bends, rhythm notation and instrument separation still require transcription work.
+
+In local replay, Testfile1 retained E5, D5, A5, E5. On zoom006 the main chart read G, Am, B5, C, D, E7, F. On GodDamn002, three of 32 rows remained unresolved and many others had pitch-only readings; this recording lacks an independently verified note chart. A 134-second stress input made by repeating Testfile1 produced 114 event windows and 422 note predictions, including predictions after 120 seconds. This checks pipeline coverage. The legacy tempo, key and chord-frame diagnostics still sample up to 120 seconds.

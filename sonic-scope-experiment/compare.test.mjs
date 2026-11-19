@@ -176,3 +176,24 @@ test('chord chart keeps event times, uncertain rows and distinct provisional rea
     'take.mp3 — estimated guitar chords', '0.00–1.00 s  F  (F7?)', '1.00–2.00 s  Bm', '2.00–3.00 s  Uncertain'
   ].join('\n'));
 });
+
+test('song chart tolerates a weak extra pitch and refuses to invent a chord from successive single notes', async () => {
+  const {songReading, buildTabDraft} = await import('./song.mjs');
+  const row = {start:0, end:1, type:'Single note', notes:'C4', persistence:80, fit:60};
+  const run = notes => {
+    const result = comparePredictions([row], notes, 1);
+    const event = result.events[0];
+    event.songReading = songReading(event, result.basicPitchNotes);
+    return result;
+  };
+  const r = run([48,52,55,58].map(m => predict(m,0,1)).concat({...predict(66,0,1), amplitude:0.09}));
+  assert.equal(r.events[0].songReading.label, 'C7');
+  const solo = run([predict(60,0,0.3),predict(64,0.35,0.3),predict(67,0.7,0.3)]);
+  assert.equal(solo.events[0].songReading.kind, 'notes');
+  r.events[0].reviewedLabel = 'C9';
+  const draft = buildTabDraft(r);
+  assert.equal(draft.events[0].label, 'C9');
+  assert.equal(draft.events[0].reading.label, 'C7');
+  assert.deepEqual(draft.notes[0].positions, [{string:5,fret:3},{string:6,fret:8}]);
+  assert.match(buildChordChart(r), /C9/);
+});

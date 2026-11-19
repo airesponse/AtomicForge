@@ -1,3 +1,5 @@
+import { symbol } from './song.mjs';
+export { buildTabDraft } from './song.mjs';
 const pitchNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const pitchClasses = new Map([
   ['C', 0], ['D', 2], ['E', 4], ['F', 5], ['G', 7], ['A', 9], ['B', 11]
@@ -210,15 +212,15 @@ const chordWithTime = (chord, decimals) => chord
   : '—';
 
 export function buildChordChart(report) {
-  const symbol = chord => chord.replace(/ major$/, '').replace(/ minor$/, 'm');
-  const lines = [report.recording + ' — estimated guitar chords'];
+  const edited = report.events.some(event => event.reviewedLabel);
+  const lines = [report.recording + (edited ? ' — guitar chart with edits' : ' — estimated guitar chords')];
   for (const event of report.events) {
-    const chord = event.basicPitch.summaryChord?.chord;
+    const chord = event.songReading?.label ?? event.basicPitch.summaryChord?.chord;
     const alternatives = new Set((event.basicPitch.qualityEvidence ?? []).map(span => span.chord));
     if (event.attackSeventh) alternatives.add(event.attackSeventh.chord);
-    alternatives.delete(chord);
+    for (const candidate of alternatives) if (symbol(candidate) === symbol(chord ?? '')) alternatives.delete(candidate);
     const review = [...alternatives].map(candidate => symbol(candidate) + '?').join(', ');
-    lines.push(times(event.start, event.end) + ' s  ' + (chord ? symbol(chord) : 'Uncertain') + (review ? '  (' + review + ')' : ''));
+    lines.push(times(event.start, event.end) + ' s  ' + (event.reviewedLabel || (chord ? symbol(chord) : 'Uncertain')) + (!event.reviewedLabel && review ? '  (' + review + ')' : ''));
   }
   return lines.join('\n');
 }
@@ -239,20 +241,33 @@ export function buildComparisonReport(report) {
   return [...header, ...rows].join('\n');
 }
 
-export function renderComparison(container, report, chordView = 'summary', playInterval) {
+export function renderComparison(container, report, chordView = 'summary', playInterval, saveEdit) {
   const table = document.createElement('table');
   table.className = 'comparison-table';
   const body = document.createElement('tbody');
   const head = table.createTHead().insertRow();
-  if (chordView === 'summary') {
-    for (const label of ['Event (s)', 'Chord estimate', 'Other chord evidence']) {
+  if (chordView === 'summary' || chordView === 'review') {
+    for (const label of ['Play interval', 'Song chart', 'Evidence']) {
       const cell = document.createElement('th');
       cell.scope = 'col';
       cell.textContent = label;
       head.append(cell);
     }
     table.append(body);
-    for (const event of report.events) {
+    const reviewOnly = chordView === 'review';
+    const events = reviewOnly ? report.events.filter(event => {
+      const reading = event.songReading;
+      const competing = event.basicPitch.qualityEvidence?.some(span => symbol(span.chord) !== reading?.label);
+      return !event.reviewedLabel && (reading?.kind !== 'chord' || reading.source !== 'sustained notes' ||
+        competing || Boolean(event.attackSeventh));
+    }) : report.events;
+    if (!events.length && reviewOnly) {
+      const message = document.createElement('p');
+      message.textContent = 'No events flagged for review.';
+      container.replaceChildren(message);
+      return;
+    }
+    for (const event of events) {
       const row = body.insertRow();
       const timing = times(event.start, event.end);
       const intervalCell = row.insertCell();
@@ -264,9 +279,27 @@ export function renderComparison(container, report, chordView = 'summary', playI
         button.addEventListener('click', () => playInterval(event.start, event.end));
         intervalCell.append(button);
       } else intervalCell.textContent = timing;
-      for (const value of [event.basicPitch.summaryChord?.chord ?? 'Uncertain', evidenceText(event, event.basicPitch.summaryChord?.chord)]) {
-        row.insertCell().textContent = value;
-      }
+      const estimate = event.songReading?.label ?? event.basicPitch.summaryChord?.chord ?? 'Unresolved';
+      const cell = row.insertCell();
+      const field = document.createElement('input');
+      field.type = 'text';
+      field.maxLength = 40;
+      field.className = 'chart-edit';
+      field.placeholder = estimate;
+      field.value = event.reviewedLabel || '';
+      field.setAttribute('aria-label', 'Chart label for ' + timing + ', estimate ' + estimate);
+      field.addEventListener('input', () => {
+        event.reviewedLabel = field.value.trim();
+        saveEdit?.(event);
+      });
+      if (reviewOnly) field.addEventListener('change', () => {
+        if (event.reviewedLabel) renderComparison(container, report, chordView, playInterval, saveEdit);
+      });
+      cell.append(field);
+      const evidence = row.insertCell();
+      const detail = evidenceText(event, estimate);
+      evidence.textContent = estimate + ' · ' + (event.songReading?.source ?? 'sustained notes') +
+        (detail === '—' ? '' : ' · ' + detail);
     }
     container.replaceChildren(table);
     return;
