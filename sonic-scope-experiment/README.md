@@ -69,3 +69,9 @@ The export is optional. With audio alone, the CLI returns the independent chord 
 | GodDamn002.m4a | Chordino produced 15 labeled spans after the initial no-chord interval. The recording has no independently supplied chord sequence for scoring. |
 
 These runs use FFmpeg mono decoding at 22050 Hz and the packages' default parameters. The known chord order was used only when comparing results. Changing event boundaries alone did not recover the three dominant sevenths in the seven-chord take.
+
+### Attack evidence for dominant sevenths
+
+A major chord estimate now triggers a local check of the decoded waveform. The summary and quick report show a seventh candidate when the root, major third and minor seventh all have spectral peaks at least 15% as strong as the strongest peak in the analysis band, in two consecutive overlapping frames, with the seventh in the same octave. The JSON field `events[].attackSeventh` records the chord, MIDI seventh and frame-window bounds, or null. Frame-window bounds describe analysis support and are approximate. A window centered on the boundary includes up to 60 ms from the preceding event. Harmonics and transition spill can produce misleading peaks.
+
+On the development recording zoom006, both the saved browser boundaries and fresh local replay boundaries produced E7 (D4) and F7 (E♭4), with no attack candidate for D7 or the other four played chords. D7 retained brief Basic Pitch evidence in the browser export. Testfile1 retained four power chords with no seventh candidates. These checks reuse the development recordings; performance on other players, tones and voicings is unmeasured.

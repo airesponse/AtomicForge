@@ -193,9 +193,14 @@ export function transcribe(samples, onProgress, signal) {
 
 
 function evidenceText(event, omitChord) {
-  return (event.basicPitch.qualityEvidence ?? []).filter(span => span.chord !== omitChord).map(span =>
+  const evidence = (event.basicPitch.qualityEvidence ?? []).filter(span => span.chord !== omitChord).map(span =>
     `${span.chord} for ${Math.round((span.end - span.start) * 1000)} ms`
-  ).join(', ') || '—';
+  );
+  if (event.attackSeventh) {
+    const { chord, seventhMidi } = event.attackSeventh;
+    evidence.push(chord + ' attack candidate (' + noteName(seventhMidi) + ')');
+  }
+  return evidence.join(', ') || '—';
 }
 
 const names = midis => midis.map(noteName).join(', ') || '—';

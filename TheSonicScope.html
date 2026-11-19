@@ -2976,7 +2976,7 @@
         }, run.signal);
         if (run.signal.aborted) return;
         const report = {
-          schemaVersion: 3,
+          schemaVersion: 4,
           recording: lastAudioFilename,
           durationSeconds: buffer.duration,
           decodedSampleRate: buffer.sampleRate,
@@ -2989,6 +2989,15 @@
           differenceReference: '2E.18 MIDI predictions on the same events',
           ...comparison.comparePredictions(polyReportRows, result.notes, buffer.duration)
         };
+        const { attackSeventh } = await import('./sonic-scope-experiment/attack.mjs');
+        for (const [index, event] of report.events.entries()) {
+          if (index % 8 === 0) {
+            basicPitchStatus.textContent = 'Checking chord attacks…';
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+          if (run.signal.aborted) return;
+          event.attackSeventh = attackSeventh(buffer, event, fftMagnitude);
+        }
         comparison.renderComparison(basicPitchResults, report, basicPitchChordView.value, startAt);
         basicPitchComparison = comparison;
         basicPitchReport = report;

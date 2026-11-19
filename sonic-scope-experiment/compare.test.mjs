@@ -147,3 +147,20 @@ test('interval auditions pause and resume to the same endpoint and stop the prev
   assert.deepEqual(starts.map(args => Array.from(args)), [[0, 2, 2], [0, 2.5, 1.5], [0, 5, 1], [0, 0]]);
   assert.equal(stopped.length, 2);
 });
+
+test('attack evidence requires a third and a seventh and remains separate from the sustained label', async () => {
+  const {attackSeventh} = await import('./attack.mjs');
+  const html = await readFile(new URL('../TheSonicScope.html', import.meta.url), 'utf8');
+  const fft = runInContext('(' + html.match(/function fftMagnitude[\s\S]*?\n    }/)[0] + ')', createContext({}));
+  const rate = 22050;
+  const event = {start: 0, end: 0.5, basicPitch: {summaryChord: {chord: 'A major'}}};
+  function evaluate(pitches) {
+    const samples = Float32Array.from({length: rate / 2}, (_, i) => pitches.reduce((sum, midi) =>
+      sum + 0.15 * Math.sin(2 * Math.PI * (440 * 2 ** ((midi - 69) / 12)) * i / rate), 0));
+    return attackSeventh({sampleRate: rate, length: samples.length, numberOfChannels: 1, getChannelData: () => samples}, event, fft);
+  }
+  assert.equal(evaluate([45, 61, 64, 67]).chord, 'A7');
+  assert.equal(evaluate([45, 61, 64]), null);
+  assert.equal(evaluate([45, 64, 67]), null);
+  assert.equal(event.basicPitch.summaryChord.chord, 'A major');
+});
