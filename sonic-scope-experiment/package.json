@@ -7,7 +7,8 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@spotify/basic-pitch": "1.0.1"
+    "@spotify/basic-pitch": "1.0.1",
+    "@tensorflow/tfjs": "3.21.0"
   },
   "devDependencies": {
     "esbuild": "0.25.12"

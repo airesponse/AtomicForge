@@ -89,7 +89,21 @@ export function transcribe(samples, onProgress, signal) {
       return;
     }
     const worker = new Worker(new URL('./generated/basic-pitch.worker.mjs', import.meta.url), { type: 'module' });
+    const phaseMessages = {
+      loading: 'Loading Basic Pitch model…',
+      'first-window': 'Analyzing the first audio window on the CPU…',
+      decoding: 'Decoding Basic Pitch notes…'
+    };
+    let progress = 'Starting Basic Pitch worker…';
+    let timeout;
+    function resetTimeout() {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        finish(reject, new Error('Basic Pitch made no progress for 60 seconds. Last step: ' + progress));
+      }, 60000);
+    }
     function finish(callback, value) {
+      clearTimeout(timeout);
       signal.removeEventListener('abort', abort);
       worker.terminate();
       callback(value);
@@ -99,11 +113,18 @@ export function transcribe(samples, onProgress, signal) {
     worker.onmessage = ({ data }) => {
       if (data.error) finish(reject, new Error(data.error));
       else if (data.notes) finish(resolve, data);
-      else onProgress(data.fraction);
+      else {
+        progress = phaseMessages[data.phase] ?? 'Running Basic Pitch… ' + Math.round(data.fraction * 100) + '%';
+        resetTimeout();
+        onProgress(progress);
+      }
     };
-    worker.onerror = () => finish(reject, new Error('Basic Pitch worker failed to load. Run the experiment build and open the localhost URL.'));
+    worker.onerror = event => finish(reject, new Error(
+      event.message || 'Basic Pitch worker failed to load. Run the experiment build and open the localhost URL.'
+    ));
     worker.onmessageerror = () => finish(reject, new Error('Could not read the Basic Pitch worker response.'));
     try {
+      resetTimeout();
       worker.postMessage(samples, [samples.buffer]);
     } catch (error) {
       finish(reject, error);

@@ -2916,8 +2916,8 @@
           throw new Error('2E.18 did not produce a complete baseline.');
         }
         const samples = await comparison.resampleForBasicPitch(buffer);
-        const result = await comparison.transcribe(samples, fraction => {
-          basicPitchStatus.textContent = 'Running Basic Pitch… ' + Math.round(fraction * 100) + '%';
+        const result = await comparison.transcribe(samples, message => {
+          basicPitchStatus.textContent = message;
         }, run.signal);
         if (run.signal.aborted) return;
         const report = {
