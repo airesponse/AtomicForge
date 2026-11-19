@@ -209,6 +209,20 @@ const chordWithTime = (chord, decimals) => chord
   ? `${chord.chord} (${times(chord.start, chord.end, decimals)} s)`
   : '—';
 
+export function buildChordChart(report) {
+  const symbol = chord => chord.replace(/ major$/, '').replace(/ minor$/, 'm');
+  const lines = [report.recording + ' — estimated guitar chords'];
+  for (const event of report.events) {
+    const chord = event.basicPitch.summaryChord?.chord;
+    const alternatives = new Set((event.basicPitch.qualityEvidence ?? []).map(span => span.chord));
+    if (event.attackSeventh) alternatives.add(event.attackSeventh.chord);
+    alternatives.delete(chord);
+    const review = [...alternatives].map(candidate => symbol(candidate) + '?').join(', ');
+    lines.push(times(event.start, event.end) + ' s  ' + (chord ? symbol(chord) : 'Uncertain') + (review ? '  (' + review + ')' : ''));
+  }
+  return lines.join('\n');
+}
+
 export function buildComparisonReport(report) {
   const header = [
     'SONIC SCOPE — CHORD COMPARISON',

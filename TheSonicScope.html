@@ -379,6 +379,7 @@
       <h2 class="section-title">Guitar chord analysis</h2>
       <div class="chord-test-actions">
         <button type="button" class="btn btn-secondary" id="runBasicPitch">Analyze guitar chords</button>
+        <button type="button" class="btn btn-secondary" id="copyChordChart" disabled>Copy chord chart</button>
         <button type="button" class="btn btn-secondary" id="copyBasicPitch" disabled>Copy comparison report</button>
         <button type="button" class="btn btn-secondary" id="exportBasicPitch" disabled>Export JSON</button>
       </div>
@@ -2931,6 +2932,7 @@
     const basicPitchResults = document.getElementById('basicPitchResults');
     const basicPitchButton = document.getElementById('runBasicPitch');
     const basicPitchExport = document.getElementById('exportBasicPitch');
+    const chordChartCopy = document.getElementById('copyChordChart');
     const basicPitchCopy = document.getElementById('copyBasicPitch');
     const basicPitchCopyStatus = document.getElementById('copyBasicPitchStatus');
     const basicPitchView = document.getElementById('basicPitchView');
@@ -2945,6 +2947,7 @@
       basicPitchReport = null;
       basicPitchResults.replaceChildren();
       basicPitchExport.disabled = true;
+      chordChartCopy.disabled = true;
       basicPitchCopy.disabled = true;
       basicPitchView.hidden = true;
       basicPitchCopyStatus.replaceChildren();
@@ -3002,6 +3005,7 @@
         basicPitchComparison = comparison;
         basicPitchReport = report;
         basicPitchExport.disabled = false;
+        chordChartCopy.disabled = false;
         basicPitchCopy.disabled = false;
         basicPitchView.hidden = false;
         basicPitchStatus.textContent = `${report.events.length} events compared · ${report.basicPitchNotes.length} Basic Pitch note predictions · ${report.unassignedBasicPitchNoteIndices.length} outside windows`;
@@ -3019,6 +3023,9 @@
       if (basicPitchReport) basicPitchComparison.renderComparison(basicPitchResults, basicPitchReport, basicPitchChordView.value, startAt);
     });
 
+    chordChartCopy.addEventListener('click', () => {
+      if (basicPitchReport) return copyReport(basicPitchComparison.buildChordChart(basicPitchReport), basicPitchCopyStatus);
+    });
     basicPitchCopy.addEventListener('click', () => {
       if (basicPitchReport) return copyReport(basicPitchComparison.buildComparisonReport(basicPitchReport), basicPitchCopyStatus);
     });

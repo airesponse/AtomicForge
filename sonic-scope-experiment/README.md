@@ -13,7 +13,7 @@ npm --prefix sonic-scope-experiment test
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Open [The Sonic Scope on localhost](http://127.0.0.1:8765/TheSonicScope.html). Select a recording and click **Analyze Tempo, Chroma, Key & Chords**. Under **Guitar chord analysis**, click **Analyze guitar chords**. The three-column summary opens first. **Copy comparison report** copies a compact table for sharing. **Export JSON** includes all note predictions and timing. Open **2E.18 note diagnostics** for the full 2E.18 report.
+Open [The Sonic Scope on localhost](http://127.0.0.1:8765/TheSonicScope.html). Select a recording and click **Analyze Tempo, Chroma, Key & Chords**. Under **Guitar chord analysis**, click **Analyze guitar chords**. The three-column summary opens first. **Copy chord chart** copies one line per event with the time range and guitar chord symbol. Parentheses with a question mark indicate an alternative to audition, such as F (F7?). **Copy comparison report** copies a compact table for sharing. **Export JSON** includes all note predictions and timing. Open **2E.18 note diagnostics** for the full 2E.18 report.
 
 The initial npm install needs internet. The bundle and model files then load from localhost. The browser decodes the audio and downmixes to mono at 22.05 kHz, then sends the PCM to a local web worker for inference. The worker ends after each run or when the recording or event boundaries change. Transitive dependency resolution is currently unlocked. The bundle and model files are generated locally and excluded from Git.
 

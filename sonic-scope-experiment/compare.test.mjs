@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { createContext, runInContext } from 'node:vm';
-import { buildComparisonReport, comparePredictions, noteName } from './compare.mjs';
+import { buildChordChart, buildComparisonReport, comparePredictions, noteName } from './compare.mjs';
 
 const predict = (pitchMidi, startTimeSeconds, durationSeconds, amplitude = 0.72) => ({
   pitchMidi, startTimeSeconds, durationSeconds, amplitude
@@ -163,4 +163,16 @@ test('attack evidence requires a third and a seventh and remains separate from t
   assert.equal(evaluate([45, 61, 64]), null);
   assert.equal(evaluate([45, 64, 67]), null);
   assert.equal(event.basicPitch.summaryChord.chord, 'A major');
+});
+
+test('chord chart keeps event times, uncertain rows and distinct provisional readings', () => {
+  const basicPitch = {summaryChord: {chord: 'F major'}, qualityEvidence: [{chord: 'F7'}]};
+  const events = [
+    {start: 0, end: 1, basicPitch, attackSeventh: {chord: 'F7'}},
+    {start: 1, end: 2, basicPitch: {summaryChord: {chord: 'B minor'}}},
+    {start: 2, end: 3, basicPitch: {summaryChord: null}}
+  ];
+  assert.equal(buildChordChart({recording: 'take.mp3', events}), [
+    'take.mp3 — estimated guitar chords', '0.00–1.00 s  F  (F7?)', '1.00–2.00 s  Bm', '2.00–3.00 s  Uncertain'
+  ].join('\n'));
 });
