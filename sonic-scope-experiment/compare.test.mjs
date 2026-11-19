@@ -104,3 +104,16 @@ test('runs the actual 2E.18 detector on a synthetic guitar-register tone', async
   `, context);
   assert.match(result.name, /\bG3\b/);
 });
+
+test('surfaces brief seventh evidence only when the defining notes overlap', () => {
+  const row = { start: 0, end: 1, notes: '', type: 'Uncertain' };
+  const triad = [50, 54, 57].map(midi => predict(midi, 0, 0.8));
+  const events = notes => comparePredictions([row], notes, 1).events[0].basicPitch;
+  const chord = events([...triad, predict(60, 0.2, 0.05)]);
+  assert.equal(chord.sustainedChord.chord, 'D major');
+  assert.deepEqual(chord.qualityEvidence, [{ chord: 'D7', start: 0.2, end: 0.25 }]);
+  assert.deepEqual(events([...triad, predict(60, 0.81, 0.1)]).qualityEvidence, []);
+  assert.deepEqual(events(triad).qualityEvidence, []);
+  assert.equal(chord.summaryChord.chord, 'D major');
+  assert.equal(events([...triad, predict(60, 0.2, 0.16)]).summaryChord.chord, 'D7');
+});

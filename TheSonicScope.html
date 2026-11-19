@@ -376,9 +376,9 @@
 
 
     <section class="panel" id="automaticChordPanel">
-      <h2 class="section-title">Chord testing</h2>
+      <h2 class="section-title">Guitar chord analysis</h2>
       <div class="chord-test-actions">
-        <button type="button" class="btn btn-secondary" id="runBasicPitch">Compare 2E.18 and Basic Pitch</button>
+        <button type="button" class="btn btn-secondary" id="runBasicPitch">Analyze guitar chords</button>
         <button type="button" class="btn btn-secondary" id="copyBasicPitch" disabled>Copy comparison report</button>
         <button type="button" class="btn btn-secondary" id="exportBasicPitch" disabled>Export JSON</button>
       </div>
@@ -386,10 +386,11 @@
       <div id="basicPitchView" hidden>
         <label for="basicPitchChordView">Basic Pitch chord view</label>
         <select id="basicPitchChordView">
-          <option value="sustained">Sustained overlap</option>
+          <option value="summary">Chord summary</option>
+          <option value="sustained">Compare sustained overlap</option>
           <option value="pooled">Whole event</option>
         </select>
-        <p class="chord-test-status">Sustained overlap shows the longest recognized chord held for at least 150 ms. Expand a row for raw notes and differences.</p>
+        <p class="chord-test-status">The main label needs 150 ms of sustained overlap. Other chord evidence shows how long a more specific voicing appeared within the event.</p>
       </div>
       <div id="basicPitchResults" class="chord-test-results"></div>
       <p id="copyBasicPitchStatus" class="chord-test-status" role="status"></p>
@@ -2973,7 +2974,7 @@
         }, run.signal);
         if (run.signal.aborted) return;
         const report = {
-          schemaVersion: 2,
+          schemaVersion: 3,
           recording: lastAudioFilename,
           durationSeconds: buffer.duration,
           decodedSampleRate: buffer.sampleRate,

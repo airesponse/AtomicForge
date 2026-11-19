@@ -36,7 +36,7 @@ function chordCandidate(midis) {
 
 const minimumChordSeconds = 0.15;
 
-function sustainedChord(notes, start, end) {
+function chordEvidence(notes, start, end) {
   const edges = notes.flatMap(note => [
     { time: Math.max(start, note.start), pitch: note.midi % 12, change: 1 },
     { time: Math.min(end, note.end), pitch: note.midi % 12, change: -1 }
@@ -44,6 +44,7 @@ function sustainedChord(notes, start, end) {
   const active = new Array(12).fill(0);
   let span = null;
   let best = null;
+  const longestByChord = new Map();
 
   for (let index = 0; index < edges.length;) {
     const { time } = edges[index];
@@ -62,11 +63,24 @@ function sustainedChord(notes, start, end) {
     else span = { chord, start: time, end: nextTime };
 
     const duration = span.end - span.start;
+    const previous = longestByChord.get(chord);
+    if (duration > 0 && (!previous || duration > previous.end - previous.start)) {
+      longestByChord.set(chord, { ...span });
+    }
     if (duration + 1e-9 >= minimumChordSeconds && (!best || duration > best.end - best.start)) {
       best = { ...span };
     }
   }
-  return best;
+  // A strum can briefly reveal a third or seventh before one string decays.
+  // Keep these shorter readings available without promoting them to the main label.
+  const root = best?.chord.match(/^[A-G]#?/)?.[0];
+  const alternatives = best?.chord === root + '5'
+    ? [root + ' major', root + ' minor', root + '7']
+    : best?.chord === root + ' major' ? [root + '7'] : [];
+  const qualityEvidence = alternatives.map(label => longestByChord.get(label)).filter(Boolean);
+  const sustainedAlternatives = qualityEvidence.filter(span => span.end - span.start + 1e-9 >= minimumChordSeconds);
+  const summaryChord = sustainedAlternatives.length === 1 ? sustainedAlternatives[0] : best;
+  return { sustainedChord: best, qualityEvidence, summaryChord };
 }
 
 export function comparePredictions(baseline, modelNotes, duration) {
@@ -97,7 +111,7 @@ export function comparePredictions(baseline, modelNotes, duration) {
         legacyChord: row.baseline
       },
       basicPitch: { midi: basicPitchMidi, chordCandidate: chordCandidate(basicPitchMidi), noteIndices: basicPitchNoteIndices,
-        sustainedChord: sustainedChord(basicPitchNoteIndices.map(index => basicPitchNotes[index]), row.start, row.end) },
+        ...chordEvidence(basicPitchNoteIndices.map(index => basicPitchNotes[index]), row.start, row.end) },
       missingFromBasicPitch: baselineMidi.filter(midi => !basicPitchMidi.includes(midi)),
       additionalInBasicPitch: basicPitchMidi.filter(midi => !baselineMidi.includes(midi))
     };
@@ -178,6 +192,12 @@ export function transcribe(samples, onProgress, signal) {
 }
 
 
+function evidenceText(event, omitChord) {
+  return (event.basicPitch.qualityEvidence ?? []).filter(span => span.chord !== omitChord).map(span =>
+    `${span.chord} for ${Math.round((span.end - span.start) * 1000)} ms`
+  ).join(', ') || '—';
+}
+
 const names = midis => midis.map(noteName).join(', ') || '—';
 const times = (start, end, decimals = 2) => `${start.toFixed(decimals)}–${end.toFixed(decimals)}`;
 const chordWithTime = (chord, decimals) => chord
@@ -190,21 +210,38 @@ export function buildComparisonReport(report) {
     'Recording: ' + report.recording,
     `Events: ${report.events.length} · Basic Pitch note predictions: ${report.basicPitchNotes.length} · Outside windows: ${report.unassignedBasicPitchNoteIndices.length}`,
     `Sustained chord: longest recognized pitch set overlapping for at least ${report.sustainedChordMinimumSeconds * 1000} ms`,
-    'Event (s)\tConsolidated\t2E.18 notes\tBasic Pitch sustained chord\tBasic Pitch pooled chord\tBasic Pitch raw pitches\t2E.18 only\tBasic Pitch only'
+    'Event (s)\tConsolidated\t2E.18 notes\tBasic Pitch sustained chord\tBasic Pitch pooled chord\tBasic Pitch raw pitches\t2E.18 only\tBasic Pitch only\tOther chord evidence\tSummary chord'
   ];
   const rows = report.events.map(event => [
     times(event.start, event.end, 3), event.baseline.legacyChord ?? '—', names(event.baseline.midi),
     chordWithTime(event.basicPitch.sustainedChord, 3), event.basicPitch.chordCandidate ?? '—',
-    names(event.basicPitch.midi), names(event.missingFromBasicPitch), names(event.additionalInBasicPitch)
+    names(event.basicPitch.midi), names(event.missingFromBasicPitch), names(event.additionalInBasicPitch), evidenceText(event), event.basicPitch.summaryChord?.chord ?? '—'
   ].join('\t'));
   return [...header, ...rows].join('\n');
 }
 
-export function renderComparison(container, report, chordView = 'sustained') {
+export function renderComparison(container, report, chordView = 'summary') {
   const table = document.createElement('table');
   table.className = 'comparison-table';
   const body = document.createElement('tbody');
   const head = table.createTHead().insertRow();
+  if (chordView === 'summary') {
+    for (const label of ['Event (s)', 'Chord estimate', 'Other chord evidence']) {
+      const cell = document.createElement('th');
+      cell.scope = 'col';
+      cell.textContent = label;
+      head.append(cell);
+    }
+    table.append(body);
+    for (const event of report.events) {
+      const row = body.insertRow();
+      for (const value of [times(event.start, event.end), event.basicPitch.summaryChord?.chord ?? 'Uncertain', evidenceText(event, event.basicPitch.summaryChord?.chord)]) {
+        row.insertCell().textContent = value;
+      }
+    }
+    container.replaceChildren(table);
+    return;
+  }
   const modelLabel = chordView === 'sustained' ? 'Basic Pitch sustained' : 'Basic Pitch pooled';
   for (const label of ['Event (s)', 'Consolidated', '2E.18 notes', modelLabel, 'Details']) {
     const cell = document.createElement('th');
