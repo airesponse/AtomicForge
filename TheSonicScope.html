@@ -378,6 +378,14 @@
         <span id="polyStatus" role="status" style="display:block;color:var(--muted);font-size:.84rem;margin-top:8px;">Run the main audio analysis first.</span>
         <div id="polyResults" style="margin-top:12px;overflow-x:auto;"></div>
       </div>
+      <div id="basicPitchPanel" style="margin-top:18px;padding-top:14px;border-top:1px solid #455;">
+        <h3 style="margin:0 0 8px;font-size:1.06rem;">Basic Pitch comparison</h3>
+        <p style="color:var(--muted);font-size:.84rem;line-height:1.5;">Compare notes on the same event boundaries. The two right columns show disagreements between engines. Basic Pitch activation and 2E.18 persistence use different scales.</p>
+        <button type="button" class="btn btn-secondary" id="runBasicPitch">Compare 2E.18 and Basic Pitch</button>
+        <button type="button" class="btn btn-secondary" id="exportBasicPitch" disabled>Export comparison JSON</button>
+        <p id="basicPitchStatus" role="status" style="color:var(--muted);font-size:.84rem;">Load a recording and run the main audio analysis first.</p>
+        <div id="basicPitchResults" style="overflow-x:auto;"></div>
+      </div>
       <details style="margin-top:14px;"><summary style="cursor:pointer;color:#f0ba6b;">Advanced: manual reference validation (optional)</summary>
       <p style="color:var(--muted);font-size:.8rem;line-height:1.5;">The original manual validation tools remain below for independent testing. Automatically predicted labels must not be used as ground truth for scoring the same detectors.</p></details>
     </div>
@@ -485,6 +493,7 @@
     }
 
     function resetAnalysisDisplay() {
+      clearBasicPitchComparison();
       latestChordFrames = null;
       if(typeof automaticSegments!=='undefined')automaticSegments=[];
       if(typeof autoResults!=='undefined')autoResults.replaceChildren();
@@ -2338,6 +2347,7 @@
         const third=octaveCandidateFrames(b,baseline);
         const classified=autoSegments(b,[baseline,second,third]);
         const segs=classified.accepted;
+        clearBasicPitchComparison();
         automaticSegments=segs;
         rejectedAutomaticSegments=classified.rejected;
         autoResults.replaceChildren();
@@ -2869,6 +2879,89 @@
       }catch(err){status.textContent='Multi-pitch analysis failed: '+err.message;console.error(err);}
     }
     document.getElementById('runPolyphonic').addEventListener('click',runPolyphonic);
+
+    const basicPitchStatus = document.getElementById('basicPitchStatus');
+    const basicPitchResults = document.getElementById('basicPitchResults');
+    const basicPitchButton = document.getElementById('runBasicPitch');
+    const basicPitchExport = document.getElementById('exportBasicPitch');
+    let basicPitchRun = null;
+    let basicPitchReport = null;
+
+    function clearBasicPitchComparison() {
+      basicPitchRun?.abort();
+      basicPitchRun = null;
+      basicPitchReport = null;
+      basicPitchResults.replaceChildren();
+      basicPitchExport.disabled = true;
+      basicPitchButton.disabled = false;
+      basicPitchStatus.textContent = 'Run the main audio analysis, then compare engines.';
+    }
+
+    basicPitchButton.addEventListener('click', async () => {
+      if (!audioBuffer || !automaticSegments.length) {
+        basicPitchStatus.textContent = 'Run the main audio analysis to find event boundaries first.';
+        return;
+      }
+      clearBasicPitchComparison();
+      const run = new AbortController();
+      basicPitchRun = run;
+      const buffer = audioBuffer;
+      basicPitchButton.disabled = true;
+      basicPitchStatus.textContent = 'Preparing 2E.18 baseline and Basic Pitch model…';
+      try {
+        const comparison = await import('./sonic-scope-experiment/compare.mjs');
+        if (run.signal.aborted) return;
+        runPolyphonic();
+        if (!polyReportRows.length || polyReportRows.length !== automaticSegments.length) {
+          throw new Error('2E.18 did not produce a complete baseline.');
+        }
+        const samples = await comparison.resampleForBasicPitch(buffer);
+        const result = await comparison.transcribe(samples, fraction => {
+          basicPitchStatus.textContent = 'Running Basic Pitch… ' + Math.round(fraction * 100) + '%';
+        }, run.signal);
+        if (run.signal.aborted) return;
+        const report = {
+          schemaVersion: 1,
+          recording: lastAudioFilename,
+          durationSeconds: buffer.duration,
+          decodedSampleRate: buffer.sampleRate,
+          decodedChannels: buffer.numberOfChannels,
+          basicPitchVersion: '1.0.1',
+          modelSampleRate: 22050,
+          modelSettings: result.settings,
+          baselineConfidence: '2E.18 event persistence, fraction',
+          basicPitchConfidence: 'mean note activation (amplitude), fraction',
+          differenceReference: '2E.18 MIDI predictions on the same events',
+          ...comparison.comparePredictions(polyReportRows, result.notes, buffer.duration)
+        };
+        comparison.renderComparison(basicPitchResults, report);
+        basicPitchReport = report;
+        basicPitchExport.disabled = false;
+        basicPitchStatus.textContent = report.events.length + ' events compared. ' +
+          report.unassignedBasicPitchNoteIndices.length + ' Basic Pitch notes outside the comparison windows are included in the JSON.';
+      } catch (error) {
+        if (!run.signal.aborted) basicPitchStatus.textContent = 'Comparison failed: ' + error.message;
+      } finally {
+        if (basicPitchRun === run) {
+          basicPitchRun = null;
+          basicPitchButton.disabled = false;
+        }
+      }
+    });
+
+    basicPitchExport.addEventListener('click', () => {
+      if (!basicPitchReport) return;
+      const recording = basicPitchReport.recording.replace(/\.[^.]+$/, '');
+      const blob = new Blob([JSON.stringify(basicPitchReport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = recording + '-sonic-scope-comparison.json';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
 
     document.getElementById('runAutomaticChords').addEventListener('click',discoverAutomaticChords);
     window.addEventListener('resize',drawAutoWave);
