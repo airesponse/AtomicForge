@@ -16,11 +16,19 @@ function baselinePitches(row) {
   });
 }
 
+const chordSuffixes = {
+  '0,7': '5',
+  '0,4,7': ' major',
+  '0,3,7': ' minor',
+  '0,4,7,10': '7',
+  '0,4,10': '7'
+};
+
 function chordCandidate(midis) {
   const classes = [...new Set(midis.map(midi => midi % 12))];
   for (const root of classes) {
     const intervals = classes.map(pc => (pc - root + 12) % 12).sort((a, b) => a - b).join(',');
-    const suffix = { '0,7': '5', '0,4,7': ' major', '0,3,7': ' minor' }[intervals];
+    const suffix = chordSuffixes[intervals];
     if (suffix) return pitchNames[root] + suffix;
   }
   return null;

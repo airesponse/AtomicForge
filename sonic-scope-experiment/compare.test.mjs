@@ -58,6 +58,26 @@ test('requires continuous overlap and does not assemble a chord from successive 
   assert.equal(event.basicPitch.sustainedChord, null);
 });
 
+test('labels a dominant seventh in inversion and through a missing fifth', () => {
+  const baseline = { start: 0, end: 1, type: 'Multiple notes', notes: 'C3, D3, F#3' };
+  const notes = [predict(48, 0, 0.9), predict(50, 0, 0.9), predict(54, 0, 0.9), predict(57, 0.1, 0.4)];
+  const report = comparePredictions([baseline], notes, 1);
+  const [event] = report.events;
+  assert.equal(event.baseline.chordCandidate, 'D7');
+  assert.equal(event.basicPitch.chordCandidate, 'D7');
+  assert.deepEqual(event.basicPitch.sustainedChord, { chord: 'D7', start: 0, end: 0.9 });
+  assert.match(buildComparisonReport({ ...report, recording: 'dominant.m4a' }), /D7 \(0.000–0.900 s\)/);
+});
+
+test('does not label a tritone or a major seventh as a dominant seventh', () => {
+  const baseline = { start: 0, end: 1, type: 'Uncertain', notes: '' };
+  for (const pitches of [[54, 60], [50, 54, 57, 61]]) {
+    const [event] = comparePredictions([baseline], pitches.map(pitch => predict(pitch, 0, 0.8)), 1).events;
+    assert.equal(event.basicPitch.chordCandidate, null);
+    assert.equal(event.basicPitch.sustainedChord, null);
+  }
+});
+
 test('runs the actual 2E.18 detector on a synthetic guitar-register tone', async () => {
   const html = await readFile(new URL('../TheSonicScope.html', import.meta.url), 'utf8');
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
