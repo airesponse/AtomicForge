@@ -306,7 +306,7 @@
       <div class="controls-row">
         <button class="btn" id="playBtn" disabled>▶ Play Audio</button>
         <button class="btn btn-secondary" id="stopBtn" disabled>■ Stop</button>
-        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Analyze Tempo & Beats</button>
+        <button class="btn btn-secondary" id="analyzeBtn" disabled>🔬 Analyze Tempo, Chroma, Key & Chords</button>
         <button class="btn btn-secondary" id="pdfBtn" disabled title="Available after harmonic analysis is implemented">📄 Export Report (PDF) — Coming Soon</button>
         <span id="statusText" style="font-size: 0.85rem; color: var(--muted); margin-left: auto;">No audio loaded</span>
       </div>
@@ -341,12 +341,97 @@
         </div>
       </div>
 
+      <div class="progression-box" id="keyCandidatesPanel">
+        <div style="font-size:0.9rem;font-weight:600;color:#fff;">Key Candidates</div>
+        <div id="keyCandidates" style="margin-top:9px;color:var(--muted);font-size:0.85rem;">Run analysis to compare major and minor keys.</div>
+        <p style="font-size:0.78rem;color:var(--muted);line-height:1.45;margin:9px 0 0;">Key and scale are estimates from overall pitch-class energy. Blues-rock, power chords, modal mixtures and relative major/minor keys may be ambiguous. The strength indicator is not a probability.</p>
+      </div>
+      <div class="progression-box" id="chromagramPanel" aria-label="Chromagram analysis">
+        <div style="font-size:0.9rem;font-weight:600;color:#fff;margin-bottom:8px;">12-note Chromagram</div>
+        <div id="chromagramBars" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;align-items:end;min-height:120px;" aria-label="Pitch class energy chart"></div>
+        <p id="chromagramNote" style="font-size:0.8rem;color:var(--muted);margin:10px 0 0;">Analyze a recording to display its pitch-class energy. Transient rejection and harmonic weighting are applied; results remain estimates.</p>
+      </div>
+
       <div class="progression-box">
-        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">Detected Chord Progression Map</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: #fff;">Estimated Chord Timeline (root-aware, zoomable)</div>
         <div class="chord-badge-list" id="resProgression">
-          <!-- Chord badges will be added here -->
+          <!-- Chord candidates appear after analysis -->
         </div>
       </div>
+    </div>
+
+
+    <!-- 2E.6: predictions only, no user-provided reference or claimed ground truth -->
+    <div class="panel" id="automaticChordPanel">
+      <div class="section-title">🎸 Milestone 2E.18 — Root Recovery & Pitch-Class Verification</div>
+      <p style="color:var(--muted);font-size:.88rem;line-height:1.55;">No chord names, counts, or timestamps to enter. Sonic Scope preserves the 2E.11 power-chord baseline and adds experimental multi-pitch analysis for single notes, double-stops and small chords. The new detector separates candidate fundamentals from their harmonics; ambiguous events remain explicitly uncertain. These are <strong>audio-derived predictions, not verified ground truth</strong>; agreement between detectors does not establish accuracy.</p>
+      <button class="btn btn-secondary" type="button" id="runAutomaticChords">Analyze chords automatically</button>
+      <span id="automaticChordStatus" role="status" style="display:block;margin-top:10px;color:var(--muted);font-size:.85rem;">Load audio and run the main analysis; automatic chord discovery will then run.</span>
+      <canvas id="automaticChordCanvas" height="155" style="display:block;width:100%;height:155px;margin-top:12px;border:1px solid #455;border-radius:7px;background:#101719;" aria-label="Waveform with automatically detected chord attacks"></canvas>
+      <div id="automaticChordResults" aria-live="polite" style="margin-top:12px;overflow-x:auto;"></div>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid #455;">
+        <h3 style="margin:0 0 8px;font-size:1.06rem;">2E.18 — Independent notes and root recovery</h3>
+        <p style="color:var(--muted);font-size:.84rem;line-height:1.5;">Track guitar-register harmonic families across attack and sustain, test root/fifth alternatives, and compare single-note and polyphonic hypotheses. Ambiguous evidence remains uncertain. The 2E.11 baseline is unchanged.</p>
+        <button type="button" class="btn btn-secondary" id="runPolyphonic">Analyze notes, double-stops &amp; chords</button>
+        <button type="button" class="btn btn-secondary" id="copyDiagnosticReport" style="margin-left:6px;">Copy complete diagnostic report</button>
+        <span id="copyDiagnosticStatus" role="status" style="display:block;color:var(--muted);font-size:.8rem;margin-top:6px;">Copies 2E.18 results, 2E.17 comparison, evidence metrics and baseline for sharing. No manual transcription needed.</span>
+        <span id="polyStatus" role="status" style="display:block;color:var(--muted);font-size:.84rem;margin-top:8px;">Run the main audio analysis first.</span>
+        <div id="polyResults" style="margin-top:12px;overflow-x:auto;"></div>
+      </div>
+      <details style="margin-top:14px;"><summary style="cursor:pointer;color:#f0ba6b;">Advanced: manual reference validation (optional)</summary>
+      <p style="color:var(--muted);font-size:.8rem;line-height:1.5;">The original manual validation tools remain below for independent testing. Automatically predicted labels must not be used as ground truth for scoring the same detectors.</p></details>
+    </div>
+
+    <!-- Milestone 2E: independent ground-truth validation; no changes to detection DSP -->
+    <details class="panel" id="validationPanel" style="padding:18px;"><summary style="font-weight:700;cursor:pointer;">Advanced — Manual Ground Truth &amp; Detector Validation (optional)</summary><div style="margin-top:16px;">
+      <div class="section-title">🧪 Chord Detector Validation Mode</div>
+      <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">Record a known progression, load the recording above, and enter the <strong>actual chord and start/end times</strong> below. Times must match the audio file. This measures the existing detector without teaching it the answers.</p>
+
+      <div id="onsetPanel" style="margin:18px 0;padding:15px;border:1px solid #44665d;border-radius:10px;background:#14201e;">
+        <h3 style="margin:0 0 8px;font-size:1.08rem;">Milestone 2E.4 — Automatic Chord Boundary Timing</h3>
+        <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">Find strum attacks from audio independently of chord classifiers. Assign the chord names you actually played, then review and drag timing markers. Automatically measured boundaries are estimates, not independently verified chord identities.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-secondary" id="detectOnsetsBtn" type="button">Detect strum boundaries</button>
+          <label for="onsetCount" style="font-size:.85rem;">Strums <input id="onsetCount" type="number" min="1" max="24" value="4" style="width:55px;background:#16161b;color:#fff;border:1px solid #666;border-radius:5px;padding:6px;"></label>
+          <label for="onsetNames" style="font-size:.85rem;">Chord order <input id="onsetNames" type="text" value="E5,D5,A5,E5" style="width:180px;max-width:65vw;background:#16161b;color:#fff;border:1px solid #666;border-radius:5px;padding:7px;" aria-label="Chord names in played order"></label>
+        </div>
+        <p id="onsetStatus" role="status" style="font-size:.84rem;color:var(--muted);margin:10px 0;">Load audio, then detect attacks. Analysis is not required.</p>
+        <canvas id="onsetCanvas" height="155" style="display:block;width:100%;height:155px;border:1px solid #455;border-radius:7px;background:#101719;touch-action:none;cursor:crosshair;" aria-label="Audio waveform with draggable onset markers"></canvas>
+        <p style="color:var(--muted);font-size:.78rem;margin:8px 0;">Drag orange markers to adjust strum starts. The first chord starts at the first detected attack; audio before it is excluded from scoring. Tap Play to audition each interval.</p>
+        <div id="onsetRows" style="display:grid;gap:7px;margin:10px 0;"></div>
+        <button class="btn btn-secondary" id="applyOnsetsBtn" type="button">Use these timings as ground truth</button>
+      </div>
+      <label for="validationTruth" style="display:block;font-weight:600;margin:12px 0 7px;">Ground truth — one chord per line: start,end,chord</label>
+      <textarea id="validationTruth" spellcheck="false" rows="5" placeholder="0,2,E5&#10;2,4,D5&#10;4,6,A5&#10;6,8,E5" style="display:block;box-sizing:border-box;width:100%;max-width:720px;background:#16161b;border:1px solid #494952;border-radius:8px;padding:12px;color:#f4f4f4;font:14px/1.5 ui-monospace,SFMono-Regular,monospace;"></textarea>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;">
+        <button type="button" id="validateChordsBtn" style="padding:10px 16px;border:1px solid #f59e0b;border-radius:8px;background:#25201a;color:#f59e0b;font-weight:700;cursor:pointer;">Compare with detected chords</button>
+        <span id="validationStatus" role="status" style="color:var(--muted);font-size:.84rem;">Run audio analysis first, then compare.</span>
+      </div>
+      <div id="validationResults" aria-live="polite" style="margin-top:16px;"></div>
+      <div id="diagnosticPanel" style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border);">
+        <h3 style="margin:0 0 8px;font-size:1.1rem;">Milestone 2E.1 — Chord Root Diagnostics</h3>
+        <p style="color:var(--muted);font-size:.88rem;line-height:1.5;">Inspect each labeled chord's attack and sustain separately. Independent FFT-based bass fundamental and harmonic pitch candidates help diagnose errors; this does not modify the chord detector or train it on the reference labels.</p>
+        <button class="btn btn-secondary" id="diagnoseChordsBtn" type="button">Inspect attack, sustain &amp; roots</button>
+        <span id="diagnosticStatus" role="status" style="margin-left:10px;color:var(--muted);font-size:.84rem;">Load audio, analyze, then enter reference intervals.</span>
+        <div id="diagnosticResults" aria-live="polite" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    </div></details>
+    <div class="panel" id="comparisonPanel">
+      <div class="section-title">🎸 Milestone 2E.2 — Side-by-Side Chord Detector</div>
+      <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">Compare the original 2D.8 detector against an independent experimental attack-aware, bass-supported power-chord detector. The experimental detector uses audio only, never the reference labels. Original results remain unchanged.</p>
+      <button class="btn btn-secondary" id="compareDetectorsBtn" type="button">Run both detectors &amp; compare</button>
+      <div id="comparisonStatus" role="status" style="margin-top:10px;color:var(--muted);font-size:.85rem;">Analyze audio first. Reference intervals are optional for predictions but required for accuracy scores.</div>
+      <div id="comparisonResults" aria-live="polite" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="panel" id="candidatePanel">
+      <div class="section-title">🎸 Milestone 2E.3 — Octave &amp; Root/Fifth Candidate</div>
+      <p style="color:var(--muted);font-size:.87rem;line-height:1.5;">A third, independent power-chord candidate tests octave-aware fundamentals, root/fifth pairing, and attack-weighted chord tracking. Compare all three detectors on identical frame times. Reference labels are used only to score results.</p>
+      <button class="btn btn-secondary" id="compareThreeBtn" type="button">Compare all three detectors</button>
+      <div id="candidateStatus" role="status" style="margin-top:10px;color:var(--muted);font-size:.85rem;">Load audio and run analysis first.</div>
+      <div id="candidateResults" aria-live="polite" style="margin-top:14px;"></div>
     </div>
 
     <!-- Compositional Development & Suggestions Section -->
@@ -365,8 +450,8 @@
   <script>
     'use strict';
 
-    // Milestone 1: reliable audio playback. Harmonic analysis and PDF export
-    // remain disabled until real analysis results are available.
+    // Milestone 2B: audio playback, tempo estimation and pitch-class analysis.
+    // Key, scale, chord detection and PDF export remain unavailable.
     let audioContext = null;
     let audioBuffer = null;
     let audioSource = null;
@@ -400,9 +485,24 @@
     }
 
     function resetAnalysisDisplay() {
+      latestChordFrames = null;
+      if(typeof automaticSegments!=='undefined')automaticSegments=[];
+      if(typeof autoResults!=='undefined')autoResults.replaceChildren();
+      if(typeof autoStatus!=='undefined')autoStatus.textContent='Load audio and analyze to discover chords automatically.';
+      validationResults.replaceChildren();
+      diagnosticResults.replaceChildren();
+      if(typeof comparisonResults!=='undefined')comparisonResults.replaceChildren();
+      if(typeof candidateResults!=='undefined')candidateResults.replaceChildren();
+      if(typeof candidateStatus!=='undefined')candidateStatus.textContent='Analyze audio first.';
+      if(typeof comparisonStatus!=='undefined')comparisonStatus.textContent='Analyze audio first.';
+      diagnosticStatus.textContent = 'Load audio, analyze, then enter reference intervals.';
+      validationStatus.textContent = 'Run audio analysis first, then compare.';
       for (const id of ['resBPM', 'resKey', 'resScale', 'resBeat', 'resChroma']) {
         document.getElementById(id).textContent = 'N/A';
       }
+      document.getElementById('chromagramBars').replaceChildren();
+      document.getElementById('keyCandidates').textContent = 'Run analysis to compare major and minor keys.';
+      document.getElementById('chromagramNote').textContent = 'Analyze a recording to display its pitch-class energy. Transient rejection and harmonic weighting are applied; results remain estimates.';
       document.getElementById('resProgression').replaceChildren();
       document.getElementById('suggestionsList').replaceChildren();
     }
@@ -547,9 +647,10 @@
       const generation = ++loadGeneration;
       ++analysisGeneration;
       analyzeBtn.dataset.busy = 'false';
-      analyzeBtn.textContent = '🔬 Analyze Tempo & Beats';
+      analyzeBtn.textContent = '🔬 Analyze Tempo, Chroma, Key & Chords';
       stopAudio('Loading audio…');
       audioBuffer = null;
+      onsetTimes=[];onsetRows.replaceChildren();onsetWaveform();onsetStatus.textContent="Load audio, then detect attacks.";
       updateControls();
       resetAnalysisDisplay();
       try {
@@ -565,7 +666,10 @@
         const decoded = await audioContext.decodeAudioData(arrayBuffer);
         if (generation !== loadGeneration) return;
         audioBuffer = decoded;
+        onsetWaveform();
         updateControls();
+        lastAudioFilename=file.name;
+        polyReportRows=[];
         setStatus(`Loaded: ${file.name} (${decoded.duration.toFixed(1)} s)`);
       } catch (error) {
         if (generation !== loadGeneration) return;
@@ -700,6 +804,2075 @@
       return { bpm, strength, score: bestScore, seconds: maxSeconds };
     }
 
+    // Radix-2 FFT; samples are windowed before transformation.
+    function fftMagnitude(real, imag) {
+      const n = real.length;
+      for (let i = 1, j = 0; i < n; i++) {
+        let bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) {
+          [real[i], real[j]] = [real[j], real[i]];
+          [imag[i], imag[j]] = [imag[j], imag[i]];
+        }
+      }
+      for (let len = 2; len <= n; len <<= 1) {
+        const angle = -2 * Math.PI / len;
+        const wr = Math.cos(angle), wi = Math.sin(angle);
+        for (let i = 0; i < n; i += len) {
+          let ur = 1, ui = 0;
+          for (let j = 0; j < len / 2; j++) {
+            const a = i + j, b = a + len / 2;
+            const vr = real[b] * ur - imag[b] * ui;
+            const vi = real[b] * ui + imag[b] * ur;
+            real[b] = real[a] - vr;
+            imag[b] = imag[a] - vi;
+            real[a] += vr;
+            imag[a] += vi;
+            const nextR = ur * wr - ui * wi;
+            ui = ur * wi + ui * wr;
+            ur = nextR;
+          }
+        }
+      }
+    }
+
+    function estimateChroma(buffer) {
+      // Milestone 2B.1: suppress broadband attacks and reduce upper-harmonic
+      // votes by evaluating each candidate fundamental with harmonic support.
+      const n = 16384;
+      if (buffer.length < n) return null;
+      const sampleRate = buffer.sampleRate;
+      const channels = Array.from({length: buffer.numberOfChannels},
+        (_, ch) => buffer.getChannelData(ch));
+      const duration = Math.min(buffer.duration, 120);
+      const frames = Math.min(96, Math.max(10, Math.floor(duration / 0.65)));
+      const real = new Float64Array(n), imag = new Float64Array(n);
+      const spectra = [];
+      const energy = [];
+      for (let frame = 0; frame < frames; frame++) {
+        const center = Math.round((frame + 0.5) * duration / frames * sampleRate);
+        const start = Math.max(0, Math.min(buffer.length - n, center - n / 2));
+        let rms = 0;
+        for (let i = 0; i < n; i++) {
+          let sample = 0;
+          for (const data of channels) sample += data[start + i];
+          sample /= channels.length;
+          rms += sample * sample;
+          real[i] = sample * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+          imag[i] = 0;
+        }
+        const level = Math.sqrt(rms / n);
+        energy.push(level);
+        if (level < 0.002) { spectra.push(null); continue; }
+        fftMagnitude(real, imag);
+        const magnitudes = new Float32Array(n / 2);
+        for (let i = 0; i < magnitudes.length; i++) {
+          magnitudes[i] = Math.hypot(real[i], imag[i]);
+        }
+        spectra.push(magnitudes);
+      }
+
+      const sorted = energy.filter(x => x > 0.002).sort((a, b) => a - b);
+      if (sorted.length < 3) return null;
+      const median = sorted[Math.floor(sorted.length / 2)];
+      const sums = new Float64Array(12);
+      let used = 0;
+      const hzPerBin = sampleRate / n;
+      const magnitudeNear = (spectrum, frequency) => {
+        const bin = frequency / hzPerBin;
+        if (bin < 2 || bin >= spectrum.length - 2) return 0;
+        const nearest = Math.round(bin);
+        return Math.max(spectrum[nearest - 1], spectrum[nearest], spectrum[nearest + 1]);
+      };
+      for (let frame = 0; frame < frames; frame++) {
+        const spectrum = spectra[frame];
+        if (!spectrum) continue;
+        // Exclude unusually loud, broadband transients where possible.
+        const previous = energy[Math.max(0, frame - 1)];
+        if (energy[frame] > median * 2.8 && energy[frame] > previous * 1.65) continue;
+        const pitches = new Float64Array(12);
+        // MIDI 40–84: low E on guitar through C6. Candidate fundamentals
+        // receive support from harmonics, with higher harmonics downweighted.
+        for (let midi = 40; midi <= 84; midi++) {
+          const fundamental = 440 * Math.pow(2, (midi - 69) / 12);
+          const first = magnitudeNear(spectrum, fundamental);
+          const second = magnitudeNear(spectrum, fundamental * 2);
+          const third = magnitudeNear(spectrum, fundamental * 3);
+          // Require a meaningful fundamental; harmonics alone cannot create a note.
+          const support = first + 0.28 * Math.min(second, first * 2)
+            + 0.12 * Math.min(third, first * 2);
+          if (support < 0.01) continue;
+          const pitchClass = midi % 12;
+          pitches[pitchClass] += Math.sqrt(support) / Math.pow(fundamental, 0.22);
+        }
+        const total = pitches.reduce((x, y) => x + y, 0);
+        if (total <= 0) continue;
+        for (let i = 0; i < 12; i++) sums[i] += pitches[i] / total;
+        used++;
+      }
+      if (used < 3) return null;
+      return Array.from(sums, x => x / used);
+    }
+
+    function renderChroma(values) {
+      const names = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+      const chart = document.getElementById('chromagramBars');
+      chart.replaceChildren();
+      if (!values) {
+        document.getElementById('resChroma').textContent = 'Undetermined';
+        document.getElementById('chromagramNote').textContent = 'Not enough pitched audio to estimate a chromagram.';
+        return;
+      }
+      const max = Math.max(...values);
+      const top = values.map((value, index) => ({value, index}))
+        .sort((a,b) => b.value - a.value).slice(0, 3);
+      document.getElementById('resChroma').textContent = top.map(x => names[x.index]).join(' · ');
+      for (let i = 0; i < 12; i++) {
+        const col = document.createElement('div');
+        col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;';
+        const value = document.createElement('div');
+        value.style.cssText = 'font-size:0.67rem;color:var(--muted);';
+        value.textContent = `${Math.round(values[i] * 100)}%`;
+        const track = document.createElement('div');
+        track.style.cssText = 'height:78px;width:100%;display:flex;align-items:end;background:#242429;border-radius:4px;overflow:hidden;';
+        const bar = document.createElement('div');
+        bar.style.cssText = 'width:100%;background:var(--accent);border-radius:3px 3px 0 0;';
+        bar.style.height = `${Math.max(2, max ? values[i] / max * 100 : 0)}%`;
+        track.appendChild(bar);
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:0.68rem;color:var(--text);white-space:nowrap;';
+        label.textContent = names[i];
+        col.append(value, track, label);
+        chart.appendChild(col);
+      }
+      document.getElementById('chromagramNote').textContent =
+        'Percentages show estimated pitch-class energy (sum ≈ 100%), not note probabilities. Percussion and harmonics may still affect results.';
+    }
+
+
+    // Milestone 2C: compare the global chromagram to standard major/minor
+    // key profiles. These profiles are empirical templates, not a music
+    // transcription, and do not distinguish all modes or blues vocabulary.
+    function estimateKeyAndScale(chroma) {
+      if (!chroma || chroma.length !== 12) return null;
+      const total = chroma.reduce((a, b) => a + b, 0);
+      if (!(total > 0)) return null;
+      const major = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
+      const minor = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+      const names = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+      const norm = v => {
+        const mean = v.reduce((a,b)=>a+b,0)/v.length;
+        const centered = v.map(x => x - mean);
+        const length = Math.hypot(...centered);
+        return length > 1e-12 ? centered.map(x => x/length) : null;
+      };
+      const input = norm(chroma);
+      if (!input) return null;
+      const candidates = [];
+      for (let root=0; root<12; root++) {
+        for (const [mode, template] of [['major',major],['minor',minor]]) {
+          const shifted = Array.from({length:12}, (_,pc) => template[(pc-root+12)%12]);
+          const profile = norm(shifted);
+          const score = input.reduce((sum,v,i)=>sum+v*profile[i],0);
+          candidates.push({root,mode,name:`${names[root]} ${mode}`,score});
+        }
+      }
+      candidates.sort((a,b)=>b.score-a.score);
+      const best=candidates[0], runner=candidates[1];
+      const gap=best.score-runner.score;
+      const strength = best.score < 0.35 || gap < 0.035 ? 'Ambiguous'
+        : best.score >= 0.65 && gap >= 0.12 ? 'Stronger match'
+        : 'Tentative';
+      return {best, candidates:candidates.slice(0,4), strength, gap};
+    }
+
+    function renderKeyAndScale(result) {
+      const key = document.getElementById('resKey');
+      const scale = document.getElementById('resScale');
+      const candidates = document.getElementById('keyCandidates');
+      if (!result) {
+        key.textContent = 'Undetermined';
+        scale.textContent = 'Undetermined';
+        candidates.textContent = 'Insufficient pitched content for a key estimate.';
+        return;
+      }
+      key.textContent = result.best.name;
+      scale.textContent = result.best.mode === 'major' ? 'Major (estimated)' : 'Natural minor (estimated)';
+      candidates.replaceChildren();
+      const note = document.createElement('div');
+      note.textContent = `${result.strength} — ranked template matches (not probabilities):`;
+      candidates.appendChild(note);
+      const list = document.createElement('div');
+      list.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;';
+      for (const candidate of result.candidates) {
+        const item = document.createElement('span');
+        item.style.cssText = 'padding:5px 9px;border:1px solid var(--border);border-radius:7px;color:var(--text);';
+        item.textContent = `${candidate.name} (${candidate.score.toFixed(2)})`;
+        list.appendChild(item);
+      }
+      candidates.appendChild(list);
+    }
+
+
+    // Milestone 2D.8: onset-guided pitch with root ambiguity handling
+    // sampling, independently evaluated bass and chord-tone evidence.
+    // This is an HPSS-inspired approximation, not full STFT/ISTFT HPSS or CQT.
+    function estimateChordTimeline(buffer, bpm) {
+      const sr=buffer.sampleRate, n=16384, duration=Math.min(120,buffer.duration);
+      if(buffer.length<n || duration<2)return [];
+      const channels=Array.from({length:buffer.numberOfChannels},(_,i)=>buffer.getChannelData(i));
+      const names=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B','B'];
+      names[10]='B♭';
+      const beat=Number.isFinite(bpm)&&bpm>=50&&bpm<=220?60/bpm:0.65;
+      const spacing=Math.max(0.25,Math.min(0.42,beat/2));
+      const count=Math.min(400,Math.ceil(duration/spacing));
+      const dt=duration/count, real=new Float64Array(n), imag=new Float64Array(n);
+      const hzPerBin=sr/n, spectra=[];
+      const notes=Array.from({length:61},(_,i)=>{
+        const midi=i+28,hz=440*Math.pow(2,(midi-69)/12);
+        return {midi,hz};
+      });
+      for(let frame=0;frame<count;frame++){
+        const time=(frame+0.5)*dt;
+        const offset=Math.max(0,Math.min(buffer.length-n,Math.round(time*sr-n/2)));
+        let energy=0;
+        for(let i=0;i<n;i++){
+          let sample=0;for(const channel of channels)sample+=channel[offset+i];
+          sample/=channels.length;energy+=sample*sample;
+          real[i]=sample*(0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));
+          imag[i]=0;
+        }
+        if(Math.sqrt(energy/n)<0.003){spectra.push(null);continue;}
+        fftMagnitude(real,imag);
+        const magnitude=new Float64Array(n/2);
+        for(let i=0;i<magnitude.length;i++)magnitude[i]=Math.hypot(real[i],imag[i]);
+        const peak=hz=>{
+          const bin=Math.round(hz/hzPerBin);
+          if(bin<2||bin>=magnitude.length-2)return 0;
+          return Math.max(magnitude[bin-1],magnitude[bin],magnitude[bin+1]);
+        };
+        // A log-spaced filterbank at semitone centres, with harmonic support.
+        const pitch=new Float64Array(notes.length);
+        for(let j=0;j<notes.length;j++){
+          const hz=notes[j].hz;
+          const fundamental=peak(hz);
+          const octave=peak(hz*2),third=peak(hz*3);
+          const sub=peak(hz/2);
+          pitch[j]=Math.sqrt(Math.max(0,fundamental-0.18*sub))+
+            0.22*Math.sqrt(Math.max(0,Math.min(fundamental,octave)))+
+            0.10*Math.sqrt(Math.max(0,Math.min(fundamental,third)));
+        }
+        spectra.push(pitch);
+      }
+      // Short-resolution onset evidence from changes in unsmoothed pitch energy.
+      // This is kept separate from the five-frame harmonic median so attacks
+      // are not lost when chord labels are stabilized.
+      const rawFlux=spectra.map((pitch,i)=>{
+        if(!pitch||i===0||!spectra[i-1])return 0;
+        let rise=0,base=0;
+        for(let k=0;k<pitch.length;k++){
+          rise+=Math.max(0,pitch[k]-spectra[i-1][k]);
+          base+=spectra[i-1][k];
+        }
+        return rise/Math.max(base,1e-8);
+      });
+      const rawSorted=[...rawFlux].sort((a,b)=>a-b);
+      const onsetThreshold=Math.max(0.07,(rawSorted[Math.floor(rawSorted.length*0.75)]||0)*1.35);
+      const onsets=rawFlux.map((value,i)=>value>=onsetThreshold &&
+        value>=(rawFlux[i-1]||0) && value>=(rawFlux[i+1]||0));
+      // Temporal median across five adjacent frames suppresses isolated
+      // percussive bursts while retaining persistent pitched energy.
+      const observations=spectra.map((pitch,i)=>{
+        if(!pitch)return {time:(i+0.5)*dt,unknown:true};
+        const harmonic=new Float64Array(pitch.length);
+        for(let k=0;k<pitch.length;k++){
+          const values=[];
+          for(let j=Math.max(0,i-2);j<=Math.min(count-1,i+2);j++){
+            if(spectra[j])values.push(spectra[j][k]);
+          }
+          values.sort((a,b)=>a-b);
+          harmonic[k]=values[Math.floor(values.length/2)]||0;
+        }
+        const bass=new Float64Array(12),chroma=new Float64Array(12);
+        for(let k=0;k<notes.length;k++){
+          const {midi,hz}=notes[k],value=harmonic[k];
+          if(midi>=35&&midi<=59)bass[midi%12]+=value/Math.pow(hz/110,0.14);
+          if(midi>=40&&midi<=84)chroma[midi%12]+=value/Math.pow(hz/220,0.08);
+        }
+        const bassTotal=bass.reduce((a,b)=>a+b,0),total=chroma.reduce((a,b)=>a+b,0);
+        if(total<1e-9)return {time:(i+0.5)*dt,unknown:true};
+        const low=Array.from(bass,x=>bassTotal?x/bassTotal:0);
+        const mid=Array.from(chroma,x=>x/total);
+        const roots=Array.from({length:12},(_,root)=>{
+          const fifth=(root+7)%12;
+          // Two independent signals: pitch content and bass root support.
+          const harmonicScore=mid[root]*1.3+mid[fifth]*0.65;
+          const bassScore=low[root]*1.15+low[fifth]*0.08;
+          // Discount apparent roots whose fifth dominates their own pitch,
+          // and reward a bass note that agrees with the proposed root.
+          const fifthDominance=Math.max(0,mid[fifth]-mid[root]);
+          return harmonicScore*0.56+bassScore*0.44
+            -0.24*fifthDominance + 0.12*Math.min(low[root],mid[root]);
+        });
+        // Keep the bass-root ranking separately for ambiguity checks.
+        const bassRank=Array.from({length:12},(_,r)=>low[r]);
+        return {time:(i+0.5)*dt,unknown:false,mid,low,roots,bassRank};
+      });
+      const flux=observations.map((o,i)=>{
+        if(i===0||o.unknown||observations[i-1].unknown)return 0;
+        return o.mid.reduce((sum,v,k)=>sum+Math.max(0,v-observations[i-1].mid[k]),0);
+      });
+      const sorted=[...flux].sort((a,b)=>a-b);
+      const threshold=Math.max(0.045,(sorted[Math.floor(sorted.length*0.7)]||0)*1.15);
+      // Dynamic programming: changing chords is easier near harmonic onsets.
+      const dp=[],back=[];
+      for(let i=0;i<observations.length;i++){
+        const row=Array(12).fill(-Infinity),previous=Array(12).fill(-1);
+        for(let root=0;root<12;root++){
+          const emission=observations[i].unknown?0:observations[i].roots[root];
+          if(i===0){row[root]=emission;continue;}
+          for(let old=0;old<12;old++){
+            const related=Math.abs(root-old)===5||Math.abs(root-old)===7;
+            // Relax the transition cost near a detected attack; retain
+            // stronger smoothing through steady harmonic passages.
+            const onsetNearby=onsets[i]||onsets[i-1]||onsets[i+1];
+            const penalty=root===old?0:
+              (onsetNearby?0.018:flux[i]>=threshold?0.060:0.145)*(related?1.25:1);
+            // Discourage switching to the fifth of the previous root unless
+            // the new root has its own low-frequency support.
+            const fifthShift=(root-old+12)%12===7;
+            const bassEvidence=observations[i].unknown?0:observations[i].low[root];
+            const fifthPenalty=fifthShift&&bassEvidence<0.11?0.065:0;
+            const score=dp[i-1][old]+emission-penalty-fifthPenalty;
+            if(score>row[root]){row[root]=score;previous[root]=old;}
+          }
+        }
+        dp.push(row);back.push(previous);
+      }
+      let state=dp[dp.length-1].indexOf(Math.max(...dp[dp.length-1]));
+      const tracked=new Array(count);
+      for(let i=count-1;i>=0;i--){tracked[i]=state;state=back[i][state];}
+      return observations.map((o,i)=>{
+        if(o.unknown)return {time:o.time,label:'?',confidence:0};
+        const root=tracked[i],best=o.roots[root];
+        const runner=Math.max(...o.roots.filter((_,r)=>r!==root));
+        const margin=best-runner;
+        const support=o.mid[root]+o.mid[(root+7)%12];
+        const confidence=Math.max(0,Math.min(1,0.40+margin*1.3+(support-0.16)*1.2));
+        // An ambiguous root should not be presented as a certain chord.
+        // Compare bass evidence for the chosen root with its nearest rival,
+        // allowing stable neighboring frames to resolve close decisions.
+        const rivalRoot=o.roots.indexOf(runner);
+        const bassAgreement=o.low[root] >= Math.max(0.065,o.low[rivalRoot]*0.78);
+        const localMargin=margin/Math.max(Math.abs(best),1e-8);
+        const nearOnset=onsets[i]||onsets[i-1]||onsets[i+1];
+        let continuity=0;
+        for(let j=Math.max(0,i-2);j<=Math.min(count-1,i+2);j++)
+          if(tracked[j]===root)continuity++;
+        const ambiguous=(localMargin < -0.12 && !bassAgreement) ||
+          (localMargin < -0.24 && continuity < 4) ||
+          (localMargin < -0.08 && !bassAgreement && nearOnset && continuity<4);
+        const radius=Math.max(1,Math.round(beat*0.6/dt));
+        let majorVotes=0,minorVotes=0;
+        for(let j=Math.max(0,i-radius);j<=Math.min(count-1,i+radius);j++){
+          const v=observations[j];
+          if(v.unknown||tracked[j]!==root)continue;
+          const major=v.mid[(root+4)%12],minor=v.mid[(root+3)%12];
+          if(major-minor>0.032)majorVotes++;
+          if(minor-major>0.032)minorVotes++;
+        }
+        const quality=Math.max(majorVotes,minorVotes)>=3&&Math.abs(majorVotes-minorVotes)>=2;
+        const suffix=quality?(majorVotes>minorVotes?'':'m'):'5';
+        return {time:o.time,label:ambiguous?'?':names[root]+suffix,
+          confidence:ambiguous?0:confidence,onset:!!onsets[i]};
+      });
+    }
+
+    function renderChordTimeline(timeline) {
+      const panel=document.getElementById('resProgression');
+      panel.replaceChildren();
+      if(!timeline.length){panel.textContent='No chord candidates found.';return;}
+      const spacing=timeline.length>1?timeline[1].time-timeline[0].time:0.5;
+      const segments=[];
+      for(const item of timeline){
+        const last=segments[segments.length-1];
+        if(last&&last.label===item.label){
+          last.end=item.time+spacing/2;last.count++;last.confidenceSum+=item.confidence;
+        }else{
+          segments.push({label:item.label,start:Math.max(0,item.time-spacing/2),
+            end:item.time+spacing/2,count:1,confidenceSum:item.confidence});
+        }
+      }
+      for(let i=1;i<segments.length-1;i++){
+        if(segments[i].count<=2&&segments[i-1].label===segments[i+1].label)
+          segments[i].label=segments[i-1].label;
+      }
+      const merged=[];
+      for(const seg of segments){
+        const last=merged[merged.length-1];
+        if(last&&last.label===seg.label){
+          last.end=seg.end;last.count+=seg.count;last.confidenceSum+=seg.confidenceSum;
+        }else merged.push({...seg});
+      }
+      const total=Math.max(spacing,merged[merged.length-1].end);
+      const format=t=>`${Math.floor(t/60)}:${Math.floor(t%60).toString().padStart(2,'0')}`;
+      const level=seg=>{
+        const score=seg.confidenceSum/seg.count;
+        return score>=0.63?'High':score>=0.44?'Medium':'Low';
+      };
+      const description=document.createElement('p');
+      description.style.cssText='font-size:0.8rem;color:var(--muted);margin:0 0 12px;';
+      description.textContent='Onset-guided tracking with bass-root continuity. Uncertain roots appear as gaps; confidence labels are heuristic.';
+      panel.appendChild(description);
+
+      const controls=document.createElement('div');
+      controls.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));align-items:center;gap:12px;margin-bottom:16px;';
+      const zoomLabel=document.createElement('label');
+      zoomLabel.textContent='View window ';
+      zoomLabel.style.cssText='color:var(--muted);font-size:0.84rem;';
+      const zoom=document.createElement('select');
+      zoom.style.cssText='background:#222229;color:#fff;border:1px solid #484850;border-radius:6px;padding:6px;';
+      for(const seconds of [10,20,30,60,120]){
+        const option=document.createElement('option');
+        option.value=String(seconds);
+        option.textContent=seconds>=total&&seconds===120?'Entire analysis':`${seconds} seconds`;
+        zoom.appendChild(option);
+      }
+      zoom.value='20';
+      zoomLabel.appendChild(zoom);
+      const positionLabel=document.createElement('label');
+      positionLabel.style.cssText='color:var(--muted);font-size:0.84rem;';
+      positionLabel.textContent='Start ';
+      const position=document.createElement('input');
+      position.type='range';position.min='0';position.max=String(Math.max(0,total-20));
+      position.step=String(Math.max(0.1,spacing));
+      position.value='0';position.style.width='min(280px,50vw)';
+      const positionText=document.createElement('span');
+      positionText.style.cssText='font-size:0.83rem;color:var(--muted);display:inline-block;min-width:100px;';
+      positionLabel.appendChild(position);
+      controls.append(zoomLabel,positionLabel,positionText);
+      panel.appendChild(controls);
+
+      const ruler=document.createElement('div');
+      ruler.style.cssText='position:relative;height:18px;color:var(--muted);font-size:0.76rem;margin:10px 0 6px;clear:both;width:100%;';
+      const bar=document.createElement('div');
+      bar.style.cssText='position:relative;width:100%;height:72px;background:#25252b;border:1px solid var(--border);border-radius:8px;overflow:hidden;';
+      const detail=document.createElement('div');
+      detail.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;';
+      panel.append(ruler,bar,detail);
+
+      const renderWindow=()=>{
+        const windowSeconds=Math.min(Number(zoom.value),total);
+        const maxStart=Math.max(0,total-windowSeconds);
+        position.max=String(maxStart);
+        const start=Math.min(maxStart,Number(position.value)||0);
+        position.value=String(start);
+        const end=start+windowSeconds;
+        positionText.textContent=`${format(start)}–${format(end)}`;
+        ruler.replaceChildren();
+        for(let i=0;i<=4;i++){
+          const tick=document.createElement('span');
+          tick.textContent=format(start+windowSeconds*i/4);
+          tick.style.cssText=`position:absolute;left:${i*25}%;transform:translateX(${i===0?'0':i===4?'-100%':'-50%'});white-space:nowrap;`;
+          ruler.appendChild(tick);
+        }
+        bar.replaceChildren();detail.replaceChildren();
+        for(const seg of merged){
+          if(seg.end<=start||seg.start>=end)continue;
+          const clippedStart=Math.max(start,seg.start),clippedEnd=Math.min(end,seg.end);
+          const piece=document.createElement('div');
+          const width=(clippedEnd-clippedStart)/windowSeconds*100;
+          const left=(clippedStart-start)/windowSeconds*100;
+          const confidenceLevel=level(seg);
+          piece.style.cssText=`position:absolute;left:${left}%;width:${width}%;height:100%;box-sizing:border-box;border-right:1px solid #303038;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;font-size:0.82rem;font-weight:600;color:white;background:${seg.label==='?'?'#25252b':confidenceLevel==='High'?'#ad670b':confidenceLevel==='Medium'?'#78531c':'#484047'};`;
+          piece.textContent=width>=5?seg.label:'';
+          piece.title=`${seg.label} · ${format(seg.start)} · ${(seg.end-seg.start).toFixed(1)}s · ${confidenceLevel} confidence`;
+          bar.appendChild(piece);
+          if(seg.label==='?'||seg.count<2)continue;
+          const badge=document.createElement('span');
+          badge.className='chord-badge';
+          badge.textContent=`${format(seg.start)} ${seg.label} · ${(seg.end-seg.start).toFixed(1)}s · ${confidenceLevel}`;
+          detail.appendChild(badge);
+        }
+        if(!detail.children.length)detail.textContent='No stable chord labels in this window.';
+      };
+      zoom.addEventListener('change',renderWindow);
+      position.addEventListener('input',renderWindow);
+      renderWindow();
+    }
+
+    // Ground-truth chord identities are supplied by the user; 2E.4 can estimate timing.
+
+    // 2E.4: onset timing is audio-derived; chord names are user-supplied only.
+    const onsetCanvas=document.getElementById('onsetCanvas');
+    const onsetStatus=document.getElementById('onsetStatus');
+    const onsetRows=document.getElementById('onsetRows');
+    let onsetTimes=[], onsetPlayback=null, onsetDrag=-1;
+    function onsetAudioMono(buffer){
+      const a=buffer.getChannelData(0),b=buffer.numberOfChannels>1?buffer.getChannelData(1):null;
+      return {a,b};
+    }
+    function onsetStrength(buffer){
+      const {a,b}=onsetAudioMono(buffer),sr=buffer.sampleRate;
+      const hop=Math.max(128,Math.round(sr*.01)), win=Math.max(hop*2,Math.round(sr*.025));
+      const energy=[],flux=[];let prev=0;
+      for(let k=0;k+win<a.length;k+=hop){
+        let sum=0,diff=0,last=0;
+        for(let i=k;i<k+win;i+=2){const v=b?(a[i]+b[i])*.5:a[i];sum+=v*v;diff+=(v-last)*(v-last);last=v;}
+        const rms=Math.sqrt(sum/(win/2));
+        energy.push(rms);flux.push(Math.max(0,rms-prev)+.25*Math.sqrt(diff/(win/2)));prev=rms;
+      }
+      const smooth=flux.map((_,i)=>{let v=0,n=0;for(let j=Math.max(0,i-2);j<=Math.min(flux.length-1,i+2);j++){v+=flux[j];n++;}return v/n;});
+      return {energy,flux:smooth,hopSeconds:hop/sr};
+    }
+    function findOnsetTimes(buffer,count){
+      const f=onsetStrength(buffer), candidates=[];
+      const max=Math.max(...f.flux,1e-9);
+      const minDistance=.12;
+      for(let i=3;i<f.flux.length-3;i++){
+        const v=f.flux[i];if(v<max*.045)continue;
+        let local=0;for(let j=Math.max(0,i-30);j<i;j++)local+=f.flux[j];local/=Math.min(i,30)||1;
+        if(v<local*1.4)continue;
+        if(v>=f.flux[i-1]&&v>=f.flux[i+1])candidates.push({time:i*f.hopSeconds,score:v/(local+.008*max)});
+      }
+      candidates.sort((a,b)=>b.score-a.score);
+      const chosen=[];
+      for(const c of candidates){if(chosen.every(t=>Math.abs(t-c.time)>=minDistance)){chosen.push(c.time);if(chosen.length>=count)break;}}
+      chosen.sort((a,b)=>a-b);
+      return chosen;
+    }
+    function onsetWaveform(){
+      const ctx=onsetCanvas.getContext('2d');if(!ctx)return;
+      const rect=onsetCanvas.getBoundingClientRect();
+      const w=Math.max(280,Math.round(rect.width*(window.devicePixelRatio||1))),h=Math.round(155*(window.devicePixelRatio||1));
+      if(onsetCanvas.width!==w||onsetCanvas.height!==h){onsetCanvas.width=w;onsetCanvas.height=h;}
+      ctx.fillStyle='#101719';ctx.fillRect(0,0,w,h);
+      if(!audioBuffer)return;
+      const {a,b}=onsetAudioMono(audioBuffer),mid=h/2;
+      ctx.strokeStyle='#49b9a7';ctx.lineWidth=Math.max(1,window.devicePixelRatio||1);ctx.beginPath();
+      for(let x=0;x<w;x++){
+        const start=Math.floor(x*a.length/w),end=Math.max(start+1,Math.floor((x+1)*a.length/w));let peak=0;
+        const stride=Math.max(1,Math.floor((end-start)/24));
+        for(let i=start;i<end;i+=stride){const v=b?(a[i]+b[i])*.5:a[i];peak=Math.max(peak,Math.abs(v));}
+        ctx.moveTo(x,mid-peak*(mid-10));ctx.lineTo(x,mid+peak*(mid-10));
+      }ctx.stroke();
+      ctx.font=`${12*(window.devicePixelRatio||1)}px sans-serif`;
+      onsetTimes.forEach((t,i)=>{
+        const x=t/audioBuffer.duration*w;ctx.strokeStyle='#ffad42';ctx.lineWidth=2*(window.devicePixelRatio||1);
+        ctx.beginPath();ctx.moveTo(x,5);ctx.lineTo(x,h-5);ctx.stroke();
+        ctx.fillStyle='#ffcd83';ctx.fillText(String(i+1),Math.min(w-18,x+5),17*(window.devicePixelRatio||1));
+      });
+    }
+    function onsetLabels(){return document.getElementById('onsetNames').value.split(',').map(v=>v.trim()).filter(Boolean);}
+    function renderOnsetRows(){
+      onsetRows.replaceChildren();const labels=onsetLabels();
+      onsetTimes.forEach((t,i)=>{
+        const end=i+1<onsetTimes.length?onsetTimes[i+1]:audioBuffer.duration;
+        const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.83rem;';
+        const label=document.createElement('span');label.textContent=`${i+1}. ${labels[i]||'(name missing)'}  ${t.toFixed(3)}–${end.toFixed(3)}s`;
+        const play=document.createElement('button');play.type='button';play.textContent='▶ Play';play.style.cssText='padding:5px 9px;border-radius:5px;border:1px solid #678;background:#253538;color:white;';
+        play.addEventListener('click',async()=>{
+          if(!audioBuffer)return;
+          if(!audioContext||audioContext.state==='closed')audioContext=new (window.AudioContext||window.webkitAudioContext)();
+          await audioContext.resume();
+          if(onsetPlayback){try{onsetPlayback.stop();}catch(_){}}
+          const src=audioContext.createBufferSource();src.buffer=audioBuffer;src.connect(audioContext.destination);
+          const dur=Math.max(.01,end-t);src.start(0,t,dur);onsetPlayback=src;
+          src.onended=()=>{if(onsetPlayback===src)onsetPlayback=null;};
+        });
+        line.append(label,play);onsetRows.append(line);
+      });
+      onsetWaveform();
+    }
+    document.getElementById('detectOnsetsBtn').addEventListener('click',()=>{
+      if(!audioBuffer){onsetStatus.textContent='Load a recording first.';return;}
+      const count=Math.min(24,Math.max(1,Number(document.getElementById('onsetCount').value)||4));
+      onsetTimes=findOnsetTimes(audioBuffer,count);
+      onsetStatus.textContent=`Found ${onsetTimes.length} of ${count} requested attacks. Review the waveform and drag markers if needed; weak or overlapping attacks may be missed.`;
+      renderOnsetRows();
+    });
+    document.getElementById('onsetNames').addEventListener('input',renderOnsetRows);
+    onsetCanvas.addEventListener('pointerdown',e=>{
+      if(!audioBuffer||!onsetTimes.length)return;
+      const rect=onsetCanvas.getBoundingClientRect(),t=(e.clientX-rect.left)/rect.width*audioBuffer.duration;
+      let best=-1,dist=Infinity;
+      onsetTimes.forEach((v,i)=>{const d=Math.abs(v-t);if(d<dist){dist=d;best=i;}});
+      if(dist>Math.max(.12,audioBuffer.duration*.04))return;
+      onsetDrag=best;onsetCanvas.setPointerCapture(e.pointerId);
+    });
+    onsetCanvas.addEventListener('pointermove',e=>{
+      if(onsetDrag<0||!audioBuffer)return;
+      const rect=onsetCanvas.getBoundingClientRect(),t=(e.clientX-rect.left)/rect.width*audioBuffer.duration;
+      const low=onsetDrag?onsetTimes[onsetDrag-1]+.04:0;
+      const high=onsetDrag<onsetTimes.length-1?onsetTimes[onsetDrag+1]-.04:audioBuffer.duration-.01;
+      onsetTimes[onsetDrag]=Math.max(low,Math.min(high,t));renderOnsetRows();
+    });
+    function finishOnsetDrag(){onsetDrag=-1;}
+    onsetCanvas.addEventListener('pointerup',finishOnsetDrag);
+    onsetCanvas.addEventListener('pointercancel',finishOnsetDrag);
+    window.addEventListener('resize',onsetWaveform);
+    document.getElementById('applyOnsetsBtn').addEventListener('click',()=>{
+      if(!audioBuffer||!onsetTimes.length){onsetStatus.textContent='Detect and review strum boundaries first.';return;}
+      const labels=onsetLabels();
+      if(labels.length!==onsetTimes.length||labels.some(s=>!normalizeChord(s))){onsetStatus.textContent=`Enter exactly ${onsetTimes.length} valid chord names in played order (for example E5,D5,A5,E5).`;return;}
+      const lines=onsetTimes.map((t,i)=>`${t.toFixed(3)},${(i+1<onsetTimes.length?onsetTimes[i+1]:audioBuffer.duration).toFixed(3)},${labels[i]}`);
+      validationTruth.value=lines.join('\n');
+      onsetStatus.textContent='Timing estimates copied to ground truth. Chord names came from your input. Run the comparisons below to score the detectors.';
+      validationTruth.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+
+    let latestChordFrames = null;
+    const validationStatus = document.getElementById('validationStatus');
+    const validationResults = document.getElementById('validationResults');
+    const validationTruth = document.getElementById('validationTruth');
+    function normalizeChord(text) {
+      const match = /^([A-Ga-g])([#♯b♭]?)(5|m|maj|major|minor)?$/.exec(text.trim());
+      if (!match) return null;
+      const base = {C:0,D:2,E:4,F:5,G:7,A:9,B:11}[match[1].toUpperCase()];
+      const pc = (base + (match[2]==='#'||match[2]==='♯'?1:match[2]==='b'||match[2]==='♭'?-1:0)+12)%12;
+      const quality = match[3]==='5'?'5':match[3]==='m'||match[3]==='minor'?'m':'';
+      return {pc,quality};
+    }
+    function parseGroundTruth(raw) {
+      const lines=raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      if (!lines.length) throw new Error('Enter at least one timed chord interval.');
+      const intervals=[];
+      for(let i=0;i<lines.length;i++) {
+        const parts=lines[i].split(',').map(v=>v.trim());
+        if(parts.length!==3) throw new Error(`Line ${i+1}: use start,end,chord (for example 0,2,E5).`);
+        const start=Number(parts[0]),end=Number(parts[1]),chord=normalizeChord(parts[2]);
+        if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||!chord)
+          throw new Error(`Line ${i+1}: invalid times or chord. Use E5, D5, Am, C#, etc.`);
+        if(intervals.length&&start<intervals[intervals.length-1].end-1e-6)
+          throw new Error(`Line ${i+1}: intervals overlap or are out of order.`);
+        intervals.push({start,end,label:parts[2],chord});
+      }
+      return intervals;
+    }
+    function validateChords() {
+      validationResults.replaceChildren();
+      if(!latestChordFrames||!latestChordFrames.length){
+        validationStatus.textContent='Load audio and run analysis before validating.';
+        return;
+      }
+      let intervals;
+      try {intervals=parseGroundTruth(validationTruth.value);} catch(err) {
+        validationStatus.textContent=err.message;return;
+      }
+      const step=latestChordFrames.length>1?latestChordFrames[1].time-latestChordFrames[0].time:0.5;
+      const limit=latestChordFrames[latestChordFrames.length-1].time+step/2;
+      if(intervals.some(v=>v.end>limit+0.05)){
+        validationStatus.textContent=`Ground truth extends beyond the analyzed ${limit.toFixed(1)} seconds. Shorten intervals or use a shorter recording.`;
+        return;
+      }
+      const stats={total:0,exact:0,root:0,unknown:0};
+      const rows=intervals.map(interval=>{
+        const samples=latestChordFrames.filter(frame=>frame.time>=interval.start&&frame.time<interval.end);
+        const counts=new Map();let exact=0,root=0,unknown=0;
+        for(const frame of samples){
+          const found=frame.label==='?'?null:normalizeChord(frame.label);
+          if(!found){unknown++;continue;}
+          counts.set(frame.label,(counts.get(frame.label)||0)+1);
+          if(found.pc===interval.chord.pc){root++;if(found.quality===interval.chord.quality)exact++;}
+        }
+        stats.total+=samples.length;stats.exact+=exact;stats.root+=root;stats.unknown+=unknown;
+        const best=[...counts].sort((a,b)=>b[1]-a[1])[0];
+        return {interval,samples:samples.length,exact,root,unknown,dominant:best?best[0]:'Uncertain'};
+      });
+      if(!stats.total){validationStatus.textContent='No analysis frames fall inside the supplied intervals.';return;}
+      const pct=n=>`${Math.round(100*n/stats.total)}%`;
+      validationStatus.textContent=`Compared ${stats.total} analysis frames across ${rows.length} labeled intervals.`;
+      const summary=document.createElement('p');
+      summary.style.cssText='font-weight:700;line-height:1.7;';
+      summary.textContent=`Exact chord match: ${pct(stats.exact)} · Root match: ${pct(stats.root)} · Uncertain: ${pct(stats.unknown)}`;
+      validationResults.appendChild(summary);
+      const explanation=document.createElement('p');
+      explanation.style.cssText='font-size:.8rem;color:var(--muted);line-height:1.5;';
+      explanation.textContent='Scores are frame-weighted within your labeled intervals, not chord-onset accuracy. Exact requires matching root and chord quality; root match ignores quality. Uncertain frames count as incorrect. Only the first 120 seconds are analyzed.';
+      validationResults.appendChild(explanation);
+      const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;';
+      const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;text-align:left;font-size:.84rem;';
+      const header=document.createElement('tr');
+      for(const label of ['Actual interval','Expected','Most detected','Exact','Root','Uncertain']){
+        const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:8px;border-bottom:1px solid #555;white-space:nowrap;';header.appendChild(th);
+      }
+      const thead=document.createElement('thead');thead.appendChild(header);table.appendChild(thead);
+      const tbody=document.createElement('tbody');
+      for(const row of rows){
+        const tr=document.createElement('tr');
+        const values=[`${row.interval.start.toFixed(1)}–${row.interval.end.toFixed(1)}s`,row.interval.label,row.dominant,
+          row.samples?`${Math.round(row.exact/row.samples*100)}%`:'—',
+          row.samples?`${Math.round(row.root/row.samples*100)}%`:'—',
+          row.samples?`${Math.round(row.unknown/row.samples*100)}%`:'—'];
+        for(const value of values){const td=document.createElement('td');td.textContent=value;td.style.cssText='padding:8px;border-bottom:1px solid #333;white-space:nowrap;';tr.appendChild(td);}
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);wrap.appendChild(table);validationResults.appendChild(wrap);
+    }
+    document.getElementById('validateChordsBtn').addEventListener('click',validateChords);
+
+    // Milestone 2E.1 diagnostic-only spectral inspector. Does not feed the
+    // existing chord detector, validation scores, or key/tempo estimates.
+    const diagnosticStatus=document.getElementById('diagnosticStatus');
+    const diagnosticResults=document.getElementById('diagnosticResults');
+    const diagnosticNotes=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+    function diagnosticSnapshot(buffer,seconds){
+      const n=16384,sr=buffer.sampleRate;
+      if(buffer.length<n)return null;
+      const start=Math.max(0,Math.min(buffer.length-n,Math.round(seconds*sr-n/2)));
+      const real=new Float64Array(n),imag=new Float64Array(n);
+      let rms=0;
+      for(let i=0;i<n;i++){
+        let sample=0;
+        for(let c=0;c<buffer.numberOfChannels;c++)sample+=buffer.getChannelData(c)[start+i];
+        sample/=buffer.numberOfChannels;
+        rms+=sample*sample;
+        real[i]=sample*(0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));
+      }
+      rms=Math.sqrt(rms/n);
+      fftMagnitude(real,imag);
+      const magnitudes=new Float64Array(n/2);
+      for(let k=0;k<magnitudes.length;k++)magnitudes[k]=Math.hypot(real[k],imag[k]);
+      const binWidth=sr/n;
+      function peak(hz){
+        const k=Math.round(hz/binWidth);
+        if(k<2||k>=magnitudes.length-2)return 0;
+        return Math.max(magnitudes[k-1],magnitudes[k],magnitudes[k+1]);
+      }
+      const bass=Array(12).fill(0),harmonic=Array(12).fill(0),fundamentals=[];
+      for(let midi=28;midi<=84;midi++){
+        const hz=440*Math.pow(2,(midi-69)/12),base=peak(hz);
+        const h2=peak(hz*2),h3=peak(hz*3);
+        // Independent candidate evidence: actual fundamental plus bounded
+        // harmonic reinforcement; missing fundamentals cannot score highly.
+        const verified=Math.sqrt(Math.max(0,base))+
+          0.24*Math.sqrt(Math.max(0,Math.min(base,h2)))+
+          0.12*Math.sqrt(Math.max(0,Math.min(base,h3)));
+        const pc=midi%12;
+        if(midi>=35&&midi<=59){
+          bass[pc]+=verified/Math.pow(hz/110,0.12);
+          fundamentals.push({name:diagnosticNotes[pc]+(Math.floor(midi/12)-1),hz,score:verified});
+        }
+        if(midi>=40&&midi<=84)harmonic[pc]+=verified;
+      }
+      function ranked(arr,count=4){
+        const sum=arr.reduce((a,b)=>a+b,0);
+        return arr.map((score,pc)=>({name:diagnosticNotes[pc],pc,score:sum?score/sum:0}))
+          .sort((a,b)=>b.score-a.score).slice(0,count);
+      }
+      return {rms,bass:ranked(bass),harmonic:ranked(harmonic),
+        fundamentals:fundamentals.sort((a,b)=>b.score-a.score).slice(0,4)};
+    }
+    function diagnosticTime(t){return `${t.toFixed(2)}s`;}
+    function diagnoseChords(){
+      diagnosticResults.replaceChildren();
+      if(!audioBuffer||!latestChordFrames?.length){
+        diagnosticStatus.textContent='Load audio and run analysis first.';return;
+      }
+      let intervals;
+      try{intervals=parseGroundTruth(validationTruth.value);}catch(err){
+        diagnosticStatus.textContent=err.message;return;
+      }
+      const step=latestChordFrames.length>1?latestChordFrames[1].time-latestChordFrames[0].time:0.5;
+      const limit=Math.min(audioBuffer.duration,latestChordFrames[latestChordFrames.length-1].time+step/2);
+      if(intervals.some(v=>v.end>limit+0.05)){
+        diagnosticStatus.textContent=`Reference intervals exceed analyzed duration (${limit.toFixed(2)}s). Adjust their end times.`;return;
+      }
+      const intro=document.createElement('p');
+      intro.style.cssText='color:var(--muted);font-size:.82rem;line-height:1.5;';
+      intro.textContent='Relative spectral evidence, not note probabilities. Attack is sampled shortly after each interval begins; sustain near its middle. FFT windows are about '+(16384/audioBuffer.sampleRate*1000).toFixed(0)+' ms, so very short intervals may overlap neighboring chords. Reference timings must reflect actual strums.';
+      diagnosticResults.appendChild(intro);
+      const tableWrap=document.createElement('div');tableWrap.style.cssText='overflow-x:auto;';
+      const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;text-align:left;font-size:.82rem;min-width:760px;';
+      const head=document.createElement('tr');
+      for(const h of ['Reference','Detector majority','Attack bass','Sustain bass','Attack harmony','Sustain harmony','Likely issue']){
+        const th=document.createElement('th');th.textContent=h;th.style.cssText='padding:9px 7px;border-bottom:1px solid #555;vertical-align:top;';head.appendChild(th);
+      }
+      const thead=document.createElement('thead');thead.appendChild(head);table.appendChild(thead);
+      const tbody=document.createElement('tbody');
+      const fmt=arr=>arr.slice(0,3).map(x=>`${x.name} ${Math.round(x.score*100)}%`).join(' · ');
+      let mismatch=0;
+      for(const interval of intervals){
+        const len=interval.end-interval.start;
+        // Attack is offset past the initial pick transient; sustain is later.
+        const attackTime=interval.start+Math.min(0.14,len*0.2);
+        const sustainTime=interval.start+len*0.62;
+        const attack=diagnosticSnapshot(audioBuffer,attackTime);
+        const sustain=diagnosticSnapshot(audioBuffer,sustainTime);
+        const frames=latestChordFrames.filter(x=>x.time>=interval.start&&x.time<interval.end);
+        const counts=new Map();for(const frame of frames)counts.set(frame.label,(counts.get(frame.label)||0)+1);
+        const detected=[...counts].sort((a,b)=>b[1]-a[1])[0]?.[0]||'?';
+        const attackRoot=attack?.bass[0]?.pc,sustainRoot=sustain?.bass[0]?.pc;
+        const target=interval.chord.pc;
+        const detectorRoot=normalizeChord(detected)?.pc;
+        let issue='Insufficient spectral data';
+        if(attack&&sustain){
+          if(detectorRoot===target)issue='Detector root matches reference';
+          else if(attackRoot===target&&sustainRoot===target)issue='Bass agrees; classification/tracking differs';
+          else if(attackRoot===target||sustainRoot===target)issue='Bass varies across attack and sustain';
+          else issue='Bass extraction or reference timing needs inspection';
+          if(detectorRoot!==target)mismatch++;
+        }
+        const tr=document.createElement('tr');
+        const vals=[`${interval.label} (${diagnosticTime(interval.start)}–${diagnosticTime(interval.end)})`,
+          detected,attack?fmt(attack.bass):'—',sustain?fmt(sustain.bass):'—',
+          attack?fmt(attack.harmonic):'—',sustain?fmt(sustain.harmonic):'—',issue];
+        for(const val of vals){const td=document.createElement('td');td.textContent=val;td.style.cssText='padding:10px 7px;border-bottom:1px solid #333;vertical-align:top;line-height:1.5;';tr.appendChild(td);}
+        tbody.appendChild(tr);
+        const details=document.createElement('details');details.style.cssText='margin:8px 0 14px;';
+        const title=document.createElement('summary');title.textContent=`${interval.label} — individual bass fundamental candidates (${diagnosticTime(attackTime)} attack / ${diagnosticTime(sustainTime)} sustain)`;
+        details.appendChild(title);
+        const content=document.createElement('p');content.style.cssText='color:var(--muted);font-size:.83rem;line-height:1.6;';
+        const list=sample=>sample?.fundamentals.map(x=>`${x.name} (${Math.round(x.hz)} Hz)`).join(', ')||'Unavailable';
+        content.textContent=`Attack: ${list(attack)}. Sustain: ${list(sustain)}. RMS attack: ${attack?.rms.toFixed(4)||'—'}; sustain: ${sustain?.rms.toFixed(4)||'—'}.`;
+        details.appendChild(content);diagnosticResults.appendChild(details);
+      }
+      table.appendChild(tbody);tableWrap.appendChild(table);
+      diagnosticResults.insertBefore(tableWrap,diagnosticResults.children[1]||null);
+      diagnosticStatus.textContent=`Inspected ${intervals.length} reference intervals; ${mismatch} have a different majority detected root. No detector parameters changed.`;
+    }
+    document.getElementById('diagnoseChordsBtn').addEventListener('click',diagnoseChords);
+
+
+    // 2E.2 experimental detector: no reference labels enter the prediction path.
+    // This detector is deliberately independent of the original tracking DP.
+    const comparisonStatus=document.getElementById('comparisonStatus');
+    const comparisonResults=document.getElementById('comparisonResults');
+    const comparisonNames=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+    let experimentalFrames=null;
+    function expandedEvidence(ranked){
+      const values=Array(12).fill(0);
+      if(ranked)for(const item of ranked)values[item.pc]=item.score;
+      return values;
+    }
+    function experimentalChordFrames(buffer,baseline){
+      if(!baseline?.length)return [];
+      const times=baseline.map(x=>x.time);
+      const samples=times.map(t=>diagnosticSnapshot(buffer,t));
+      const evidences=samples.map(sample=>({bass:expandedEvidence(sample?.bass),mid:expandedEvidence(sample?.harmonic),rms:sample?.rms||0}));
+      // Local harmonic change is a proxy for new strum attacks; never use truth labels.
+      const novelty=evidences.map((e,i)=>{
+        if(!i)return 1;
+        const prior=evidences[i-1];
+        return e.mid.reduce((sum,v,k)=>sum+Math.max(0,v-prior.mid[k]),0);
+      });
+      const positives=novelty.slice(1).filter(Number.isFinite).sort((a,b)=>a-b);
+      const threshold=Math.max(0.13,(positives[Math.floor(positives.length*0.65)]||0)*1.2);
+      const attacks=novelty.map((v,i)=>i===0||(
+        v>threshold && v>=(novelty[i-1]||0) && v>=(novelty[i+1]||0)) ||
+        Boolean(baseline[i]?.onset && v>0.085));
+      // Evaluate all twelve power-chord roots; compare root+fifth against
+      // fifth-as-root alternatives using low-frequency evidence.
+      const scores=evidences.map(e=>comparisonNames.map((_,root)=>{
+        const fifth=(root+7)%12;
+        const own=e.mid[root],fifthEnergy=e.mid[fifth];
+        const bassRoot=e.bass[root],bassFifth=e.bass[fifth];
+        const fifthAsRoot=e.mid[fifth]*0.7+e.mid[(fifth+7)%12]*0.3;
+        return 1.25*bassRoot+0.92*own+0.56*fifthEnergy+
+          0.18*Math.min(bassRoot,own)-0.16*bassFifth-
+          0.10*Math.max(0,fifthAsRoot-(own+fifthEnergy));
+      }));
+      // Smooth only within independently observed attack-separated segments.
+      const boundaries=[0];
+      for(let i=1;i<attacks.length;i++)if(attacks[i]&&i-boundaries[boundaries.length-1]>=2)boundaries.push(i);
+      boundaries.push(times.length);
+      const output=new Array(times.length);
+      for(let b=0;b<boundaries.length-1;b++){
+        const start=boundaries[b],end=boundaries[b+1];
+        const aggregate=Array(12).fill(0);
+        for(let i=start;i<end;i++){
+          const attackWeight=i===start?1.65:i===start+1?1.30:1;
+          for(let root=0;root<12;root++)aggregate[root]+=scores[i][root]*attackWeight;
+        }
+        const root=aggregate.indexOf(Math.max(...aggregate));
+        for(let i=start;i<end;i++){
+          const local=scores[i],ranked=[...local].sort((a,b)=>b-a);
+          const margin=(local[root]-ranked[1])/Math.max(0.001,ranked[0]);
+          output[i]={time:times[i],label:comparisonNames[root]+'5',
+            confidence:Math.max(0.15,Math.min(0.95,0.55+margin)),onset:attacks[i],
+            rootEvidence:evidences[i].bass[root],segment:b+1};
+        }
+      }
+      return output;
+    }
+    function comparisonMetrics(frames,intervals){
+      let total=0,exact=0,root=0,unknown=0;
+      const rows=[];
+      for(const interval of intervals){
+        const selected=frames.filter(f=>f.time>=interval.start&&f.time<interval.end);
+        const counts=new Map();let localRoot=0;
+        for(const frame of selected){
+          total++;
+          const parsed=normalizeChord(frame.label);
+          if(!parsed){unknown++;continue;}
+          counts.set(frame.label,(counts.get(frame.label)||0)+1);
+          if(parsed.pc===interval.chord.pc){root++;localRoot++;if(parsed.quality===interval.chord.quality)exact++;}
+        }
+        rows.push({majority:[...counts].sort((a,b)=>b[1]-a[1])[0]?.[0]||'?',
+          root:selected.length?Math.round(100*localRoot/selected.length):null});
+      }
+      return {total,exact,root,unknown,rows};
+    }
+    function runComparison(){
+      comparisonResults.replaceChildren();
+      if(!audioBuffer||!latestChordFrames?.length){comparisonStatus.textContent='Load and analyze an audio recording first.';return;}
+      experimentalFrames=experimentalChordFrames(audioBuffer,latestChordFrames);
+      let intervals=null,error='';
+      try{
+        intervals=parseGroundTruth(validationTruth.value);
+        const dt=latestChordFrames.length>1?latestChordFrames[1].time-latestChordFrames[0].time:0.5;
+        const limit=Math.min(audioBuffer.duration,latestChordFrames.at(-1).time+dt/2);
+        if(intervals.some(v=>v.end>limit+0.05))throw Error(`Reference intervals exceed analyzed duration (${limit.toFixed(2)}s).`);
+      }catch(err){error=err.message;}
+      const explanation=document.createElement('p');
+      explanation.style.cssText='font-size:.82rem;color:var(--muted);line-height:1.5;';
+      explanation.textContent='Experimental predictions are audio-derived, not trained on the ground truth. Both detectors use the same analysis frame timestamps. Attack segmentation is automatic and approximate; short recordings and inaccurate reference times affect scores.';
+      comparisonResults.appendChild(explanation);
+      if(!intervals){
+        comparisonStatus.textContent=`Experimental detector completed ${experimentalFrames.length} frames. Enter valid reference intervals for accuracy: ${error}`;
+        intervals=[{start:0,end:Math.min(audioBuffer.duration,latestChordFrames.at(-1).time+0.01),label:'Unlabeled',chord:null}];
+      }else comparisonStatus.textContent=`Compared ${experimentalFrames.length} frames using independent audio-based predictions.`;
+      const old=intervals[0].chord?comparisonMetrics(latestChordFrames,intervals):null;
+      const newer=intervals[0].chord?comparisonMetrics(experimentalFrames,intervals):null;
+      if(old&&newer){
+        const summary=document.createElement('p');summary.style.cssText='font-weight:700;line-height:1.7;';
+        const pct=(x,n)=>n?Math.round(100*x/n)+'%':'—';
+        summary.textContent=`Original: ${pct(old.exact,old.total)} exact / ${pct(old.root,old.total)} roots · Experimental: ${pct(newer.exact,newer.total)} exact / ${pct(newer.root,newer.total)} roots · Change: ${Math.round(100*(newer.root-old.root)/Math.max(1,old.total))} percentage points (root)`;
+        comparisonResults.appendChild(summary);
+      }
+      const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;';
+      const table=document.createElement('table');table.style.cssText='width:100%;min-width:550px;border-collapse:collapse;text-align:left;font-size:.83rem;';
+      const head=document.createElement('tr');
+      for(const label of ['Interval','Expected','Original majority','Experimental majority','Original root %','Experimental root %']){
+        const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:9px 7px;border-bottom:1px solid #555;';head.appendChild(th);
+      }
+      table.appendChild(head);
+      for(let i=0;i<intervals.length;i++){
+        const interval=intervals[i];
+        const majority=frames=>{
+          const counts=new Map();for(const f of frames)if(f.time>=interval.start&&f.time<interval.end)counts.set(f.label,(counts.get(f.label)||0)+1);
+          return [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0]||'?';
+        };
+        const vals=[`${interval.start.toFixed(2)}–${interval.end.toFixed(2)}s`,interval.label,
+          majority(latestChordFrames),majority(experimentalFrames),
+          old?(old.rows[i].root===null?'—':old.rows[i].root+'%'):'—',
+          newer?(newer.rows[i].root===null?'—':newer.rows[i].root+'%'):'—'];
+        const tr=document.createElement('tr');for(const value of vals){const td=document.createElement('td');td.textContent=value;td.style.cssText='padding:9px 7px;border-bottom:1px solid #333;white-space:nowrap;';tr.appendChild(td);}table.appendChild(tr);
+      }
+      wrap.appendChild(table);comparisonResults.appendChild(wrap);
+      const note=document.createElement('p');note.style.cssText='color:var(--muted);font-size:.8rem;margin-top:12px;';
+      note.textContent='The original chord timeline above is deliberately untouched. This is a controlled comparison, not a replacement of the production detector.';
+      comparisonResults.appendChild(note);
+    }
+    document.getElementById('compareDetectorsBtn').addEventListener('click',runComparison);
+
+    // 2E.3 candidate uses only audio spectra and the existing audio-derived
+    // frame timestamps. No reference intervals enter prediction or smoothing.
+    const candidateStatus=document.getElementById('candidateStatus');
+    const candidateResults=document.getElementById('candidateResults');
+    function octaveCandidateFrames(buffer,baseline){
+      if(!baseline?.length)return [];
+      const n=16384,sr=buffer.sampleRate,bin=sr/n;
+      const mono=new Float32Array(buffer.length);
+      for(let c=0;c<buffer.numberOfChannels;c++){
+        const data=buffer.getChannelData(c);
+        for(let i=0;i<data.length;i++)mono[i]+=data[i]/buffer.numberOfChannels;
+      }
+      function spectrum(time){
+        const real=new Float64Array(n),imag=new Float64Array(n);
+        const start=Math.max(0,Math.min(mono.length-n,Math.round(time*sr-n*0.5)));
+        for(let i=0;i<n;i++)real[i]=(mono[start+i]||0)*(0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));
+        fftMagnitude(real,imag);
+        const mag=new Float64Array(n/2);
+        for(let i=0;i<mag.length;i++)mag[i]=Math.hypot(real[i],imag[i]);
+        return mag;
+      }
+      function peak(mag,hz){
+        const k=Math.round(hz/bin);
+        if(k<2||k>=mag.length-2)return 0;
+        return Math.max(mag[k-1],mag[k],mag[k+1]);
+      }
+      const all=baseline.map(f=>{
+        const mag=spectrum(f.time),evidence=Array(12).fill(0),fund=Array(12).fill(0);
+        // Evaluate candidate roots in guitar's practical low register.
+        // Reward consistent octave and harmonic stacks, but keep a direct
+        // fundamental requirement to avoid assigning every fifth as a root.
+        for(let midi=35;midi<=64;midi++){
+          const hz=440*Math.pow(2,(midi-69)/12),pc=midi%12;
+          const p1=peak(mag,hz),p2=peak(mag,2*hz),p3=peak(mag,3*hz);
+          const p4=peak(mag,4*hz),p5=peak(mag,5*hz);
+          const direct=Math.sqrt(p1);
+          const supported=Math.sqrt(Math.min(p2,p3)*0.5);
+          const stack=direct+0.42*Math.sqrt(p2)+0.22*Math.sqrt(p3)+0.10*Math.sqrt(p4)+0.07*Math.sqrt(p5);
+          const register=midi<=52?1:0.48;
+          evidence[pc]+=register*(0.62*stack+0.38*(direct+supported));
+          if(midi<=52)fund[pc]+=direct*(midi<=47?1.15:1);
+        }
+        const es=evidence.reduce((a,b)=>a+b,0)||1,fs=fund.reduce((a,b)=>a+b,0)||1;
+        return {harm:evidence.map(x=>x/es),bass:fund.map(x=>x/fs)};
+      });
+      const local=all.map(e=>Array.from({length:12},(_,root)=>{
+        const fifth=(root+7)%12,third=(root+4)%12;
+        const rootH=e.harm[root],fifthH=e.harm[fifth];
+        const rootB=e.bass[root],fifthB=e.bass[fifth];
+        // A fifth can be stronger than its root. However, a proposed
+        // fifth-as-root must also explain its OWN fifth's spectrum.
+        const support=Math.min(rootH,fifthH);
+        const rivalFifth=e.harm[(fifth+7)%12];
+        return 1.35*rootB+1.15*rootH+0.72*fifthH+0.48*support
+          -0.28*Math.max(0,fifthB-rootB)
+          -0.18*Math.max(0,rivalFifth-rootH)
+          -0.06*e.harm[third];
+      }));
+      // Preserve the 2E.2 automatic onset segmentation, then add a
+      // shorter attack-weighted vote and allow confident local overrides.
+      const novelty=all.map((e,i)=>i?e.harm.reduce((v,x,k)=>v+Math.max(0,x-all[i-1].harm[k]),0):1);
+      const sorted=novelty.slice(1).sort((a,b)=>a-b);
+      const threshold=Math.max(0.12,(sorted[Math.floor(sorted.length*0.65)]||0)*1.15);
+      const attacks=novelty.map((v,i)=>i===0||(v>threshold&&v>=(novelty[i-1]||0)&&v>=(novelty[i+1]||0))||Boolean(baseline[i]?.onset&&v>0.08));
+      const cuts=[0];
+      for(let i=1;i<attacks.length;i++)if(attacks[i]&&i-cuts[cuts.length-1]>=2)cuts.push(i);
+      cuts.push(baseline.length);
+      const output=new Array(baseline.length);
+      for(let seg=0;seg<cuts.length-1;seg++){
+        const a=cuts[seg],b=cuts[seg+1],vote=Array(12).fill(0);
+        for(let i=a;i<b;i++){
+          const weight=i===a?2:i===a+1?1.4:0.8;
+          for(let root=0;root<12;root++)vote[root]+=weight*local[i][root];
+        }
+        const segmentRoot=vote.indexOf(Math.max(...vote));
+        for(let i=a;i<b;i++){
+          const ranking=local[i].map((v,k)=>({v,k})).sort((x,y)=>y.v-x.v);
+          const confident=ranking[0].v>ranking[1].v*1.35;
+          const root=confident&&i>a+1?ranking[0].k:segmentRoot;
+          output[i]={time:baseline[i].time,label:comparisonNames[root]+'5',onset:attacks[i],
+            confidence:Math.min(0.95,Math.max(0.2,ranking[0].v/(ranking[0].v+ranking[1].v+1e-9))),segment:seg+1};
+        }
+      }
+      return output;
+    }
+    function compareThree(){
+      candidateResults.replaceChildren();
+      if(!audioBuffer||!latestChordFrames?.length){candidateStatus.textContent='Load audio and run analysis first.';return;}
+      if(audioBuffer.length<16384){candidateStatus.textContent='Audio is too short for the FFT window.';return;}
+      const second=experimentalChordFrames(audioBuffer,latestChordFrames);
+      const third=octaveCandidateFrames(audioBuffer,latestChordFrames);
+      let intervals;
+      try{
+        intervals=parseGroundTruth(validationTruth.value);
+        const dt=latestChordFrames.length>1?latestChordFrames[1].time-latestChordFrames[0].time:0.5;
+        const limit=Math.min(audioBuffer.duration,latestChordFrames.at(-1).time+dt/2);
+        if(intervals.some(v=>v.end>limit+0.05))throw Error(`Reference intervals exceed analyzed duration (${limit.toFixed(2)}s).`);
+      }catch(err){candidateStatus.textContent=`Enter valid reference intervals: ${err.message}`;return;}
+      const sets=[latestChordFrames,second,third];
+      const results=sets.map(frames=>comparisonMetrics(frames,intervals));
+      const pct=(x,n)=>n?Math.round(100*x/n)+'%':'—';
+      candidateStatus.textContent=`Compared ${third.length} aligned frames across ${intervals.length} reference intervals. No production detector changes.`;
+      const summary=document.createElement('p');summary.style.cssText='font-weight:700;line-height:1.7;';
+      summary.textContent=['Original','2E.2','2E.3'].map((name,i)=>`${name}: ${pct(results[i].exact,results[i].total)} exact / ${pct(results[i].root,results[i].total)} roots`).join(' · ');
+      candidateResults.appendChild(summary);
+      const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;';
+      const table=document.createElement('table');table.style.cssText='width:100%;min-width:700px;border-collapse:collapse;text-align:left;font-size:.82rem;';
+      const header=document.createElement('tr');
+      for(const label of ['Interval','Expected','Original','2E.2','2E.3','Original root','2E.2 root','2E.3 root']){
+        const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:8px 6px;border-bottom:1px solid #555;white-space:nowrap;';header.appendChild(th);
+      }
+      table.appendChild(header);
+      for(let i=0;i<intervals.length;i++){
+        const vals=[`${intervals[i].start.toFixed(2)}–${intervals[i].end.toFixed(2)}s`,intervals[i].label,
+          ...results.map(r=>r.rows[i].majority),...results.map(r=>r.rows[i].root===null?'—':r.rows[i].root+'%')];
+        const tr=document.createElement('tr');
+        for(const v of vals){const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:8px 6px;border-bottom:1px solid #333;white-space:nowrap;';tr.appendChild(td);}
+        table.appendChild(tr);
+      }
+      wrap.appendChild(table);candidateResults.appendChild(wrap);
+      const note=document.createElement('p');note.style.cssText='font-size:.8rem;color:var(--muted);margin-top:12px;line-height:1.5;';
+      note.textContent='2E.3 is an experimental candidate, not a trained model. It uses octave-supported fundamentals and root/fifth pairs; no reference labels influence predictions. FFT windows (~341 ms at 48 kHz) and uncertain onset timing can reduce accuracy. Compare on additional recordings before promoting it.';
+      candidateResults.appendChild(note);
+    }
+    document.getElementById('compareThreeBtn').addEventListener('click',compareThree);
+
+
+    // 2E.11: audio-only fusion. No reference labels enter any prediction.
+    const autoStatus=document.getElementById('automaticChordStatus');
+    const autoResults=document.getElementById('automaticChordResults');
+    const autoCanvas=document.getElementById('automaticChordCanvas');
+    let automaticSegments=[];
+    let polyReportRows=[];
+    let lastAudioFilename="Unnamed recording";
+    let rejectedAutomaticSegments=[];
+    const autoPitchNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    function automaticAttacks(buffer){
+      const f=onsetStrength(buffer),n=f.flux.length;
+      if(n<5)return [0];
+      const sorted=f.flux.filter(Number.isFinite).slice().sort((a,b)=>a-b);
+      const q=v=>sorted[Math.min(sorted.length-1,Math.floor(v*(sorted.length-1)))]||0;
+      const peak=sorted[sorted.length-1]||0;
+      const threshold=Math.max(q(.5)*2.4,q(.9)*.42,peak*.085,1e-8);
+      const picks=[];
+      for(let i=2;i<n-2;i++){
+        const v=f.flux[i];
+        if(v<threshold||v<f.flux[i-1]||v<f.flux[i+1])continue;
+        const earlier=f.energy.slice(Math.max(0,i-16),Math.max(0,i-3));
+        const before=earlier.length?earlier.reduce((a,b)=>a+b,0)/earlier.length:0;
+        const after=f.energy[Math.min(n-1,i+2)]||0;
+        if(after<before*1.12&&v<q(.9)*.85)continue;
+        picks.push({t:i*f.hopSeconds,strength:v});
+      }
+      picks.sort((a,b)=>b.strength-a.strength);
+      const chosen=[];
+      for(const p of picks){
+        if(chosen.every(c=>Math.abs(c.t-p.t)>.22))chosen.push(p);
+      }
+      chosen.sort((a,b)=>a.t-b.t);
+      if(!chosen.length)return [0];
+      if(chosen[0].t<.14)chosen[0].t=0;
+      return chosen.map(p=>Math.max(0,p.t));
+    }
+    function autoMajority(frames,start,end){
+      const weights=new Map();let count=0;
+      for(const frame of frames){
+        if(frame.time<start+.035||frame.time>=end-.025)continue;
+        const name=frame.label||frame.chord||'';
+        if(!/^[A-G](?:#|b)?5$/.test(name))continue;
+        weights.set(name,(weights.get(name)||0)+1);count++;
+      }
+      if(!count)return {label:null,share:0,n:0};
+      const ranked=[...weights.entries()].sort((a,b)=>b[1]-a[1]);
+      return {label:ranked[0][0],share:ranked[0][1]/count,n:count};
+    }
+    function autoSpectralEvidence(buffer,start,end){
+      const len=end-start;
+      const times=[start+Math.min(.15,len*.24),start+len*.42,start+len*.67]
+        .filter(t=>t<end-.025&&t>=0);
+      const scores=new Float64Array(12);
+      let valid=0;
+      for(const t of times){
+        const snap=diagnosticSnapshot(buffer,t);
+        if(!snap||snap.rms<.001)continue;
+        const bass=new Float64Array(12),harmony=new Float64Array(12);
+        for(const x of snap.bass||[])bass[x.pc]=x.score;
+        for(const x of snap.harmonic||[])harmony[x.pc]=x.score;
+        // A power chord is root + fifth, not just its strongest spectral peak.
+        // Reward a supported root, with the fifth as corroborating evidence.
+        for(let r=0;r<12;r++){
+          const fifth=(r+7)%12;
+          const rootSupport=.72*bass[r]+.28*harmony[r];
+          const fifthSupport=.40*bass[fifth]+.60*harmony[fifth];
+          const inverseRoot=.72*bass[fifth]+.28*harmony[fifth];
+          scores[r]+=rootSupport+.36*Math.min(rootSupport,fifthSupport)
+            +.18*fifthSupport-.10*Math.max(0,inverseRoot-rootSupport);
+        }
+        valid++;
+      }
+      if(valid)for(let r=0;r<12;r++)scores[r]/=valid;
+      return {scores,valid};
+    }
+    // Harmonic-series comb: test plausible guitar fundamentals independently
+    // of chroma peak voting. Frequency is octave-specific, unlike pitch class.
+    function autoHarmonicFundamentals(buffer,start,end){
+      const n=16384,sr=buffer.sampleRate,half=n/2;
+      const scores=new Float64Array(12),evidence=new Float64Array(12);
+      const duration=end-start;
+      const sampleTimes=[start+Math.min(.18,duration*.23),start+duration*.43,start+duration*.66]
+        .filter(t=>t>=0&&t<=buffer.duration);
+      let used=0;
+      for(const t of sampleTimes){
+        if(buffer.length<n)break;
+        const offset=Math.max(0,Math.min(buffer.length-n,Math.round(t*sr-n/2)));
+        const real=new Float64Array(n),imag=new Float64Array(n);
+        let energy=0;
+        for(let i=0;i<n;i++){
+          let v=0;
+          for(let ch=0;ch<buffer.numberOfChannels;ch++)v+=buffer.getChannelData(ch)[offset+i];
+          v/=buffer.numberOfChannels;energy+=v*v;
+          real[i]=v*(.5-.5*Math.cos(2*Math.PI*i/(n-1)));
+        }
+        if(Math.sqrt(energy/n)<.001)continue;
+        fftMagnitude(real,imag);
+        const mag=new Float64Array(half);
+        for(let i=0;i<half;i++)mag[i]=Math.hypot(real[i],imag[i]);
+        const binHz=sr/n;
+        const peak=(hz)=>{
+          const k=Math.round(hz/binHz);
+          if(k<2||k>=half-2)return 0;
+          return Math.max(mag[k-1],mag[k],mag[k+1]);
+        };
+        const noteScores=new Float64Array(12);
+        for(let midi=35;midi<=69;midi++){
+          const f=440*Math.pow(2,(midi-69)/12);
+          const pc=midi%12;
+          let support=0,weight=0,observed=0;
+          for(let harmonic=1;harmonic<=7;harmonic++){
+            if(f*harmonic>=sr/2)break;
+            const w=1/Math.pow(harmonic,.8);
+            const value=peak(f*harmonic);
+            support+=w*Math.sqrt(value);
+            weight+=w;
+            if(harmonic===1)observed=value;
+          }
+          // Require some energy at the proposed fundamental, but allow
+          // missing-fundamental instruments and weak low-frequency pickup.
+          const value=(support/Math.max(weight,1e-9))*(.72+.28*Math.min(1,Math.sqrt(observed)/(support/Math.max(weight,1e-9)+1e-9)));
+          noteScores[pc]=Math.max(noteScores[pc],value);
+        }
+        const peakScore=Math.max(...noteScores,1e-9);
+        for(let pc=0;pc<12;pc++){
+          scores[pc]+=noteScores[pc]/peakScore;
+          evidence[pc]+=noteScores[pc]>peakScore*.45?1:0;
+        }
+        used++;
+      }
+      if(used)for(let i=0;i<12;i++)scores[i]/=used;
+      return {scores,used,evidence};
+    }
+    // 2E.8: independent low-frequency periodicity estimator. Downsample
+    // after box-filtering, then use normalized difference (YIN-like) over
+    // plausible guitar bass notes. No chord labels are supplied to this stage.
+    function autoLowFundamentals(buffer,start,end){
+      const sr=buffer.sampleRate, target=2200, step=Math.max(1,Math.round(sr/target));
+      const fs=sr/step, windowN=2048;
+      const scores=new Float64Array(12), candidates=[];
+      const dur=Math.max(0,end-start);
+      const times=[start+Math.min(.19,dur*.22),start+dur*.48,start+dur*.73];
+      let used=0;
+      for(const t of times){
+        const middle=Math.round(t*sr);
+        const offset=Math.max(0,Math.min(buffer.length-windowN*step,middle-Math.round(windowN*step/2)));
+        if(buffer.length<windowN*step)continue;
+        const x=new Float64Array(windowN);
+        let mean=0,energy=0;
+        for(let i=0;i<windowN;i++){
+          let v=0;
+          for(let j=0;j<step;j++){
+            const k=offset+i*step+j;
+            for(let ch=0;ch<buffer.numberOfChannels;ch++)v+=buffer.getChannelData(ch)[k];
+          }
+          v/=step*buffer.numberOfChannels;x[i]=v;mean+=v;
+        }
+        mean/=windowN;
+        for(let i=0;i<windowN;i++){x[i]-=mean;energy+=x[i]*x[i];}
+        if(Math.sqrt(energy/windowN)<.001)continue;
+        const minLag=Math.max(2,Math.floor(fs/260)),maxLag=Math.min(160,Math.ceil(fs/65));
+        const diff=new Float64Array(maxLag+1),norm=new Float64Array(maxLag+1);
+        let cumulative=0;
+        for(let lag=1;lag<=maxLag;lag++){
+          let d=0;
+          for(let i=0;i<windowN-maxLag;i+=2){const delta=x[i]-x[i+lag];d+=delta*delta;}
+          diff[lag]=d;cumulative+=d;
+          norm[lag]=cumulative>1e-12?d*lag/cumulative:1;
+        }
+        const noteCandidates=[];
+        for(let midi=40;midi<=60;midi++){
+          const f=440*Math.pow(2,(midi-69)/12),lag=fs/f;
+          if(lag<minLag||lag>maxLag)continue;
+          const k=Math.round(lag);
+          const value=Math.min(norm[Math.max(minLag,k-1)],norm[k],norm[Math.min(maxLag,k+1)]);
+          const strength=Math.max(0,1-value);
+          noteCandidates.push({midi,f,strength});
+        }
+        // A harmonic fifth can generate a spurious periodicity. Reward
+        // local minima and lower fundamental periods without forcing a root.
+        for(const c of noteCandidates){
+          const pc=c.midi%12;
+          scores[pc]+=c.strength;
+        }
+        noteCandidates.sort((a,b)=>b.strength-a.strength);
+        candidates.push(noteCandidates.slice(0,3));used++;
+      }
+      if(used)for(let i=0;i<12;i++)scores[i]/=used;
+      return {scores,used,candidates};
+    }
+    function autoRoot(label){
+      if(!label||!label.endsWith('5'))return -1;
+      return autoPitchNames.indexOf(label.slice(0,-1).replace('♯','#').replace('♭','b'));
+    }
+    // 2E.10: physically measured spectral peaks and guitar-register templates.
+    // Candidate MIDI 40..57 (E2..A3), not a fixed sequence of chord names.
+    function autoMeasuredGuitar(buffer,start,end){
+      const sr=buffer.sampleRate,N=32768,half=N/2;
+      const times=[.22,.46,.70].map(fr=>start+(end-start)*fr);
+      const candidateScores=new Float64Array(12),peakRows=[];
+      let used=0;
+      for(const time of times){
+        if(buffer.length<N)break;
+        const offset=Math.max(0,Math.min(buffer.length-N,Math.round(time*sr-N/2)));
+        const real=new Float64Array(N),imag=new Float64Array(N);
+        let power=0;
+        for(let i=0;i<N;i++){
+          let x=0;
+          for(let ch=0;ch<buffer.numberOfChannels;ch++)x+=buffer.getChannelData(ch)[offset+i];
+          x/=buffer.numberOfChannels;power+=x*x;
+          real[i]=x*(.5-.5*Math.cos(2*Math.PI*i/(N-1)));
+        }
+        if(Math.sqrt(power/N)<.002)continue;
+        fftMagnitude(real,imag);
+        const mags=new Float64Array(half);
+        for(let k=0;k<half;k++)mags[k]=Math.hypot(real[k],imag[k]);
+        const hzPerBin=sr/N;
+        const peakAt=(freq)=>{
+          if(freq<45||freq>1600)return 0;
+          const k=Math.round(freq/hzPerBin);
+          const tolerance=Math.max(2,Math.round(freq*.017/hzPerBin));
+          let value=0;
+          for(let j=Math.max(2,k-tolerance);j<=Math.min(half-2,k+tolerance);j++)value=Math.max(value,mags[j]);
+          return value;
+        };
+        const localPeaks=[];
+        for(let k=Math.ceil(60/hzPerBin);k<Math.floor(1100/hzPerBin);k++){
+          if(mags[k]>mags[k-1]&&mags[k]>=mags[k+1])
+            localPeaks.push({hz:k*hzPerBin,amp:mags[k]});
+        }
+        localPeaks.sort((a,b)=>b.amp-a.amp);
+        peakRows.push(localPeaks.slice(0,8));
+        const reference=Math.max(1e-8,...localPeaks.slice(0,8).map(p=>p.amp));
+        const sampleScores=new Float64Array(12);
+        for(let midi=40;midi<=57;midi++){
+          const rootHz=440*Math.pow(2,(midi-69)/12);
+          const fifthHz=rootHz*1.4983070769;
+          const fundamental=peakAt(rootHz)/reference;
+          const octave=peakAt(rootHz*2)/reference;
+          const thirdHarmonic=peakAt(rootHz*3)/reference;
+          const fifth=peakAt(fifthHz)/reference;
+          const fifthOctave=peakAt(fifthHz*2)/reference;
+          // Root support is required: a strong fifth alone cannot
+          // nominate itself as the root of the power chord.
+          const rootEvidence=.56*Math.sqrt(fundamental)+.30*Math.sqrt(octave)+.14*Math.sqrt(thirdHarmonic);
+          const fifthEvidence=.70*Math.sqrt(fifth)+.30*Math.sqrt(fifthOctave);
+          const score=rootEvidence*(.70+.30*Math.min(1,fifthEvidence));
+          sampleScores[midi%12]=Math.max(sampleScores[midi%12],score);
+        }
+        for(let pc=0;pc<12;pc++)candidateScores[pc]+=sampleScores[pc];
+        used++;
+      }
+      if(used)for(let i=0;i<12;i++)candidateScores[i]/=used;
+      const ranked=Array.from(candidateScores,(score,pc)=>({pc,score})).sort((a,b)=>b.score-a.score);
+      const representative=peakRows[Math.floor(peakRows.length/2)]||[];
+      return {scores:candidateScores,used,ranked,peaks:representative};
+    }
+    function autoFusion(buffer,start,end,detectors){
+      const measured=autoMeasuredGuitar(buffer,start,end);
+      const spectral=autoSpectralEvidence(buffer,start,end);
+      const harmonic=autoHarmonicFundamentals(buffer,start,end);
+      const estimates=detectors.map(fr=>autoMajority(fr,start,end));
+      const scores=new Float64Array(12);
+      const maxM=Math.max(1e-8,...measured.scores);
+      const maxS=Math.max(1e-8,...spectral.scores);
+      const maxH=Math.max(1e-8,...harmonic.scores);
+      for(let pc=0;pc<12;pc++){
+        // Guitar-specific measured fundamentals dominate. Legacy models
+        // are diagnostic tie-breakers, never a majority-vote override.
+        scores[pc]=.76*measured.scores[pc]/maxM+
+          .12*spectral.scores[pc]/maxS+
+          .07*harmonic.scores[pc]/maxH;
+      }
+      for(let i=0;i<estimates.length;i++){
+        const e=estimates[i],pc=autoRoot(e.label);
+        if(pc>=0)scores[pc]+=[.01,.02,.02][i]*e.share;
+      }
+      const ranked=Array.from(scores,(score,root)=>({root,score})).sort((a,b)=>b.score-a.score);
+      const best=ranked[0],second=ranked[1];
+      const margin=(best.score-second.score)/Math.max(best.score,1e-8);
+      const peaks=measured.peaks.map(p=>{
+        const midi=Math.round(69+12*Math.log2(p.hz/440));
+        return `${p.hz.toFixed(0)} Hz (${autoPitchNames[(midi%12+12)%12]}${Math.floor(midi/12)-1})`;
+      });
+      return {start,end,chord:autoPitchNames[best.root]+'5',estimates,
+        margin,runner:autoPitchNames[second.root]+'5',
+        measuredRoot:measured.used?autoPitchNames[measured.ranked[0].pc]+'5':'—',
+        harmonicRoot:autoPitchNames[harmonic.scores.indexOf(Math.max(...harmonic.scores))]+'5',
+        periodicRoot:'—',peaks,ambiguous:margin<.13||!measured.used};
+    }
+    // 2E.9: timing is independent of all chord classifiers.
+    // Do not accept, reject, or merge boundaries based on predicted chord names.
+    function autoTimingBoundaries(buffer){
+      const raw=automaticAttacks(buffer),onset=onsetStrength(buffer);
+      const sr=buffer.sampleRate,duration=buffer.duration;
+      const data=buffer.getChannelData(0);
+      // 40-ms RMS blocks detect first sustained audible guitar sound.
+      const block=Math.max(1,Math.round(sr*.04)),energies=[];
+      for(let i=0;i<data.length;i+=block){
+        let sum=0;
+        for(let j=i;j<Math.min(i+block,data.length);j++)sum+=data[j]*data[j];
+        energies.push(Math.sqrt(sum/Math.max(1,Math.min(block,data.length-i))));
+      }
+      const sorted=energies.slice().sort((a,b)=>a-b);
+      const max=sorted[sorted.length-1]||0;
+      const floor=sorted[Math.floor(sorted.length*.20)]||0;
+      const gate=Math.max(.004,max*.085,floor*3);
+      let first=0;
+      for(let i=0;i<energies.length-2;i++){
+        if(energies[i]>gate&&energies[i+1]>gate*.75){
+          first=i*block/sr;break;
+        }
+      }
+      const candidates=raw.filter(t=>t>=first-.12&&t<duration-.2);
+      const peaks=candidates.map(t=>({
+        t,strength:onset.flux[Math.min(onset.flux.length-1,Math.round(t/onset.hopSeconds))]||0
+      })).sort((a,b)=>b.strength-a.strength);
+      const chosen=[];
+      for(const p of peaks){
+        if(chosen.every(q=>Math.abs(q.t-p.t)>.48))chosen.push(p);
+      }
+      chosen.sort((a,b)=>a.t-b.t);
+      // Snap the first boundary to the first audible onset rather than 0.
+      const firstAttack=chosen.find(p=>p.t>=first-.12&&p.t<=first+.32);
+      const beginning=firstAttack?firstAttack.t:first;
+      const result=[Math.max(0,beginning)];
+      for(const p of chosen)if(p.t>result[result.length-1]+.48)result.push(p.t);
+      return result;
+    }
+    // 2E.11: tonal-event gate based on sustained signal rather than raw
+    // amplitude. Inspired by spectral-flux onset detection and segmentation
+    // practices (librosa), but implemented locally without external libraries.
+    // It never uses reference chord labels or the expected number of chords.
+    function autoEventEvidence(buffer,start,end){
+      const sr=buffer.sampleRate;
+      const a=buffer.getChannelData(0),b=buffer.numberOfChannels>1?buffer.getChannelData(1):null;
+      const duration=end-start;
+      const N=8192,parts=5;
+      const frames=[];
+      for(let part=0;part<parts;part++){
+        const time=start+duration*(.14+.72*part/(parts-1));
+        const offset=Math.max(0,Math.min(a.length-N,Math.round(time*sr-N/2)));
+        if(a.length<N)break;
+        const re=new Float64Array(N),im=new Float64Array(N);
+        let energy=0;
+        for(let i=0;i<N;i++){
+          const x=b?(a[offset+i]+b[offset+i])*.5:a[offset+i];
+          energy+=x*x;
+          re[i]=x*(.5-.5*Math.cos(2*Math.PI*i/(N-1)));
+        }
+        fftMagnitude(re,im);
+        const minBin=Math.max(2,Math.floor(75*N/sr)),maxBin=Math.min(N/2-2,Math.ceil(1050*N/sr));
+        let sum=0,logSum=0,max=0,peakBin=minBin,tonal=0;
+        for(let k=minBin;k<=maxBin;k++){
+          const m=Math.hypot(re[k],im[k])+1e-10;
+          sum+=m;logSum+=Math.log(m);
+          if(m>max){max=m;peakBin=k;}
+        }
+        const count=maxBin-minBin+1;
+        const flatness=Math.exp(logSum/count)/(sum/count+1e-10);
+        const rms=Math.sqrt(energy/N);
+        frames.push({rms,flatness,peakHz:peakBin*sr/N,peakFraction:max/(sum+1e-10)});
+      }
+      if(!frames.length)return {accepted:false,reason:'Insufficient audio',tonality:0};
+      const rmsValues=frames.map(f=>f.rms).sort((a,b)=>a-b);
+      const median=rmsValues[Math.floor(rmsValues.length/2)];
+      const maxRms=rmsValues[rmsValues.length-1];
+      const average=(arr)=>arr.reduce((a,b)=>a+b,0)/Math.max(1,arr.length);
+      const tonality=average(frames.map(f=>1-f.flatness));
+      const sustained=median/Math.max(maxRms,1e-9);
+      const flat=average(frames.map(f=>f.flatness));
+      const concentration=average(frames.map(f=>f.peakFraction));
+      return {accepted:true,median,maxRms,sustained,flat,tonality,concentration,
+        reason:'Tonal evidence present'};
+    }
+    function autoValidateEvents(buffer,segments){
+      if(!segments.length)return {accepted:[],rejected:[]};
+      const all=segments.map(s=>({...s,eventEvidence:autoEventEvidence(buffer,s.start,s.end)}));
+      const rejected=[];
+      // Only the leading interval is eligible for transient-only rejection.
+      // Requiring a subsequent onset and a steep decay avoids deleting a
+      // quiet opening chord merely because it has low absolute loudness.
+      if(all.length>1){
+        const first=all[0],next=all[1],e=first.eventEvidence;
+        const early=e.maxRms||0,late=e.median||0;
+        const isolated=first.start<.12&&first.end-first.start>=.38;
+        const weakSustain=e.sustained<.33;
+        const nextHasTone=next.eventEvidence.median>0.002;
+        const separated=next.start-first.start>.45;
+        if(isolated&&weakSustain&&nextHasTone&&separated){
+          first.rejectionReason='Opening transient: weak sustained energy (median/peak '+e.sustained.toFixed(2)+')';
+          rejected.push(all.shift());
+        }
+      }
+      return {accepted:all,rejected};
+    }
+    function autoSegments(buffer,detectors){
+      const boundaries=autoTimingBoundaries(buffer);
+      const segs=[];
+      for(let i=0;i<boundaries.length;i++){
+        const start=boundaries[i];
+        const end=i+1<boundaries.length?boundaries[i+1]:buffer.duration;
+        if(end-start<.18)continue;
+        // Analyze the body of the chord, not the transient shared with
+        // the preceding chord. The boundary is never moved by classification.
+        const analysisStart=start+Math.min(.14,(end-start)*.20);
+        const analysisEnd=end-Math.min(.09,(end-start)*.12);
+        const result=autoFusion(buffer,analysisStart,Math.max(analysisStart+.05,analysisEnd),detectors);
+        const matches=result.estimates.filter(e=>e.label===result.chord).length;
+        segs.push({...result,start,end,
+          confidence:result.ambiguous?'Ambiguous root':matches>=2?'Detector agreement':'Low agreement',
+          timingNote:'Onset estimate'});
+      }
+      return autoValidateEvents(buffer,segs);
+    }
+    function drawAutoWave(){
+      const ctx=autoCanvas.getContext('2d');if(!ctx)return;
+      const rect=autoCanvas.getBoundingClientRect(),scale=Math.min(window.devicePixelRatio||1,2);
+      const w=Math.max(280,Math.round(rect.width*scale)),h=Math.round(155*scale);
+      autoCanvas.width=w;autoCanvas.height=h;ctx.fillStyle='#101719';ctx.fillRect(0,0,w,h);
+      if(!audioBuffer)return;
+      const {a,b}=onsetAudioMono(audioBuffer),mid=h/2;
+      ctx.strokeStyle='#49b9a7';ctx.lineWidth=scale;ctx.beginPath();
+      for(let x=0;x<w;x++){
+        const begin=Math.floor(x*a.length/w),end=Math.max(begin+1,Math.floor((x+1)*a.length/w));
+        let peak=0;const stride=Math.max(1,Math.floor((end-begin)/28));
+        for(let k=begin;k<end;k+=stride)peak=Math.max(peak,Math.abs(b?(a[k]+b[k])*.5:a[k]));
+        ctx.moveTo(x,mid-peak*(mid-9));ctx.lineTo(x,mid+peak*(mid-9));
+      }ctx.stroke();
+      ctx.font=`${11*scale}px sans-serif`;
+      for(const seg of automaticSegments){
+        const x=seg.start/audioBuffer.duration*w;
+        ctx.strokeStyle='#ffad42';ctx.lineWidth=2*scale;ctx.beginPath();ctx.moveTo(x,4);ctx.lineTo(x,h-4);ctx.stroke();
+        ctx.fillStyle='#ffcd83';ctx.fillText(seg.chord||'?',Math.min(w-33*scale,x+4*scale),16*scale);
+      }
+    }
+    function discoverAutomaticChords(){
+      if(!audioBuffer||!latestChordFrames?.length){autoStatus.textContent='Load a recording and run the main audio analysis first.';return;}
+      try{
+        const b=audioBuffer,baseline=latestChordFrames;
+        const second=experimentalChordFrames(b,baseline);
+        const third=octaveCandidateFrames(b,baseline);
+        const classified=autoSegments(b,[baseline,second,third]);
+        const segs=classified.accepted;
+        automaticSegments=segs;
+        rejectedAutomaticSegments=classified.rejected;
+        autoResults.replaceChildren();
+        const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:.84rem;';
+        const head=document.createElement('tr');
+        for(const v of ['Start','End','Consolidated chord','Measured root','Strong peaks','Original','2E.2','2E.3','Confidence']){
+          const th=document.createElement('th');th.textContent=v;th.style.cssText='text-align:left;padding:8px 6px;border-bottom:1px solid #666;white-space:nowrap;';head.append(th);
+        }table.append(head);
+        for(const seg of segs){
+          const row=document.createElement('tr');
+          for(const v of [seg.start.toFixed(2)+'s',seg.end.toFixed(2)+'s',seg.chord,seg.measuredRoot,seg.peaks.slice(0,4).join(' · '),...seg.estimates.map(e=>e.label||'—'),seg.confidence]){
+            const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:8px 6px;border-bottom:1px solid #333;white-space:nowrap;';row.append(td);
+          }table.append(row);
+        }
+        autoResults.append(table);
+        if(rejectedAutomaticSegments.length){
+          const details=document.createElement('details');details.style.marginTop='12px';
+          const summary=document.createElement('summary');summary.textContent=`Rejected or uncertain opening events (${rejectedAutomaticSegments.length}) — inspect`;
+          details.append(summary);
+          for(const item of rejectedAutomaticSegments){
+            const line=document.createElement('p');line.style.cssText='font-size:.82rem;margin:8px 0;';
+            line.textContent=`${item.start.toFixed(2)}–${item.end.toFixed(2)}s: ${item.chord} candidate — ${item.rejectionReason}. This is a heuristic rejection, not proof of silence.`;
+            details.append(line);
+          }
+          autoResults.append(details);
+        }
+        const note=document.createElement('p');note.style.cssText='font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:10px;';
+        note.textContent='Audio-derived predictions only. Measured guitar-register fundamentals and root/fifth evidence drive the result; a conservative sustained-energy gate can flag opening transients; older detectors provide diagnostics; chord labels cannot move or merge timing boundaries. Ambiguous roots are flagged. Agreement is not verified accuracy, and weak or missed strums can still cause errors.';
+        autoResults.append(note);
+        autoStatus.textContent=`Estimated ${segs.length} accepted tonal chord events; ${rejectedAutomaticSegments.length} opening transient candidate(s) flagged. No manual values required. Orange markers show estimated chord changes; timing and labels may be wrong.`;
+        drawAutoWave();
+      }catch(e){autoStatus.textContent='Automatic chord analysis failed: '+e.message;console.error(e);}
+    }
+    // 2E.14 experimental sparse NNLS harmonic-template fit. No reference labels.
+    // Each frame fits a non-negative sum of note templates jointly, and a
+    // complexity penalty selects the number of independently sounding pitches.
+    const polyNoteNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const polyHz=m=>440*Math.pow(2,(m-69)/12);
+    const polyNote=m=>polyNoteNames[(m%12+12)%12]+(Math.floor(m/12)-1);
+    function polyFrame(buffer,center){
+      const N=32768,sr=buffer.sampleRate;
+      if(buffer.length<N)return null;
+      const offset=Math.max(0,Math.min(buffer.length-N,Math.round(center*sr-N/2)));
+      const real=new Float64Array(N),imag=new Float64Array(N);
+      let energy=0;
+      for(let i=0;i<N;i++){
+        let v=0;for(let ch=0;ch<buffer.numberOfChannels;ch++)v+=buffer.getChannelData(ch)[offset+i];
+        v/=buffer.numberOfChannels;energy+=v*v;
+        real[i]=v*(.5-.5*Math.cos(2*Math.PI*i/(N-1)));
+      }
+      const rms=Math.sqrt(energy/N);
+      if(rms<.0015)return {notes:[],rms,fit:0,peaks:[],total:0};
+      fftMagnitude(real,imag);
+      const df=sr/N,peaks=[];
+      for(let k=Math.ceil(60/df);k<Math.min(N/2-2,Math.floor(1700/df));k++){
+        const a=Math.hypot(real[k],imag[k]);
+        if(a>Math.hypot(real[k-1],imag[k-1])&&a>=Math.hypot(real[k+1],imag[k+1]))peaks.push({hz:k*df,amp:a});
+      }
+      peaks.sort((a,b)=>b.amp-a.amp);
+      const strongest=peaks[0]?.amp||1;
+      // Group maxima within 38 cents; avoid interpreting vibrato/leakage
+      // as separate notes. Keep strongest clusters across the spectrum.
+      const groups=[];
+      for(const peak of peaks){
+        if(peak.amp<strongest*.025)break;
+        const close=groups.find(g=>Math.abs(1200*Math.log2(peak.hz/g.hz))<38);
+        if(close){if(peak.amp>close.amp){close.hz=peak.hz;close.amp=peak.amp;}}
+        else groups.push({...peak});
+        if(groups.length>=75)break;
+      }
+      groups.sort((a,b)=>a.hz-b.hz);
+      if(!groups.length)return {notes:[],rms,fit:0,peaks:[],total:0};
+      const y=groups.map(g=>Math.sqrt(g.amp/strongest));
+      const templates=[];
+      for(let midi=40;midi<=81;midi++){
+        const f=polyHz(midi),vec=new Float64Array(groups.length);
+        for(let i=0;i<groups.length;i++){
+          let best=0;
+          for(let h=1;h<=10&&f*h<=1700;h++){
+            const cents=Math.abs(1200*Math.log2(groups[i].hz/(f*h)));
+            if(cents<40)best=Math.max(best,(1-cents/40)/Math.pow(h,.75));
+          }
+          vec[i]=best;
+        }
+        const norm=Math.hypot(...vec);
+        if(norm>.01)templates.push({midi,vec:Float64Array.from(vec,v=>v/norm)});
+      }
+      const dot=(a,b)=>{let x=0;for(let i=0;i<a.length;i++)x+=a[i]*b[i];return x;};
+      const initial=templates.map(t=>({t,match:dot(t.vec,y)})).sort((a,b)=>b.match-a.match);
+      // Candidate shortlist also retains likely roots whose upper partials
+      // are strong; never use known chord labels to select candidates.
+      const shortlist=initial.slice(0,18).map(x=>x.t);
+      const total=dot(y,y);
+      function fit(active){
+        const amps=new Float64Array(active.length),residual=Float64Array.from(y);
+        for(let sweep=0;sweep<55;sweep++){
+          let delta=0;
+          for(let j=0;j<active.length;j++){
+            const v=active[j].vec,old=amps[j];
+            const updated=Math.max(0,old+dot(v,residual)-.018);
+            const change=updated-old;
+            if(Math.abs(change)>1e-7){
+              amps[j]=updated;delta+=Math.abs(change);
+              for(let i=0;i<residual.length;i++)residual[i]-=change*v[i];
+            }
+          }
+          if(delta<1e-5)break;
+        }
+        const error=dot(residual,residual);
+        return {amps,error,improvement:Math.max(0,total-error)};
+      }
+      // Forward model selection: refit all active notes after every addition.
+      // Penalize additional notes, including octave duplicates, to avoid
+      // manufacturing polyphony from one guitar string's harmonic series.
+      let active=[],current={error:total,improvement:0,amps:[]};
+      for(let count=0;count<3;count++){
+        let best=null;
+        for(const t of shortlist){
+          if(active.includes(t))continue;
+          const trial=[...active,t],result=fit(trial);
+          const gain=current.error-result.error;
+          const relative=gain/Math.max(.0001,total);
+          const octave=active.some(x=>Math.abs(x.midi-t.midi)===12);
+          const penalty=(count===0?.035:count===1?.095:.13)+(octave?.065:0);
+          if(relative>penalty&&(!best||gain>best.gain))best={t,result,gain};
+        }
+        if(!best)break;
+        active.push(best.t);current=best.result;
+      }
+      const notes=active.map((t,i)=>({midi:t.midi,score:current.amps[i]}))
+        .filter(n=>n.score>.08).sort((a,b)=>b.score-a.score);
+      return {notes,rms,fit:Math.round(100*current.improvement/Math.max(total,.001)),peaks:groups,total};
+    }
+    // 2E.15: Acoustic-guitar evidence gate. The sparse spectral model is only
+    // a proposal; a second independent peak test is required for every note.
+    // This is not trained on reference labels and does not alter the 2E.11 DSP.
+    function polyIndependentEvidence(frame,midi){
+      if(!frame.peaks || !frame.peaks.length)return {fund:0,partials:0,score:0};
+      const f=polyHz(midi), max=Math.max(...frame.peaks.map(p=>p.amp),1e-9);
+      let fund=0,partials=0,weighted=0;
+      for(let h=1;h<=7 && f*h<=1700;h++){
+        const matching=frame.peaks.filter(p=>Math.abs(1200*Math.log2(p.hz/(f*h)))<32);
+        const amp=matching.length?Math.max(...matching.map(p=>p.amp))/max:0;
+        if(h===1)fund=amp;
+        else if(amp>=.065)partials++;
+        weighted+=Math.min(1,amp)/(Math.pow(h,.7));
+      }
+      return {fund,partials,score:weighted};
+    }
+    function polyEvent(buffer,seg){
+      const len=seg.end-seg.start;
+      // Prefer stable sustain frames; avoid the pick transient and release tail.
+      const fractions=len<.55?[.35,.68]:[.25,.43,.61,.78];
+      const frames=fractions.map(f=>polyFrame(buffer,seg.start+len*f)).filter(Boolean);
+      const votes=new Map();
+      for(const fr of frames){
+        for(const n of fr.notes){
+          const evidence=polyIndependentEvidence(fr,n.midi);
+          // Harmonic support alone is insufficient: a note must have its own
+          // fundamental or multiple clear partials, rather than just a fifth.
+          if(evidence.fund<.09 || (evidence.fund<.17 && evidence.partials<2))continue;
+          const v=votes.get(n.midi)||{midi:n.midi,count:0,score:0,fund:0};
+          v.count++;v.score+=n.score;v.fund+=evidence.fund;votes.set(n.midi,v);
+        }
+      }
+      const threshold=Math.max(2,Math.ceil(frames.length*.60));
+      const ranked=[...votes.values()].filter(v=>v.count>=threshold)
+        .sort((a,b)=>b.count-a.count||b.fund-a.fund||b.score-a.score);
+      const accepted=[];
+      for(const n of ranked){
+        if(accepted.length>=3)break;
+        // Reject likely adjacent detuned peaks and octave harmonic copies.
+        const collision=accepted.some(v=>{
+          const delta=Math.abs(v.midi-n.midi);
+          return delta===1 || (delta===12 && n.fund/n.count<.35);
+        });
+        if(collision)continue;
+        if(accepted.length){
+          const primary=accepted[0];
+          // Independent note needs substantial fundamental strength compared
+          // with the strongest note, not merely a small reduction in residual.
+          if(n.fund/n.count < Math.max(.18,(primary.fund/primary.count)*.42))continue;
+          if(n.score/n.count < primary.score/primary.count*.38)continue;
+        }
+        accepted.push(n);
+      }
+      const midis=accepted.map(n=>n.midi).sort((a,b)=>a-b);
+      const fit=frames.length?Math.round(frames.reduce((sum,f)=>sum+f.fit,0)/frames.length):0;
+      const persistence=frames.length&&accepted.length?Math.round(100*Math.min(...accepted.map(n=>n.count/frames.length))):0;
+      // A sparse model can explain a modest amount of energy even for noise;
+      // report uncertain instead of treating its best note as a correct answer.
+      const minimumFit=midis.length>=2?48:30;
+      const credible=midis.length>0 && fit>=minimumFit && persistence>=60;
+      let type='Uncertain',name='Insufficient independent pitch evidence';
+      if(credible && midis.length===1){type='Single note';name=polyNote(midis[0]);}
+      else if(credible && midis.length===2){
+        const d=midis[1]-midis[0];
+        const intervals={2:'major 2nd',3:'minor 3rd',4:'major 3rd',5:'perfect 4th',6:'tritone',7:'perfect 5th',8:'minor 6th',9:'major 6th',10:'minor 7th',11:'major 7th',12:'octave'};
+        type=d%12===7?'Power-chord candidate':'Double-stop';
+        name=polyNote(midis[0])+' + '+polyNote(midis[1])+' ('+(intervals[d]||d+' semitones')+')';
+      }else if(credible && midis.length>=3){
+        type='Small chord / multiple notes';name=midis.map(polyNote).join(' · ');
+        const pcs=new Set(midis.map(m=>m%12));
+        for(const root of midis){
+          const r=root%12;
+          if([0,4,7].every(i=>pcs.has((r+i)%12))){name=polyNoteNames[r]+' major ('+name+')';break;}
+          if([0,3,7].every(i=>pcs.has((r+i)%12))){name=polyNoteNames[r]+' minor ('+name+')';break;}
+        }
+      }
+      if(!credible){
+        name=fit<minimumFit?'Low spectral fit ('+fit+'%); notes withheld':
+          'Weak or inconsistent independent fundamentals; notes withheld';
+      }
+      return {type,name,notes:credible?midis:[],frames:frames.length,confidence:persistence,fit};
+    }
+    // 2E.16 baseline: retain 2E.15 fitting as a candidate generator, but separately
+    // evaluate stable harmonic families in each segment. This is an experimental
+    // heuristic, not a trained transcription model or validated accuracy claim.
+    function polyEvent216(buffer,seg){
+      const len=seg.end-seg.start;
+      const fractions=len<.45?[.38,.7]:[.20,.36,.52,.69,.82];
+      const frames=fractions.map(f=>polyFrame(buffer,seg.start+len*f)).filter(Boolean);
+      if(!frames.length)return {type:'Uncertain',name:'Insufficient audio',confidence:0,fit:0,reason:'No usable frames'};
+      const fit=Math.round(frames.reduce((a,f)=>a+f.fit,0)/frames.length);
+      const scores=new Map();
+      for(const frame of frames){
+        const candidates=new Set(frame.notes.map(n=>n.midi));
+        // A strong fifth can mask a quieter root: test a small set of
+        // independently observed pitch candidates and plausible fifth-below roots.
+        for(const pk of frame.peaks.slice().sort((a,b)=>b.amp-a.amp).slice(0,16)){
+          const midi=Math.round(69+12*Math.log2(pk.hz/440));
+          if(midi>=40&&midi<=81)candidates.add(midi);
+          if(midi-7>=40&&midi-7<=81)candidates.add(midi-7);
+          if(midi-12>=40&&midi-12<=81)candidates.add(midi-12);
+        }
+        const maxAmp=Math.max(...frame.peaks.map(p=>p.amp),1);
+        for(const midi of candidates){
+          const f=polyHz(midi);let fund=0,harm=0,partials=0;
+          for(let h=1;h<=7&&f*h<1700;h++){
+            const peak=frame.peaks.filter(p=>Math.abs(1200*Math.log2(p.hz/(f*h)))<30)
+              .reduce((a,b)=>Math.max(a,b.amp),0)/maxAmp;
+            if(h===1)fund=peak;
+            if(h>=2&&peak>.075){partials++;harm+=peak/Math.sqrt(h);}
+          }
+          // Require measured fundamental OR several separate partials.
+          const supported=fund>.13 || (fund>.055&&partials>=2);
+          if(!supported)continue;
+          const score=.65*fund+.35*harm;
+          const row=scores.get(midi)||{midi,votes:0,sum:0,fund:0};
+          row.votes++;row.sum+=score;row.fund+=fund;scores.set(midi,row);
+        }
+      }
+      const minVotes=Math.max(2,Math.ceil(frames.length*.6));
+      const ranked=[...scores.values()].filter(x=>x.votes>=minVotes)
+        .sort((a,b)=>b.votes-a.votes||b.sum-a.sum);
+      const accepted=[];
+      for(const c of ranked){
+        if(accepted.length===3)break;
+        if(accepted.some(a=>Math.abs(a.midi-c.midi)===1))continue;
+        // An octave is often the first harmonic of one string; demand unusually
+        // strong independent fundamental evidence before accepting both.
+        if(accepted.some(a=>Math.abs(a.midi-c.midi)===12)&&c.fund/c.votes<.40)continue;
+        if(accepted.length){
+          const lead=accepted[0];
+          if(c.sum/c.votes < lead.sum/lead.votes*.58)continue;
+          if(c.fund/c.votes < Math.max(.16,lead.fund/lead.votes*.45))continue;
+        }
+        accepted.push(c);
+      }
+      // If one detected note is a fifth above a strong lower candidate, prefer
+      // the lower root only when it has independent support in multiple frames.
+      const midis=accepted.map(a=>a.midi).sort((a,b)=>a-b);
+      const persistence=accepted.length?Math.round(100*Math.min(...accepted.map(a=>a.votes/frames.length))):0;
+      const evidence=accepted.map(a=>polyNote(a.midi)+': '+a.votes+'/'+frames.length+' frames, fundamental '+Math.round(100*a.fund/a.votes)+'%').join('; ');
+      const credible=midis.length>0&&fit>=32&&persistence>=60;
+      if(!credible)return {type:'Uncertain',name:fit<32?'Low spectral fit ('+fit+'%); notes withheld':'Insufficient stable independent fundamentals',confidence:persistence,fit,reason:'Evidence threshold not met',evidence};
+      if(midis.length===1)return {type:'Single note',name:polyNote(midis[0]),confidence:persistence,fit,evidence};
+      if(midis.length===2){
+        const d=midis[1]-midis[0];
+        const intervals={2:'major 2nd',3:'minor 3rd',4:'major 3rd',5:'perfect 4th',7:'perfect 5th',12:'octave'};
+        return {type:d===7?'Power-chord candidate':'Double-stop',name:midis.map(polyNote).join(' + ')+' ('+(intervals[d]||d+' semitones')+')',confidence:persistence,fit,evidence};
+      }
+      return {type:'Small chord / multiple notes',name:midis.map(polyNote).join(' · '),confidence:persistence,fit,evidence};
+    }
+    // 2E.17 — independently test whether each pitch explains energy not already
+    // accounted for by other harmonic families. This is a heuristic, not a
+    // trained or ground-truth-calibrated polyphonic transcription model.
+    function polyEvent217(buffer,seg){
+      const len=seg.end-seg.start;
+      const fractions=len<.45?[.35,.68]:[.19,.35,.51,.67,.81];
+      const frames=fractions.map(f=>polyFrame(buffer,seg.start+len*f)).filter(Boolean);
+      if(!frames.length)return {type:'Uncertain',name:'No usable frames',confidence:0,fit:0,evidence:'',reason:'No usable frames'};
+      const fit=Math.round(frames.reduce((sum,f)=>sum+f.fit,0)/frames.length);
+      const votes=new Map();
+      for(const frame of frames){
+        if(!frame.peaks.length)continue;
+        const peaks=frame.peaks;
+        const max=Math.max(...peaks.map(p=>p.amp),1e-8);
+        const possible=new Set(frame.notes.map(n=>n.midi));
+        for(const pk of [...peaks].sort((a,b)=>b.amp-a.amp).slice(0,24)){
+          const midi=Math.round(69+12*Math.log2(pk.hz/440));
+          for(const shift of [0,-12,-19,-24]){
+            if(midi+shift>=40&&midi+shift<=81)possible.add(midi+shift);
+          }
+        }
+        const candidates=[];
+        for(const midi of possible){
+          const f=polyHz(midi);let fundamental=0,upper=0,partialCount=0;
+          const matched=[];
+          for(let h=1;h<=9&&h*f<1700;h++){
+            const pk=peaks.reduce((best,p)=>{
+              const cents=Math.abs(1200*Math.log2(p.hz/(f*h)));
+              return cents<32&&(!best||p.amp>best.amp)?p:best;
+            },null);
+            const strength=pk?pk.amp/max:0;
+            if(h===1)fundamental=strength;
+            if(h>1&&strength>.07){partialCount++;upper+=strength/Math.sqrt(h);}
+            if(pk)matched.push({pk,h,strength});
+          }
+          // A missing fundamental can be inferred from a coherent harmonic
+          // ladder; one isolated high harmonic is not sufficient evidence.
+          const missing=fundamental<.09&&partialCount>=3&&upper>.50;
+          if(fundamental<.115&&!missing)continue;
+          const quality=fundamental*.75+upper*.25;
+          candidates.push({midi,fundamental,upper,quality,matched,missing});
+        }
+        candidates.sort((a,b)=>b.quality-a.quality);
+        const selected=[];
+        for(const c of candidates){
+          if(selected.length>=3)break;
+          if(selected.some(x=>Math.abs(x.midi-c.midi)===1))continue;
+          // Explicitly discount harmonics already owned by a lower candidate.
+          const independent=c.matched.reduce((sum,item)=>{
+            const owned=selected.some(x=>x.matched.some(y=>
+              y.pk===item.pk && y.h!==item.h));
+            return sum+(owned?0:item.strength/Math.sqrt(item.h));
+          },0);
+          const isOctave=selected.some(x=>Math.abs(x.midi-c.midi)===12);
+          const isFifth=selected.some(x=>Math.abs(x.midi-c.midi)===7);
+          const required=selected.length?(isOctave?.46:isFifth?.27:.23):.12;
+          if(independent<required)continue;
+          if(selected.length&&c.quality<selected[0].quality*.34)continue;
+          selected.push({...c,independent});
+        }
+        // Recheck all pairs: selection order must not let an upper octave
+        // claim a lower string's harmonics merely because it ranked first.
+        for(const c of selected){
+          const row=votes.get(c.midi)||{midi:c.midi,count:0,fund:0,residual:0,missing:0};
+          row.count++;row.fund+=c.fundamental;row.residual+=c.independent;
+          if(c.missing)row.missing++;
+          votes.set(c.midi,row);
+        }
+      }
+      const minVotes=Math.max(2,Math.ceil(frames.length*.6));
+      const ranked=[...votes.values()].filter(v=>v.count>=minVotes)
+        .sort((a,b)=>b.count-a.count||b.residual-a.residual);
+      const accepted=[];
+      for(const c of ranked){
+        if(accepted.length>=3)break;
+        if(accepted.some(a=>Math.abs(a.midi-c.midi)===1))continue;
+        const octave=accepted.find(a=>Math.abs(a.midi-c.midi)===12);
+        if(octave){
+          // Conservative: a strong octave peak may still be the first
+          // overtone. Without independent evidence, keep one pitch.
+          if(c.residual/c.count<.58||c.fund/c.count<.46)continue;
+        }
+        if(accepted.length&&c.residual/c.count<.27)continue;
+        accepted.push(c);
+      }
+      const midis=accepted.map(a=>a.midi).sort((a,b)=>a-b);
+      const persistence=accepted.length?Math.round(100*Math.min(...accepted.map(a=>a.count/frames.length))):0;
+      const evidence=accepted.map(a=>polyNote(a.midi)+': '+a.count+'/'+frames.length+' frames, fundamental '+Math.round(100*a.fund/a.count)+'%, independent '+Math.round(100*a.residual/a.count)+'%'+(a.missing?', inferred fundamental':'')).join('; ');
+      if(!midis.length||fit<27)return {type:'Uncertain',name:'Insufficient independent pitch evidence',confidence:persistence,fit,evidence,reason:fit<27?'Low spectral fit':'Insufficient stable pitch families'};
+      if(midis.length===1)return {type:'Single note',name:polyNote(midis[0]),confidence:persistence,fit,evidence};
+      if(midis.length===2){
+        const d=midis[1]-midis[0];
+        const intervals={2:'major 2nd',3:'minor 3rd',4:'major 3rd',5:'perfect 4th',6:'tritone',7:'perfect 5th',8:'minor 6th',9:'major 6th',10:'minor 7th',11:'major 7th',12:'octave'};
+        return {type:d===7?'Power-chord candidate':'Double-stop',name:midis.map(polyNote).join(' + ')+' ('+(intervals[d]||d+' semitones')+')',confidence:persistence,fit,evidence};
+      }
+      return {type:'Small chord / multiple notes',name:midis.map(polyNote).join(' · '),confidence:persistence,fit,evidence};
+    }
+
+    // 2E.18: conservative pitch-class rescue. Onset boundaries and 2E.11
+    // classifications are intentionally not modified. No reference labels used.
+    function polyEvent218(buffer,seg){
+      const base=polyEvent217(buffer,seg);
+      const len=seg.end-seg.start;
+      const fractions=len<.45?[.35,.68]:[.19,.35,.51,.67,.81];
+      const frames=fractions.map(f=>polyFrame(buffer,seg.start+len*f)).filter(Boolean);
+      if(!frames.length)return {...base,reason:base.reason||'No usable frames'};
+      const support=new Map();
+      for(const frame of frames){
+        const peaks=frame.peaks||[];
+        if(!peaks.length)continue;
+        const max=Math.max(...peaks.map(p=>p.amp),1e-9);
+        for(let midi=40;midi<=76;midi++){
+          const hz=polyHz(midi),harm=[];
+          for(let h=1;h<=7&&hz*h<1600;h++){
+            const match=peaks.reduce((best,p)=>{
+              const cents=Math.abs(1200*Math.log2(p.hz/(hz*h)));
+              return cents<27&&(!best||p.amp>best.amp)?p:best;
+            },null);
+            harm.push(match?match.amp/max:0);
+          }
+          const direct=harm[0]||0;
+          const upper=harm.slice(1).filter(v=>v>.085).length;
+          // Require a real low harmonic or a coherent missing-fundamental ladder.
+          if(direct<.15 && !(upper>=3&&(harm[1]||0)>.13))continue;
+          const score=direct*.9+(harm[1]||0)*.37+(harm[2]||0)*.24+(harm[3]||0)*.16;
+          const row=support.get(midi)||{midi,votes:0,score:0,direct:0,upper:0};
+          row.votes++;row.score+=score;row.direct+=direct;row.upper+=upper;
+          support.set(midi,row);
+        }
+      }
+      const minVotes=Math.max(2,Math.ceil(frames.length*.6));
+      const candidates=[...support.values()].filter(v=>v.votes>=minVotes);
+      candidates.sort((a,b)=>b.score/b.votes-a.score/a.votes);
+      // Keep established 2E.17 identities; rescue only demonstrably stable
+      // missing pitch classes. Never force a power chord from the baseline label.
+      const existing=(base.type==='Uncertain'?[]:(base.name.match(/[A-G](?:#|b)?[2-5]/g)||[]))
+        .map(n=>{const match=n.match(/^([A-G])(#|b)?([2-5])$/);if(!match)return null;
+          const pc={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[match[1]]+(match[2]==='#'?1:match[2]==='b'?-1:0);
+          return (Number(match[3])+1)*12+pc;
+        }).filter(n=>n!==null);
+      let selected=[...existing];
+      const best=candidates[0];
+      for(const c of candidates){
+        if(selected.length>=3)break;
+        if(selected.some(m=>Math.abs(m-c.midi)<=1))continue;
+        // Do not manufacture a second string from an overtone of the first.
+        const octave=selected.some(m=>Math.abs(m-c.midi)===12);
+        const avg=c.score/c.votes, direct=c.direct/c.votes;
+        if(octave)continue;
+        if(selected.length && (avg<.45 || direct<.25 || c.votes<Math.ceil(frames.length*.8)))continue;
+        if(!selected.length && (avg<.27 || direct<.18))continue;
+        if(best && avg<best.score/best.votes*(selected.length?.48:.36))continue;
+        // High isolated partials are not independently accepted as guitar notes.
+        if(c.midi>76 || (c.midi>72 && direct<.50))continue;
+        selected.push(c.midi);
+      }
+      // If a stable low register note is stronger than a lone high partial,
+      // prefer the lower explanation instead of appending both.
+      if(selected.length===1 && selected[0]>=72){
+        const lower=candidates.find(c=>c.midi<65&&c.votes>=minVotes&&c.direct/c.votes>.23&&c.score/c.votes>.35);
+        if(lower)selected=[lower.midi];
+      }
+      selected=[...new Set(selected)].sort((a,b)=>a-b);
+      if(!selected.length)return {...base,reason:base.reason||'No stable independent pitch class'};
+      const extra=selected.filter(m=>!existing.includes(m));
+      const evidence=(base.evidence?base.evidence+'; ':'')+extra.map(m=>{
+        const c=support.get(m);return polyNote(m)+': 2E.18 rescue '+c.votes+'/'+frames.length+' frames, direct '+Math.round(100*c.direct/c.votes)+'%';
+      }).join('; ');
+      if(!extra.length)return {...base,evidence:base.evidence||'',reason:base.reason||''};
+      if(selected.length===1)return {type:'Single note',name:polyNote(selected[0]),confidence:Math.round(100*support.get(selected[0]).votes/frames.length),fit:base.fit,evidence,reason:'2E.18 stable fundamental rescue'};
+      if(selected.length===2){
+        const d=selected[1]-selected[0];
+        const intervals={2:'major 2nd',3:'minor 3rd',4:'major 3rd',5:'perfect 4th',7:'perfect 5th',12:'octave'};
+        return {type:d===7?'Power-chord candidate':'Double-stop',name:selected.map(polyNote).join(' + ')+' ('+(intervals[d]||d+' semitones')+')',confidence:base.confidence||Math.round(100*minVotes/frames.length),fit:base.fit,evidence,reason:'2E.18 independently supported additional pitch'};
+      }
+      return {type:'Small chord / multiple notes',name:selected.map(polyNote).join(' · '),confidence:base.confidence||Math.round(100*minVotes/frames.length),fit:base.fit,evidence,reason:'2E.18 independently supported additional pitch'};
+    }
+    function buildDiagnosticReport(){
+      const lines=[
+        'SONIC SCOPE — MILESTONE 2E.18 DIAGNOSTIC REPORT',
+        'Recording: '+lastAudioFilename,
+        'Duration: '+(audioBuffer?.duration.toFixed(3)||'unknown')+' s',
+        'Sample rate: '+(audioBuffer?.sampleRate||'unknown')+' Hz',
+        'Channels: '+(audioBuffer?.numberOfChannels||'unknown'),
+        'Analysis: audio-derived predictions, NOT verified ground truth',
+        'Events: '+automaticSegments.length+'; polyphonic analyzed: '+polyReportRows.length,
+        'Uncertain: '+polyReportRows.filter(r=>r.type==='Uncertain').length,
+        '',
+        'start_s\tend_s\t2E18_type\t2E18_notes\tpersistence_pct\tspectral_fit_pct\t2E17_type\t2E17_notes\t2E11_baseline\tmeasured_root\tstrong_peaks\toriginal\t2E2\t2E3\tevidence\treason'
+      ];
+      for(const r of polyReportRows){
+        lines.push([r.start.toFixed(3),r.end.toFixed(3),r.type,r.notes,r.persistence,r.fit,r.oldType,r.oldNotes,r.baseline,r.measuredRoot,(r.peaks||[]).join(' | '),...(r.legacy||['—','—','—']),r.evidence,r.reason].map(v=>String(v??'').replace(/[\t\r\n]/g,' ')).join('\t'));
+      }
+      if(!polyReportRows.length){
+        lines.push('Polyphonic analysis has not run. Click Analyze notes, double-stops & chords first.');
+        for(const seg of automaticSegments)lines.push([seg.start.toFixed(3),seg.end.toFixed(3),seg.chord,seg.measuredRoot,(seg.peaks||[]).join(' | ')].join('\t'));
+      }
+      if(rejectedAutomaticSegments.length){
+        lines.push('','Rejected opening candidates:');
+        for(const s of rejectedAutomaticSegments)lines.push(s.start.toFixed(3)+'–'+s.end.toFixed(3)+'s '+s.rejectionReason);
+      }
+      return lines.join('\n');
+    }
+    document.getElementById('copyDiagnosticReport').addEventListener('click',async()=>{
+      const status=document.getElementById('copyDiagnosticStatus');
+      if(!automaticSegments.length){status.textContent='Run automatic chord analysis first.';return;}
+      const report=buildDiagnosticReport();
+      try{
+        if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(report);status.textContent='Copied '+polyReportRows.length+' event rows to clipboard.';return;}
+        throw new Error('Clipboard API unavailable');
+      }catch(err){
+        // Fallback for local files and browsers that block Clipboard API.
+        const ta=document.createElement('textarea');ta.value=report;ta.style.cssText='position:fixed;top:10px;left:10px;width:85vw;height:40vh;z-index:99999;';
+        document.body.appendChild(ta);ta.focus();ta.select();
+        let ok=false;try{ok=document.execCommand('copy');}catch(e){}
+        if(ok){ta.remove();status.textContent='Copied report to clipboard.';}
+        else{status.textContent='Clipboard permission blocked. Report selected: use Copy in the selection menu.';}
+      }
+    });
+    function runPolyphonic(){
+      const status=document.getElementById('polyStatus'),out=document.getElementById('polyResults');
+      if(!audioBuffer||!automaticSegments.length){status.textContent='Load audio and run automatic chord analysis first.';return;}
+      status.textContent='Verifying roots and independent pitch classes…';out.replaceChildren();
+      polyReportRows=[];
+      try{
+        const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:.84rem;';
+        const header=document.createElement('tr');
+        for(const label of ['Start–end','2E.18 event type','2E.18 sounding notes','Persistence','Spectral fit','2E.17 notes','2E.11 baseline']){
+          const th=document.createElement('th');th.textContent=label;th.style.cssText='text-align:left;padding:8px 6px;border-bottom:1px solid #666;white-space:nowrap;';header.append(th);
+        }table.append(header);
+        let uncertain=0;
+        for(const seg of automaticSegments){
+          const old=polyEvent217(audioBuffer,seg);const p=polyEvent218(audioBuffer,seg);if(p.type==='Uncertain')uncertain++;
+          polyReportRows.push({start:seg.start,end:seg.end,type:p.type,notes:p.name,persistence:p.confidence,fit:p.fit,oldType:old.type,oldNotes:old.name,baseline:seg.chord,measuredRoot:seg.measuredRoot,peaks:seg.peaks,legacy:seg.estimates?.map(e=>e.label||"—"),reason:p.reason||"",evidence:p.evidence||""});
+          const tr=document.createElement('tr');
+          for(const val of [seg.start.toFixed(2)+'–'+seg.end.toFixed(2)+'s',p.type,p.name,p.confidence+'%',p.fit+'%',old.name,seg.chord]){
+            const td=document.createElement('td');td.textContent=val;td.style.cssText='padding:8px 6px;border-bottom:1px solid #333;vertical-align:top;';tr.append(td);
+          }table.append(tr);
+        }
+        out.append(table);
+        const note=document.createElement('p');note.style.cssText='font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:10px;';
+        note.textContent='2E.18 experimental root recovery and independent pitch-class verification. Octave partials are not automatically separate strings; extra pitches require independent residual evidence. 2E.17 and 2E.11 remain comparison baselines. These are unverified audio-derived predictions; fit and persistence are not recognition accuracy.';
+        out.append(note);
+        status.textContent=`Analyzed ${automaticSegments.length} events; ${uncertain} uncertain. Persistence is not recognition accuracy. Compare against the unchanged 2E.11 baseline.`;
+      }catch(err){status.textContent='Multi-pitch analysis failed: '+err.message;console.error(err);}
+    }
+    document.getElementById('runPolyphonic').addEventListener('click',runPolyphonic);
+
+    document.getElementById('runAutomaticChords').addEventListener('click',discoverAutomaticChords);
+    window.addEventListener('resize',drawAutoWave);
+
     analyzeBtn.addEventListener('click', async () => {
       if (!audioBuffer || analyzeBtn.dataset.busy === 'true') return;
       const generation = ++analysisGeneration;
@@ -707,19 +2880,32 @@
       analyzeBtn.dataset.busy = 'true';
       analyzeBtn.textContent = 'Analyzing…';
       updateControls();
-      setStatus('Estimating tempo from audio transients…');
+      setStatus('Estimating tempo, chromagram, key and chord candidates…');
       // Yield a frame so Safari can display the working status.
       await new Promise(resolve => requestAnimationFrame(resolve));
       try {
         const result = estimateTempo(buffer);
+        const chroma = estimateChroma(buffer);
         if (generation !== analysisGeneration || buffer !== audioBuffer) return;
+        renderChroma(chroma);
+        renderKeyAndScale(estimateKeyAndScale(chroma));
+        latestChordFrames=estimateChordTimeline(buffer, result?.bpm);
+        experimentalFrames=null;
+        comparisonResults.replaceChildren();
+        comparisonStatus.textContent='Analysis complete. Run both detectors to compare.';
+        renderChordTimeline(latestChordFrames);
+        discoverAutomaticChords();
+        validationResults.replaceChildren();
+        diagnosticResults.replaceChildren();
+        diagnosticStatus.textContent='Analysis complete. Enter timed chords and inspect.';
+        validationStatus.textContent='Analysis complete. Enter actual timed chords and compare.';
         document.getElementById('resBPM').textContent =
           result ? `${Math.round(result.bpm)} BPM` : 'Undetermined';
         document.getElementById('resBeat').textContent =
           result ? `${result.strength} pulse` : 'No clear pulse';
         setStatus(result
           ? `Tempo estimate: ${Math.round(result.bpm)} BPM (${result.strength.toLowerCase()} periodicity; analyzed ${result.seconds.toFixed(0)} s). Half/double-time interpretations are possible.`
-          : 'No reliable tempo found. Try a longer recording with clear rhythmic attacks.');
+          : 'No reliable tempo found; chromagram results may still be available.');
       } catch (error) {
         if (generation === analysisGeneration) {
           setStatus('Tempo analysis failed: ' + error.message);
@@ -728,7 +2914,7 @@
       } finally {
         if (generation === analysisGeneration) {
           analyzeBtn.dataset.busy = 'false';
-          analyzeBtn.textContent = '🔬 Analyze Tempo & Beats';
+          analyzeBtn.textContent = '🔬 Analyze Tempo, Chroma, Key & Chords';
           updateControls();
         }
       }
