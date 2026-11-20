@@ -725,7 +725,8 @@
     .theory-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
     .theory-canvas { cursor:crosshair; touch-action:manipulation; }
 
-  </style>
+  input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:21px;min-width:0;padding:1px;border:1px solid #ffffff66;border-radius:5px;background:#181822;cursor:pointer}input.wave-swatch:focus-visible{outline:2px solid white;outline-offset:1px}
+</style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
   <style>
@@ -759,7 +760,7 @@
     <button class="view-tab" id="scalesTabBtn" role="tab" aria-selected="false">Scales</button>
   </div>
 
-  <div class="visualizer-container"><canvas id="triadAudioCanvas" class="visualizer-canvas" aria-hidden="true"></canvas></div>
+  <div class="visualizer-container"><canvas id="triadAudioCanvas" class="visualizer-canvas" aria-hidden="true"></canvas><input class="wave-swatch" id="waveColour" type="color" value="#38bdf8" aria-label="Wave colour" title="Change wave colour"></div>
 
   <div id="triadTabPanel">
   <div class="app-layout">
@@ -3456,6 +3457,16 @@
       const canvas = document.getElementById('triadAudioCanvas');
       const ctx = canvas.getContext('2d');
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const picker = document.getElementById('waveColour');
+      const storageKey = 'atomicforge.triadmachine3.waveColour';
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (/^#[0-9a-f]{6}$/i.test(saved)) picker.value = saved;
+      } catch {}
+      picker.addEventListener('change', () => {
+        try { localStorage.setItem(storageKey, picker.value); } catch {}
+      });
+      picker.addEventListener('input', () => draw(reducedMotion.matches ? 0 : performance.now()));
       let width = 0;
       let height = 0;
       let frame = 0;
@@ -3465,7 +3476,7 @@
         ctx.clearRect(0, 0, width, height);
         ctx.beginPath();
         ctx.lineWidth = 2;
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = picker.value;
         const centerY = height / 2;
         const phase = time * 0.003;
         for (let x = 0; x < width; x++) {

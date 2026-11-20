@@ -1080,7 +1080,8 @@
       background: var(--success);
       box-shadow: 0 0 8px var(--success);
     }
-  </style>
+  input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:21px;min-width:0;padding:1px;border:1px solid #ffffff66;border-radius:5px;background:#181822;cursor:pointer}input.wave-swatch:focus-visible{outline:2px solid white;outline-offset:1px}
+</style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
   <style>
@@ -1130,7 +1131,7 @@
 
   <!-- Interactive Waveform Visualizer Canvas -->
   <div class="visualizer-container">
-    <canvas id="audio-canvas"></canvas>
+    <canvas id="audio-canvas"></canvas><input class="wave-swatch" id="waveColour" type="color" value="#38bdf8" aria-label="Wave colour" title="Change wave colour">
   </div>
 
   <!-- Global Playback & Instrument Controls -->
@@ -1678,6 +1679,15 @@
        4. AUDIO & VISUALIZER CANVAS
        ========================================================================== */
     let canvas, ctx;
+    const picker = document.getElementById('waveColour');
+      const storageKey = 'atomicforge.chordplayground.waveColour';
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (/^#[0-9a-f]{6}$/i.test(saved)) picker.value = saved;
+      } catch {}
+      picker.addEventListener('change', () => {
+        try { localStorage.setItem(storageKey, picker.value); } catch {}
+      });
     let wavePulse = 0;
 
     function initCanvasVisualizer() {
@@ -1704,7 +1714,7 @@
 
       ctx.beginPath();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "#38bdf8";
+      ctx.strokeStyle = picker.value;
 
       const time = Date.now() * 0.003;
       for (let x = 0; x < width; x++) {

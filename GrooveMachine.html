@@ -163,6 +163,7 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
   .style-buttons { grid-template-columns:repeat(2,1fr); }
   .presets { grid-template-columns:repeat(3,1fr); }
 }
+input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:21px;min-width:0;padding:1px;border:1px solid #ffffff66;border-radius:5px;background:#181822;cursor:pointer}input.wave-swatch:focus-visible{outline:2px solid white;outline-offset:1px}
 </style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
@@ -176,9 +177,8 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
 /* Compact selectors and switches share the same visual treatment in both workspaces. */
 header { min-height:64px; padding-block:11px; gap:10px; border:0; }
 .header-actions { display:flex; align-items:center; gap:8px; }
-.neon-strip { padding-inline:clamp(16px,4vw,48px); background:#080c14d9; border-bottom:1px solid var(--border); }
+.neon-strip { position:relative; padding-inline:clamp(16px,4vw,48px); background:#080c14d9; border-bottom:1px solid var(--border); }
 .neon-strip canvas { width:100%; height:24px; display:block; }
-.neon-swatch { width:29px; height:29px; border:1px solid #ffffff80; border-radius:8px; background:#49e3ff; }
 .gm-tabs { margin-bottom:13px; gap:6px; }
 .gm-tab,.back { padding:6px 10px; font-size:12px; }
 .studio-intro { margin-bottom:12px; }
@@ -206,7 +206,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
 .chip:has(input:checked),.chip[aria-pressed="true"],.style-btn.active {
   background:#14344a; border-color:var(--cyan); color:var(--cyan);
 }
-.chip:focus-within,select.choice:focus-visible,.neon-swatch:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.chip:focus-within,select.choice:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
 .chip:hover,select.choice:hover { border-color:var(--cyan); }
 .studio-track select.choice { width:100%; }
 .style-buttons { display:flex; flex-wrap:wrap; }
@@ -232,11 +232,10 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     </div>
   </div>
   <div class="header-actions">
-    <button type="button" class="neon-swatch" id="gmNeonColor" aria-label="Neon wave color: Cyan. Change color." title="Neon wave color: Cyan"></button>
     <a class="back" href="index.html">← Atomic Forge</a>
   </div>
 </header>
-<div class="neon-strip"><canvas id="gmNeonWave" aria-hidden="true"></canvas></div>
+<div class="neon-strip"><canvas id="gmNeonWave" aria-hidden="true"></canvas><input class="wave-swatch" id="waveColour" type="color" value="#49e3ff" aria-label="Wave colour" title="Change wave colour"></div>
 
 <main><nav class="gm-tabs" aria-label="Groove Machine workspaces"><button type="button" class="gm-tab active" id="gmSongTab">Song Builder</button><button type="button" class="gm-tab" id="gmStudioTab">Backing Track Studio</button></nav><div id="gmSongWorkspace">
   <div class="intro">
@@ -1464,7 +1463,7 @@ $('bsDownload').onclick=()=>{if(!state.buffer)return;try{status('Preparing uncom
 <script>
 (() => {
   const canvas = document.getElementById('gmNeonWave');
-  const swatch = document.getElementById('gmNeonColor');
+  const swatch = document.getElementById('waveColour');
   const ctx = canvas.getContext('2d');
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const colors = [
@@ -1472,10 +1471,11 @@ $('bsDownload').onclick=()=>{if(!state.buffer)return;try{status('Preparing uncom
     ['Amber', '#ffbb56'], ['Lime', '#a7f85e'], ['Ice', '#92bfff']
   ];
   const storageKey = 'grooveMachine.waveColor';
-  let colorIndex = 0;
   try {
-    const saved = colors.findIndex(([name]) => name === localStorage.getItem(storageKey));
-    if (saved >= 0) colorIndex = saved;
+    const saved = localStorage.getItem(storageKey);
+    const legacy = colors.find(([name]) => name === saved);
+    if (legacy) swatch.value = legacy[1];
+    else if (/^#[0-9a-f]{6}$/i.test(saved)) swatch.value = saved;
   } catch {}
   let width = 0;
   let height = 0;
@@ -1490,7 +1490,7 @@ $('bsDownload').onclick=()=>{if(!state.buffer)return;try{status('Preparing uncom
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    const color = colors[colorIndex][1];
+    const color = swatch.value;
     ctx.strokeStyle = color;
     ctx.lineWidth = 4;
     ctx.shadowColor = color;
@@ -1502,20 +1502,10 @@ $('bsDownload').onclick=()=>{if(!state.buffer)return;try{status('Preparing uncom
     ctx.stroke();
   }
 
-  function applyColor() {
-    const [name, color] = colors[colorIndex];
-    swatch.style.backgroundColor = color;
-    swatch.title = 'Neon wave color: ' + name;
-    swatch.setAttribute('aria-label', swatch.title + '. Change color.');
-    if (motion.matches) draw(0);
-  }
-
-  swatch.onclick = () => {
-    colorIndex = (colorIndex + 1) % colors.length;
-    applyColor();
-    try { localStorage.setItem(storageKey, colors[colorIndex][0]); } catch {}
-  };
-  applyColor();
+  swatch.addEventListener('input', () => draw(motion.matches ? 0 : performance.now()));
+  swatch.addEventListener('change', () => {
+    try { localStorage.setItem(storageKey, swatch.value); } catch {}
+  });
   if (!ctx) return;
 
   function resize() {
