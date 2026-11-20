@@ -12,7 +12,7 @@
 @media(max-width:760px){.app{width:calc(100% - 22px)}.topbar{height:auto;min-height:58px;flex-wrap:wrap;padding:8px 0;gap:8px}.top-actions{width:100%;justify-content:flex-end}.brand-copy small{display:none}.top-actions .wide-label{display:none}.hero{align-items:stretch;flex-direction:column;padding:22px 0 15px;gap:14px}.song-title{min-width:0}.workspace{grid-template-columns:1fr}.side{grid-row:2}.sheet-grid{grid-template-columns:1fr}.toolbar{gap:8px;padding:9px}.tool{gap:5px}.tool select{max-width:140px}.board-scroll{padding:8px}.card-head{padding:12px}.card-body{padding:12px}}
 .stylebar{display:flex;align-items:center;gap:9px;min-height:37px;padding:4px 12px;border-bottom:1px solid #ffffff11;background:#17121b}.stylebar-label{color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}.stylebar .palette{gap:5px;flex-wrap:nowrap}.stylebar .swatch-btn{width:22px;height:22px;flex:none;border-width:1.5px}.stylebar .shape-picks{gap:4px}.stylebar .shape-picks button{width:24px;height:23px;font-size:10px}
 .toolbar .stylebar{flex:0 0 auto;min-height:0;padding:0;border:0;background:transparent;gap:5px}.toolbar .stylebar .button{min-height:25px;padding:4px 7px;font-size:10px}
-.board-scroll{display:flex;justify-content:center;overflow:hidden}.board-svg{width:100%;max-width:100%;height:auto}
+.board-scroll{display:flex;justify-content:center;overflow:hidden;padding:4px;background:#000;border:1px solid var(--line);border-radius:6px}.board-svg{width:100%;max-width:100%;height:auto}
 @media (orientation:landscape) and (max-height:500px) and (max-width:950px){.app{width:100%;padding:0 7px}.topbar{height:30px;min-height:30px;padding:0;flex-wrap:nowrap;gap:5px}.brand{gap:6px}.brand-mark{width:23px;height:23px;border-radius:7px;font-size:14px}.brand-copy{font-size:9px}.top-actions{width:auto;gap:4px}.top-actions .button,.menu summary{min-height:23px;padding:3px 5px;font-size:9px}.hero{display:none}.topbar .brand{display:none}.topbar{height:26px;min-height:26px;border:0}.toolbar{flex-wrap:nowrap;overflow-x:auto;gap:7px;min-height:31px;max-height:33px;padding:2px 6px;border-radius:7px;box-shadow:none;scrollbar-width:none}.toolbar::-webkit-scrollbar{display:none}.toolbar .stylebar .button{min-height:22px;padding:3px 5px;font-size:9px}.tool{gap:4px;flex:none}.tool label,.toggle{font-size:8px}.tool select,.tool input{height:24px;max-width:105px;padding:3px 5px;font-size:9px;border-radius:6px}.tool input[type=number]{width:43px}.divider{height:18px;flex:none}.workspace{display:block;margin-top:3px}.workspace>.board-card{border-radius:8px}.stylebar{min-height:25px;padding:1px 6px;gap:6px}.stylebar-label{font-size:8px}.stylebar .palette{gap:3px}.stylebar .swatch-btn{width:17px;height:17px}.stylebar .shape-picks{gap:3px}.stylebar .shape-picks button{width:19px;height:18px;padding:0}.stylebar .button{min-height:19px;padding:2px 5px;font-size:8px}.stylebar-spacer{flex:1}.board-scroll{height:auto;min-height:0;overflow:visible;padding:1px 3px}.board-svg{width:auto;height:auto;max-height:min(320px,66svh);max-width:100%;margin:auto}.board-caption{padding:3px 7px;font-size:8px}.board-caption span:last-child{display:none}.side{display:none}.sheet-card{margin-top:4px}}
 .visualizer-container{position:relative;width:100%;height:60px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:rgba(15,23,42,.6);box-shadow:inset 0 0 20px #000b;overflow:hidden}
 .visualizer-canvas{display:block;width:100%;height:100%}
@@ -125,40 +125,47 @@ function tuning(){if(state.tuning==='custom'){const a=state.customTuning.split(/
 function tuningMidi(){return tuning().map(parseNote)}function actualFrets(){return state.view==='box'?5:Number(state.frets)}function visibleStart(){return state.view==='box'?Math.max(1,Number(state.position)||1):0}
 function noteKey(s,f){return `${s}:${f}`}function pc(m){return ((m%12)+12)%12}
 function displayDot(s,f,n){if(state.labelMode==='finger')return n.finger||'';const midi=(tuningMidi()[s]||40)+f;if(state.labelMode==='note')return midiName(midi).replace(/-?\d+$/,'');if(state.labelMode==='interval'){const sem=(pc(midi)-Number(state.root)+12)%12;return ({0:'R',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'})[sem]}return ''}
-function markerSvg(s,f,x,y,arr,forPrint){return arr.map((n,i)=>{const dx=arr.length>1?(i===0?-8:8):0,dy=arr.length>1?(i===0?-3:3):0,cx=x+dx,cy=y+dy,shape=n.shape||'circle',selected=selectedMark&&!forPrint&&selectedMark.s===s&&selectedMark.f===f&&selectedMark.i===i,label=displayDot(s,f,n);const shapeEl=shape==='square'?`<rect x="${cx-12}" y="${cy-12}" width="24" height="24" rx="4" fill="${n.color}" stroke="${selected?'#fff':'#191522'}" stroke-width="${selected?4:2}"/>`:shape==='diamond'?`<path d="M ${cx} ${cy-14} L ${cx+14} ${cy} L ${cx} ${cy+14} L ${cx-14} ${cy} Z" fill="${n.color}" stroke="${selected?'#fff':'#191522'}" stroke-width="${selected?4:2}"/>`:`<circle cx="${cx}" cy="${cy}" r="13" fill="${n.color}" stroke="${selected?'#fff':'#191522'}" stroke-width="${selected?4:2}"/>`;return `<g class="mark" data-s="${s}" data-f="${f}" data-i="${i}" style="cursor:pointer">${shapeEl}${label?`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#191522" font-size="${label.length>2?8:10}" font-family="Arial,sans-serif" font-weight="700" pointer-events="none">${escapeHtml(label)}</text>`:''}</g>`}).join('')}
-function renderSvg(forPrint=false){
+function markerSvg(s,f,x,y,arr,forPrint){return arr.map((n,i)=>{const dx=arr.length>1?(i===0?-8:8):0,dy=arr.length>1?(i===0?-3:3):0,cx=x+dx,cy=y+dy,shape=n.shape||'circle',selected=selectedMark&&!forPrint&&selectedMark.s===s&&selectedMark.f===f&&selectedMark.i===i,label=displayDot(s,f,n);const shapeEl=shape==='square'?`<rect x="${cx-12}" y="${cy-12}" width="24" height="24" rx="4" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`:shape==='diamond'?`<path d="M ${cx} ${cy-14} L ${cx+14} ${cy} L ${cx} ${cy+14} L ${cx-14} ${cy} Z" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`:`<circle cx="${cx}" cy="${cy}" r="14" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`;return `<g class="mark" data-s="${s}" data-f="${f}" data-i="${i}" style="cursor:pointer">${shapeEl}${label?`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#191522" font-size="${label.length>2?8:10}" font-family="Arial,sans-serif" font-weight="700" pointer-events="none">${escapeHtml(label)}</text>`:''}</g>`}).join('')}
+function renderSvg(forPrint=false,legacyCrop=false){
   const strings=Number(state.strings), frets=actualFrets(), start=visibleStart(), names=tuning();
-  const cell=55, spacing=40, top=36, left=state.leftHanded?20:112;
+  // Older slate selections store rectangles in the original board coordinates.
+  const cell=legacyCrop?55:1000/15, spacing=legacyCrop?40:32, top=legacyCrop?36:30;
+  const left=legacyCrop?(state.leftHanded?20:112):50;
   const neckWidth=frets*cell, right=left+neckWidth, neckHeight=(strings-1)*spacing, bottom=top+neckHeight;
-  const width=neckWidth+132, height=bottom+34;
+  const width=neckWidth+(legacyCrop?132:100), height=bottom+(legacyCrop?34:30);
   const fretX=j=>left+(state.leftHanded?frets-j-.5:j+.5)*cell;
   const stringY=s=>bottom-s*spacing;
   const fretNumber=j=>state.view==='box'?start+j:j+1;
   const nutX=state.leftHanded?right:left, direction=state.leftHanded?1:-1;
-  const openX=nutX+20*direction, labelX=nutX+54*direction;
-  const parts=[`<svg ${forPrint?'':'id="fretboard" class="board-svg" '}xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escapeHtml(state.title)} fretboard diagram" font-family="Arial,sans-serif">
-    <rect width="100%" height="100%" rx="10" fill="#18181b"/>
-    <text x="17" y="14" fill="#e6ddf7" font-size="12" font-weight="700">${escapeHtml(state.title)}</text>`];
-  for(let y=top+4;y<bottom;y+=4)
-    parts.push(`<path d="M ${left} ${y} h ${neckWidth}" stroke="#ffffff" stroke-opacity=".025"/>`);
+  const openX=nutX+(legacyCrop?20:18)*direction, labelX=nutX+(legacyCrop?54:12)*direction;
+  const parts=[`<svg ${forPrint?'':'id="fretboard" class="board-svg" '}xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${escapeHtml(state.title)} fretboard diagram" font-family="Inter,Arial,sans-serif">
+    <rect width="100%" height="100%" rx="${legacyCrop?10:0}" fill="#18181b"/>
+    <text x="17" y="14" fill="#e6ddf7" font-size="12" font-weight="700">${legacyCrop||state.title!=='Untitled diagram'?escapeHtml(state.title):''}</text>`];
+  for(let y=top;y<bottom;y+=4)
+    parts.push(`<path d="M ${left} ${y} h ${neckWidth}" stroke="#ffffff" stroke-opacity=".02" stroke-width="1.5"/>`);
   for(let j=0;j<frets;j++){
     const f=fretNumber(j), x=fretX(j);
-    parts.push(`<text x="${x}" y="${bottom+30}" fill="#b8b2c4" font-size="11" text-anchor="middle">${f}</text>`);
+    parts.push(`<text x="${x}" y="${height-8}" fill="#71717a" font-weight="600" font-size="11" text-anchor="middle">${f}</text>`);
     const octave=f%12===0;
     if(octave||[3,5,7,9].includes(f%12)){
       for(const fraction of octave?[.3,.7]:[.5])
-        parts.push(`<circle cx="${x}" cy="${top+neckHeight*fraction}" r="6" fill="#45434e"/>`);
+        parts.push(`<circle cx="${x}" cy="${top+neckHeight*fraction}" r="6" fill="#3f3f46"/>`);
     }
   }
   for(let j=0;j<=frets;j++){
     const x=left+(state.leftHanded?frets-j:j)*cell, nut=j===0&&fretNumber(0)===1;
-    parts.push(`<line x1="${x}" x2="${x}" y1="${top}" y2="${bottom}" stroke="${nut?'#e2e8f0':'#71717a'}" stroke-width="${nut?5:2}"/>`);
+    if(nut)parts.push(`<rect x="${state.leftHanded?x:x-6}" y="${top-2}" width="6" height="${neckHeight+4}" fill="#e2e8f0"/>`);
+    parts.push(`<line x1="${x}" x2="${x}" y1="${top}" y2="${bottom}" stroke="#71717a" stroke-width="2"/>`);
   }
-  if(state.view==='neck')parts.push(`<text x="${openX}" y="${bottom+30}" fill="#b8b2c4" font-size="11" text-anchor="middle">0</text>`);
+  if(state.view==='neck')parts.push(`<text x="${openX}" y="${height-8}" fill="#71717a" font-weight="600" font-size="11" text-anchor="middle">0</text>`);
   for(let s=0;s<strings;s++){
     const y=stringY(s), mode=state.stringModes[s]||'';
-    parts.push(`<line x1="${left}" x2="${right}" y1="${y}" y2="${y}" stroke="#a1a1aa" stroke-width="${1+(strings-1-s)*.4}"/>
-      <text x="${labelX}" y="${y+4}" text-anchor="${state.leftHanded?'start':'end'}" fill="#e2d9e8" font-size="11">${mode==='mute'?'× ':''}${escapeHtml(names[s]||'')}</text>`);
+    const hasOpen=state.view==='neck'&&mode!=='mute'&&(mode==='open'||state.notes[noteKey(s,0)]?.length);
+    const labelY=!legacyCrop&&hasOpen?y-17:y+4;
+    const pitch=names[s]||'';
+    const label=legacyCrop?pitch:(pitch==='E4'?'e':pitch.replace(/-?\d+$/,''));
+    parts.push(`<line x1="${left-(state.leftHanded?0:6)}" x2="${right+(state.leftHanded?6:0)}" y1="${y}" y2="${y}" stroke="#a1a1aa" stroke-width="${1+(strings-1-s)*.4}"/>
+      <text x="${labelX}" y="${labelY}" text-anchor="${state.leftHanded?'start':'end'}" fill="#a1a1aa" font-weight="600" font-size="12">${mode==='mute'?'× ':''}${escapeHtml(label)}</text>`);
     for(let j=state.view==='neck'?-1:0;j<frets;j++){
       const open=j===-1, f=open?0:fretNumber(j), x=open?openX:fretX(j), w=open?40:cell;
       parts.push(`<rect class="hit" data-s="${s}" data-f="${f}" x="${x-w/2}" y="${y-spacing/2}" width="${w}" height="${spacing}" fill="transparent" style="cursor:pointer"/>`);
@@ -178,7 +185,7 @@ function loadDiagram(d){checkpoint();Object.assign(state,d.state);state.activeId
 function saveDiagram(asCopy=false){const title=prompt(asCopy?'Name the copy':'Name this diagram',asCopy?state.title+' (copy)':state.title==='Untitled diagram'?'New chord or scale':state.title);if(title===null)return;checkpoint();state.title=title.trim()||'Untitled diagram';const id=(!asCopy&&state.activeId)||`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;const item={id,title:state.title,kind:state.labelMode==='interval'?'Scale / chord map':'Fretboard diagram',strings:state.strings,updated:Date.now(),state:snapshot()};const idx=state.library.findIndex(x=>x.id===id);if(idx>=0)state.library[idx]=item;else state.library.unshift(item);state.activeId=id;persist();renderAll();toast('Diagram saved to this browser.')}
 function addToSheet(id){const item=state.library.find(d=>d.id===id);if(!item)return;checkpoint();state.sheet.push({id:`${Date.now()}-${Math.random().toString(36).slice(2,6)}`,diagramId:id,title:item.title,note:''});persist();renderSheet();toast('Added to song sheet.')}
 function renderSheet(){const host=$('sheetList');host.innerHTML=state.sheet.map((entry,i)=>{const d=state.library.find(x=>x.id===entry.diagramId);if(!d)return '';return `<article class="sheet-item" draggable="true" data-sheet="${escapeHtml(entry.id)}"><div class="sheet-item-head"><input data-sheet-title="${escapeHtml(entry.id)}" value="${escapeHtml(entry.title||d.title)}" aria-label="Chord sheet label"><button type="button" class="remove" data-sheet-delete="${escapeHtml(entry.id)}" aria-label="Remove from song sheet">×</button></div>${svgForSaved(d)}<input data-sheet-note="${escapeHtml(entry.id)}" value="${escapeHtml(entry.note||'')}" placeholder="Section, fingering, or notes" aria-label="Diagram notes"></article>`}).join('');$('sheetEmpty').classList.toggle('hidden',state.sheet.some(e=>state.library.some(d=>d.id===e.diagramId)));}
-function svgForSaved(d){const old=state,savedSel=selectedMark;state={...old,...d.state};const svg=renderSvg(true).replace('<svg ','<svg style="width:100%;height:auto" ');state=old;selectedMark=savedSel;return svg}
+function svgForSaved(d,legacyCrop=false){const old=state,savedSel=selectedMark;state={...old,...d.state};const svg=renderSvg(true,legacyCrop).replace('<svg ','<svg style="width:100%;height:auto" ');state=old;selectedMark=savedSel;return svg}
 function renderAll(){renderBoard();drawPalette();renderLibrary();syncSlate();updateInspector();updateHistoryButtons()}
 function updateInspector(){const m=selectedMark,arr=m?state.notes[noteKey(m.s,m.f)]:null,n=arr?.[m?.i];$('selectedPosition').textContent=n?`String ${state.strings-m.s} · fret ${m.f}${m.f===0?' (open)':''}`:'Select a dot to label it.';$('fingerSelect').disabled=!n;$('fingerSelect').value=n?.finger||'';$('removeMarkerBtn').disabled=!n}
 function updateSelection(s,f,i){selectedMark={s,f,i};renderBoard();updateInspector()}
@@ -246,7 +253,7 @@ function bindCapture(){
     if(box.width<5||box.height<5){toast('Drag a larger area to capture.');return}
     checkpoint();
     const label=state.title==='Untitled diagram'?'':state.title;
-    state.slate.push({box,label,state:snapshot()});
+    state.slate.push({box,label,layoutVersion:2,state:snapshot()});
     persist();renderSlate();
     toast('Added to chord slate.');
   });
@@ -256,7 +263,7 @@ function bindCapture(){
 
 function cropSvg(entry){
   const {x,y,width,height}=entry.box;
-  const board=svgForSaved(entry).replace('style="width:100%;height:auto" ','').replace(/<rect class="hit"[^>]*\/>/g,'');
+  const board=svgForSaved(entry,!entry.layoutVersion).replace('style="width:100%;height:auto" ','').replace(/<rect class="hit"[^>]*\/>/g,'');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">${board}</svg>`;
 }
 const imageUrl=svg=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
