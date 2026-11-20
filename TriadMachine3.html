@@ -732,6 +732,7 @@
   <style>
     .atomic-forge-mark { display: block; flex: none; object-fit: contain; border-radius: 22%; }
   </style>
+<script src="fretboard-neck.js"></script>
 </head>
 <body>
 
@@ -1677,8 +1678,10 @@
 
     function renderFretboard(voicing) {
       const dpr = window.devicePixelRatio || 1;
-      const width = 1100;
-      const height = 220;
+      const geometry = ForgeNeck.layout();
+      const {width,height,left:marginX,top:marginY,cell:fretWidth,spacing:stringSpacing}=geometry;
+      const boardHeight=geometry.bottom-marginY;
+      const numFrets=15;
 
       canvas.width = width * dpr;
       canvas.height = height * dpr;
@@ -1686,86 +1689,21 @@
 
       ctx.scale(dpr, dpr);
 
-      ctx.fillStyle = '#18181b';
-      ctx.fillRect(0, 0, width, height);
+      ForgeNeck.draw(ForgeNeck.canvas(ctx),geometry,STRING_NAMES,numFrets,1,false,()=>{
+        if (state.enableFretRange) {
+          const startX = marginX + Math.max(0, state.startFret) * fretWidth;
+          const endX = marginX + Math.min(15, state.startFret + state.fretSpan) * fretWidth;
+          const rangeW = endX - startX;
 
-      const marginX = 50;
-      const marginY = 30;
-      const boardWidth = width - marginX * 2;
-      const boardHeight = height - marginY * 2;
-      const numFrets = 15;
-      const fretWidth = boardWidth / numFrets;
-      const stringSpacing = boardHeight / 5;
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
+          ctx.fillRect(startX, marginY, rangeW, boardHeight);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      for (let i = 0; i < boardHeight; i += 4) {
-        ctx.fillRect(marginX, marginY + i, boardWidth, 1.5);
-      }
-
-      if (state.enableFretRange) {
-        const startX = marginX + Math.max(0, state.startFret) * fretWidth;
-        const endX = marginX + Math.min(15, state.startFret + state.fretSpan) * fretWidth;
-        const rangeW = endX - startX;
-
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
-        ctx.fillRect(startX, marginY, rangeW, boardHeight);
-
-        ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(startX, marginY, rangeW, boardHeight);
-      }
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillRect(marginX - 6, marginY - 2, 6, boardHeight + 4);
-
-      const inlays = [3, 5, 7, 9, 12, 15];
-      ctx.fillStyle = '#3f3f46';
-      inlays.forEach(fret => {
-        const x = marginX + (fret - 0.5) * fretWidth;
-        if (fret === 12) {
-          ctx.beginPath();
-          ctx.arc(x, marginY + stringSpacing * 1.5, 6, 0, Math.PI * 2);
-          ctx.arc(x, marginY + stringSpacing * 3.5, 6, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.arc(x, marginY + boardHeight / 2, 6, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(startX, marginY, rangeW, boardHeight);
         }
+
       });
-
-      ctx.strokeStyle = '#71717a';
-      ctx.lineWidth = 2;
-      for (let i = 0; i <= numFrets; i++) {
-        const x = marginX + i * fretWidth;
-        ctx.beginPath();
-        ctx.moveTo(x, marginY);
-        ctx.lineTo(x, marginY + boardHeight);
-        ctx.stroke();
-
-        if (i > 0) {
-          ctx.fillStyle = '#71717a';
-          ctx.font = '600 11px Inter';
-          ctx.textAlign = 'center';
-          ctx.fillText(i, x - fretWidth / 2, height - 8);
-        }
-      }
-
-      for (let i = 0; i < 6; i++) {
-        const y = marginY + i * stringSpacing;
-        const thickness = 1 + (i * 0.4);
-        ctx.strokeStyle = '#a1a1aa';
-        ctx.lineWidth = thickness;
-        ctx.beginPath();
-        ctx.moveTo(marginX - 6, y);
-        ctx.lineTo(marginX + boardWidth, y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#a1a1aa';
-        ctx.font = '600 12px Inter';
-        ctx.textAlign = 'right';
-        ctx.fillText(STRING_NAMES[i], marginX - 12, y + 4);
-      }
 
       function drawFreeNoteMarker(p) {
         const x = p.fret === 0 ? marginX - 18 : marginX + (p.fret - 0.5) * fretWidth;

@@ -37,9 +37,16 @@
 .slate-card{margin-top:8px}.slate-card .card-head{flex-wrap:wrap}.slate-card h2{margin:0}.slate-card textarea{width:100%;resize:vertical}.capturing,.capturing svg *{cursor:crosshair!important}.capturing{user-select:none;touch-action:none}.crop-outline{fill:#bd91ff27;stroke:#dbbaff;stroke-width:2;stroke-dasharray:5 3;pointer-events:none;vector-effect:non-scaling-stroke}#captureBtn[aria-pressed=true]{border-color:var(--purple);color:var(--purple)}#slateList{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}#slateList:not(:empty){margin-bottom:10px}.slate-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-content:end}.slate-tile img{width:100%;height:100px;object-fit:contain;background:#18181b;border-radius:5px;grid-column:span 2}.slate-tile input{width:100%;min-width:0}#slateNotes,.slate-tile input{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:5px;padding:6px;font:inherit}
 @media print{html.landscape-required .orientation-prompt{display:none!important}#printSheet.printing-slate{margin:0;padding:0}.letter-page{width:8.5in;break-after:page}.letter-page:last-child{break-after:auto}.letter-page img{display:block;width:100%;height:auto}}
 input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:21px;min-width:0;padding:1px;border:1px solid #ffffff66;border-radius:5px;background:#181822;cursor:pointer}input.wave-swatch:focus-visible{outline:2px solid white;outline-offset:1px}
+/* Match the available board width in Triad Machine (12px page, 10px card, 4px frame). */
+.workspace{width:calc(100vw - 24px);margin-inline:calc(50% - 50vw + 12px);grid-template-columns:minmax(0,1fr)}
+.workspace>.board-card{padding:10px;border-radius:10px}
+.workspace .board-scroll{padding:4px;border:1px solid #334155;background:#000}
+.workspace .board-svg{display:block;width:100%;height:auto;max-height:none}
 </style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap">
+<script src="fretboard-neck.js"></script>
 </head>
 <body>
 <div class="orientation-prompt" id="orientationPrompt" role="status" aria-live="polite"><div class="orientation-prompt-inner"><span class="orientation-prompt-icon" aria-hidden="true">↻</span><h2>Turn your device sideways</h2><p>Fretboard Art works best in landscape. Rotate your iPhone or iPad to continue.</p></div></div>
@@ -126,7 +133,29 @@ function tuningMidi(){return tuning().map(parseNote)}function actualFrets(){retu
 function noteKey(s,f){return `${s}:${f}`}function pc(m){return ((m%12)+12)%12}
 function displayDot(s,f,n){if(state.labelMode==='finger')return n.finger||'';const midi=(tuningMidi()[s]||40)+f;if(state.labelMode==='note')return midiName(midi).replace(/-?\d+$/,'');if(state.labelMode==='interval'){const sem=(pc(midi)-Number(state.root)+12)%12;return ({0:'R',1:'♭2',2:'2',3:'m3',4:'M3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'})[sem]}return ''}
 function markerSvg(s,f,x,y,arr,forPrint){return arr.map((n,i)=>{const dx=arr.length>1?(i===0?-8:8):0,dy=arr.length>1?(i===0?-3:3):0,cx=x+dx,cy=y+dy,shape=n.shape||'circle',selected=selectedMark&&!forPrint&&selectedMark.s===s&&selectedMark.f===f&&selectedMark.i===i,label=displayDot(s,f,n);const shapeEl=shape==='square'?`<rect x="${cx-12}" y="${cy-12}" width="24" height="24" rx="4" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`:shape==='diamond'?`<path d="M ${cx} ${cy-14} L ${cx+14} ${cy} L ${cx} ${cy+14} L ${cx-14} ${cy} Z" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`:`<circle cx="${cx}" cy="${cy}" r="14" fill="${n.color}" stroke="#ffffff" stroke-width="${selected?4:2}"/>`;return `<g class="mark" data-s="${s}" data-f="${f}" data-i="${i}" style="cursor:pointer">${shapeEl}${label?`<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#fff" stroke="#0009" stroke-width="1" paint-order="stroke" font-size="${label.length>2?9:11}" font-family="Arial,sans-serif" font-weight="700" pointer-events="none">${escapeHtml(label)}</text>`:''}</g>`}).join('')}
-function renderSvg(forPrint=false,layoutVersion=3){
+function renderSvg(forPrint=false,layoutVersion=4){
+  if(layoutVersion<4)return renderPreviousSvg(forPrint,layoutVersion);
+  const strings=Number(state.strings),frets=actualFrets(),box=state.view==='box';
+  const start=box?visibleStart():1, mirror=state.leftHanded;
+  const g=ForgeNeck.layout(frets,strings), names=tuning();
+  const labels=names.map((pitch,s)=>(state.stringModes[s]==='mute'?'× ':'')+(pitch==='E4'?'e':pitch.replace(/-?\d+$/,''))).reverse();
+  const parts=[`<svg ${forPrint?'':'id="fretboard" class="board-svg" '}xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g.width} ${g.height}" width="${g.width}" height="${g.height}" role="img" aria-label="${escapeHtml(state.title)} fretboard diagram">`];
+  ForgeNeck.draw(ForgeNeck.svg(parts,escapeHtml),g,labels,frets,start,mirror);
+  for(let s=0;s<strings;s++){
+    const y=g.bottom-s*g.spacing;
+    for(let j=box?0:-1;j<frets;j++){
+      const open=j===-1,f=open?0:start+j,w=open?36:g.cell;
+      const offset=open?-18:(j+.5)*g.cell;
+      const x=mirror?g.right-offset:g.left+offset;
+      parts.push(`<rect class="hit" data-s="${s}" data-f="${f}" x="${x-w/2}" y="${y-g.spacing/2}" width="${w}" height="${g.spacing}" fill="transparent" style="cursor:pointer"/>`);
+      if(state.stringModes[s]==='mute')continue;
+      const legacyOpen=open&&state.stringModes[s]==='open'?[{color:'#c783ec',shape:'circle'}]:[];
+      parts.push(markerSvg(s,f,x,y,state.notes[noteKey(s,f)]||legacyOpen,forPrint));
+    }
+  }
+  return parts.join('')+'</svg>';
+}
+function renderPreviousSvg(forPrint,layoutVersion){
   const legacyCrop=layoutVersion===1;
   const strings=Number(state.strings), frets=actualFrets(), start=visibleStart(), names=tuning();
   // Older slate selections store rectangles in the original board coordinates.
@@ -186,7 +215,7 @@ function loadDiagram(d){checkpoint();Object.assign(state,d.state);state.activeId
 function saveDiagram(asCopy=false){const title=prompt(asCopy?'Name the copy':'Name this diagram',asCopy?state.title+' (copy)':state.title==='Untitled diagram'?'New chord or scale':state.title);if(title===null)return;checkpoint();state.title=title.trim()||'Untitled diagram';const id=(!asCopy&&state.activeId)||`${Date.now()}-${Math.random().toString(36).slice(2,7)}`;const item={id,title:state.title,kind:state.labelMode==='interval'?'Scale / chord map':'Fretboard diagram',strings:state.strings,updated:Date.now(),state:snapshot()};const idx=state.library.findIndex(x=>x.id===id);if(idx>=0)state.library[idx]=item;else state.library.unshift(item);state.activeId=id;persist();renderAll();toast('Diagram saved to this browser.')}
 function addToSheet(id){const item=state.library.find(d=>d.id===id);if(!item)return;checkpoint();state.sheet.push({id:`${Date.now()}-${Math.random().toString(36).slice(2,6)}`,diagramId:id,title:item.title,note:''});persist();renderSheet();toast('Added to song sheet.')}
 function renderSheet(){const host=$('sheetList');host.innerHTML=state.sheet.map((entry,i)=>{const d=state.library.find(x=>x.id===entry.diagramId);if(!d)return '';return `<article class="sheet-item" draggable="true" data-sheet="${escapeHtml(entry.id)}"><div class="sheet-item-head"><input data-sheet-title="${escapeHtml(entry.id)}" value="${escapeHtml(entry.title||d.title)}" aria-label="Chord sheet label"><button type="button" class="remove" data-sheet-delete="${escapeHtml(entry.id)}" aria-label="Remove from song sheet">×</button></div>${svgForSaved(d)}<input data-sheet-note="${escapeHtml(entry.id)}" value="${escapeHtml(entry.note||'')}" placeholder="Section, fingering, or notes" aria-label="Diagram notes"></article>`}).join('');$('sheetEmpty').classList.toggle('hidden',state.sheet.some(e=>state.library.some(d=>d.id===e.diagramId)));}
-function svgForSaved(d,layoutVersion=3){const old=state,savedSel=selectedMark;state={...old,...d.state};const svg=renderSvg(true,layoutVersion).replace('<svg ','<svg style="width:100%;height:auto" ');state=old;selectedMark=savedSel;return svg}
+function svgForSaved(d,layoutVersion=4){const old=state,savedSel=selectedMark;state={...old,...d.state};const svg=renderSvg(true,layoutVersion).replace('<svg ','<svg style="width:100%;height:auto" ');state=old;selectedMark=savedSel;return svg}
 function renderAll(){renderBoard();drawPalette();renderLibrary();syncSlate();updateInspector();updateHistoryButtons()}
 function updateInspector(){const m=selectedMark,arr=m?state.notes[noteKey(m.s,m.f)]:null,n=arr?.[m?.i];$('selectedPosition').textContent=n?`String ${state.strings-m.s} · fret ${m.f}${m.f===0?' (open)':''}`:'Select a dot to label it.';$('fingerSelect').disabled=!n;$('fingerSelect').value=n?.finger||'';$('removeMarkerBtn').disabled=!n}
 function updateSelection(s,f,i){selectedMark={s,f,i};renderBoard();updateInspector()}
@@ -254,7 +283,7 @@ function bindCapture(){
     if(box.width<5||box.height<5){toast('Drag a larger area to capture.');return}
     checkpoint();
     const label=state.title==='Untitled diagram'?'':state.title;
-    state.slate.push({box,label,layoutVersion:3,state:snapshot()});
+    state.slate.push({box,label,layoutVersion:4,state:snapshot()});
     persist();renderSlate();
     toast('Added to chord slate.');
   });
