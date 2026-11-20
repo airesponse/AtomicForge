@@ -729,6 +729,11 @@
       }
     }
 
+    .scale-key-picker { display: flex; align-items: stretch; gap: 4px; }
+    .scale-key-picker select { flex: 1; min-width: 74px; }
+    .scale-key-picker button { justify-content: center; padding: 0 8px; min-height: 36px; font-size: 19px; }
+    @media (max-width: 600px) { .scale-controls-grid { grid-template-columns: minmax(0, 1fr); } }
+
     select option.popular-scale {
       font-weight: bold;
       color: #fbbf24;
@@ -1255,12 +1260,16 @@
         </div>
 
         <div class="builder-field">
-          <label>Root Note</label>
-          <select id="scale-root-select" style="width: 100%;" onchange="updateScaleVisualizer()">
+          <label for="scale-root-select">Key</label>
+          <div class="scale-key-picker">
+            <button class="btn" type="button" aria-label="Previous key" onclick="stepScaleKey(-1)">‹</button>
+            <select id="scale-root-select" onchange="updateScaleVisualizer()">
             <option value="C">C</option><option value="C#">C# / Db</option><option value="D">D</option>
             <option value="D#">D# / Eb</option><option value="E">E</option><option value="F">F</option>
             <option value="F#">F# / Gb</option><option value="G">G</option><option value="G#">G# / Ab</option><option value="A">A</option><option value="A#">A# / Bb</option><option value="B">B</option>
-          </select>
+            </select>
+            <button class="btn" type="button" aria-label="Next key" onclick="stepScaleKey(1)">›</button>
+          </div>
         </div>
 
         <div class="builder-field">
@@ -1796,6 +1805,17 @@
         runWrapper.style.display = "none";
         playRunBtn.style.display = "none";
       }
+    }
+
+    function stepScaleKey(direction) {
+      const selector = document.getElementById("scale-root-select");
+      const count = selector.options.length;
+      let index = selector.selectedIndex;
+      do {
+        index = (index + direction + count) % count;
+      } while (selector.options[index].value.length !== 1);
+      selector.selectedIndex = index;
+      updateScaleVisualizer();
     }
 
     function updateScaleVisualizer() {
