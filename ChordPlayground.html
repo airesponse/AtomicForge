@@ -1817,13 +1817,13 @@
       "B7":   [ {s:0, f:-1}, {s:1, f:2}, {s:2, f:1}, {s:3, f:2}, {s:4, f:0}, {s:5, f:2} ]
     };
 
-    function renderGuitarChordBox(rootNote, chordSymbol, chordNotes) {
+    function renderGuitarChordBox(rootNote, bassNote, chordNotes) {
       const container = document.getElementById("guitar-chord-box");
       container.innerHTML = "";
 
       const tune=guitarStrings.map(str=>Tonal.Note.midi(str.note+str.octave)).reverse();
       const root=Tonal.Note.chroma(rootNote),tones=[...new Set(chordNotes.map(n=>Tonal.Note.chroma(n)))];
-      const chord={root,tones,quality:'',bass:null};
+      const chord={root,tones,quality:'',bass:bassNote ? Tonal.Note.chroma(bassNote) : null};
       const shapes=ForgeHarmony.shapes(chord,tune,{low:0,high:15,span:3,open:true,strings:[0,1,2,3,4,5],minNotes:3,maxNotes:6});
       if(!shapes.length){container.textContent='No matching fingering in this range.';return}
       container.innerHTML=ForgeHarmony.diagram(shapes[0],tune);
@@ -2276,7 +2276,7 @@
       dragCard.dataset.chordNotes = JSON.stringify(octaveNotes);
 
       renderPianoRoll(notes);
-      renderGuitarChordBox(root, chordSymbol, notes);
+      renderGuitarChordBox(root, bass, notes);
     }
 
     function renderPianoRoll(activeNotes) {
