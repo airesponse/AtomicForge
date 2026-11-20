@@ -374,14 +374,27 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
 <label class="studio-field">Style<select id="bsStyle"><option value="rock">Classic rock</option><option value="blues">Blues / shuffle</option><option value="soul">Soul / R&amp;B</option><option value="pop">Pop / ballad</option><option value="funk">Funk</option></select></label>
 <label class="studio-field">Bars<select id="bsBars"><option>4</option><option selected>8</option><option>12</option><option>16</option><option>24</option><option>32</option></select></label>
 <label class="studio-field">Swing<select id="bsSwing"><option value="0">Straight</option><option value="0.18">Light swing</option><option value="0.32">Shuffle</option></select></label>
-<div class="studio-wide" style="padding:15px;border:1px solid #30445f;border-radius:12px;background:#0a1726"><div class="panel-head"><h3>Progression Library</h3><span class="tag" id="bsLibraryCount">115 CHOICES</span></div><div class="studio-grid"><label class="studio-field">Number of chords<select id="bsChordCount"><option value="all">All lengths</option><option value="2">2 chords</option><option value="3">3 chords</option><option value="4" selected>4 chords</option><option value="5">5 chords</option><option value="6">6 chords</option><option value="7">7 chords</option><option value="8">8 chords</option><option value="12">12 chords</option></select></label><label class="studio-field">Progression category<select id="bsProgressionCategory"><option value="all">All categories</option><option value="pop">Pop / Rock</option><option value="minor">Minor / Moody</option><option value="jazz">Jazz / Soul</option><option value="blues">Blues</option><option value="folk">Folk / Singer-songwriter</option><option value="cinematic">Cinematic</option></select></label><label class="studio-field studio-wide">Choose progression<select id="bsProgressionLibrary" style="width:100%"></select></label></div><div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="bsApplyProgression">Apply progression</button><span class="small" id="bsProgressionDescription">Choose a progression; then apply it to the chord editor.</span></div></div>
+<div class="studio-wide" style="padding:15px;border:1px solid #30445f;border-radius:12px;background:#0a1726"><div class="panel-head"><h3>Progression Library</h3><span class="tag" id="bsLibraryCount"></span></div><div class="studio-grid"><label class="studio-field">Number of chords<select id="bsChordCount"><option value="all">All lengths</option><option value="2">2 chords</option><option value="3">3 chords</option><option value="4" selected>4 chords</option><option value="5">5 chords</option><option value="6">6 chords</option><option value="7">7 chords</option><option value="8">8 chords</option><option value="12">12 chords</option></select></label><label class="studio-field">Progression category<select id="bsProgressionCategory"><option value="all">All categories</option><option value="pop">Pop / Rock</option><option value="minor">Minor / Moody</option><option value="jazz">Jazz / Soul</option><option value="blues">Blues</option><option value="folk">Folk / Singer-songwriter</option><option value="cinematic">Cinematic</option></select></label><label class="studio-field studio-wide">Choose progression<select id="bsProgressionLibrary" style="width:100%"></select></label></div><div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="bsApplyProgression">Apply progression</button><span class="small" id="bsProgressionDescription">Choose a progression; then apply it to the chord editor.</span></div></div>
 <label class="studio-field studio-wide">Chord progression (one chord per bar; separate with spaces, commas or |)<textarea id="bsChords">C | Am | F | G</textarea></label>
+<div class="studio-field studio-wide">
+  <label for="bsSavedProgressions">Saved progressions</label>
+  <div class="row">
+    <select id="bsSavedProgressions"></select>
+    <button type="button" class="btn" id="bsLoadProgression" disabled>Load</button>
+  </div>
+  <label for="bsProgressionName">Progression name</label>
+  <div class="row">
+    <input id="bsProgressionName" maxlength="80" placeholder="e.g. Cinematic intro">
+    <button type="button" class="btn" id="bsSaveProgression">Save progression</button>
+  </div>
+  <p class="small" id="bsSavedStatus" role="status">Progressions are saved in this browser. Loading one keeps your current mix.</p>
+</div>
 </div><p class="studio-help">Supported chords: C, Cm, C7, Cmaj7, Cm7, Csus4, Cdim, C6, C9, F#m7, Bbmaj7 and similar. The sequence repeats to fill the selected bars. Enter your own progression; it does not need to match the key selector.</p>
 <div class="row"><button class="btn" id="bsPresetBlues">12-bar blues</button><button class="btn" id="bsPresetPop">I–V–vi–IV</button><button class="btn" id="bsPresetSoul">Soul progression</button></div></section>
 <section class="panel"><div class="panel-head"><h3>02 / Instrument ensemble &amp; playing styles</h3><span class="tag">SAMPLED SOUNDFONTS</span></div>
 <div id="bsTracks"></div><p class="studio-help">Choose each instrument and its note pattern independently. Soundfonts are General MIDI quality; playing styles change MIDI note timing and duration, not true recorded articulations. For genuine pizzicato strings, select Pizzicato strings. Synth drums remain basic. First render requires internet.</p></section>
 <section class="panel export-panel"><div class="panel-head"><h3>03 / Preview and export</h3><span class="tag">WAV / MP3</span></div>
-<div class="studio-actions"><button class="btn primary" id="bsBuild">Generate arrangement</button><button class="btn" id="bsPlay" disabled>▶ Play</button><button class="btn" id="bsStop" disabled>■ Stop</button><button class="btn primary" id="bsDownload" disabled>⬇ Download WAV</button><button class="btn primary" id="bsDownloadMp3" disabled>⬇ Download MP3 (320 kbps)</button></div>
+<div class="studio-actions"><button class="btn primary" id="bsBuild">Generate arrangement</button><div class="row"><button class="btn" id="bsPlay" disabled>▶ Play</button><button class="btn" id="bsStop" disabled>■ Stop</button><label class="checkline"><input type="checkbox" id="bsLoop"> Loop</label></div><button class="btn primary" id="bsDownload" disabled>⬇ Download WAV</button><button class="btn primary" id="bsDownloadMp3" disabled>⬇ Download MP3 (320 kbps)</button></div>
 <div class="studio-progress" id="bsStatus" role="status">Ready. Select your chords and generate.</div><p class="studio-help">Export as uncompressed stereo WAV or stereo MP3 at 320 kbps. Generating a long arrangement may take time and memory, especially on an iPhone. This workspace is independent of Song Builder.</p></section>
 </div></main>
 
@@ -1188,13 +1201,54 @@ const library={
 const parts=[{id:'drums',label:'Drums',volume:.65,voice:'drums',art:'groove'},{id:'bass',label:'Bass',volume:.7,voice:'finger_bass',art:'walking'},{id:'piano',label:'Keys',volume:.45,voice:'piano',art:'chords'},{id:'keys',label:'Additional instrument',volume:.32,voice:'strings',art:'sustain',enabled:false}];
 let nextPartId=1;
 const articulations={groove:'Rhythmic groove',walking:'Walking / moving bass',roots:'Root notes',chords:'Chord stabs',arpeggio:'Arpeggios',sustain:'Sustained notes',short:'Short notes',pulse:'Repeated eighth notes',plucked:'Plucked / picked pattern'};
-const state={buffer:null,context:null,source:null,building:false,signature:null};
+const state={buffer:null,context:null,source:null,building:false,revision:0,loopEnd:0};
 const status=t=>$('bsStatus').textContent=t;
 const tracks=$('bsTracks');
-function drawParts(){tracks.replaceChildren();for(const p of parts){const line=document.createElement('div');line.className='studio-track';line.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #273449';const enabled=document.createElement('label');const check=document.createElement('input');check.type='checkbox';check.id='bs_'+p.id;check.checked=p.enabled!==false;enabled.append(check,' '+p.label);line.append(enabled);const voice=document.createElement('select');voice.id='bsVoice_'+p.id;voice.setAttribute('aria-label',p.label+' instrument');for(const [key,[label]] of Object.entries(library)){const o=new Option(label,key);voice.add(o)}voice.value=p.voice;line.append(voice);const art=document.createElement('select');art.id='bsArt_'+p.id;art.setAttribute('aria-label',p.label+' playing style');for(const [key,label] of Object.entries(articulations))art.add(new Option(label,key));art.value=p.art;line.append(art);const volume=document.createElement('input');volume.type='range';volume.id='bsVol_'+p.id;volume.min=0;volume.max=100;volume.value=Math.round(p.volume*100);volume.setAttribute('aria-label',p.label+' volume');line.append(volume);if(!['drums','bass','piano','keys'].includes(p.id)){const del=document.createElement('button');del.className='btn';del.textContent='Remove';del.onclick=()=>{parts.splice(parts.indexOf(p),1);drawParts();invalidate()};line.append(del)}tracks.append(line);for(const el of [check,voice,art,volume])el.addEventListener('change',invalidate)}}drawParts();
+function drawParts(){tracks.replaceChildren();for(const p of parts){const line=document.createElement('div');line.className='studio-track';line.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #273449';const enabled=document.createElement('label');const check=document.createElement('input');check.type='checkbox';check.id='bs_'+p.id;check.checked=p.enabled!==false;enabled.append(check,' '+p.label);line.append(enabled);const voice=document.createElement('select');voice.id='bsVoice_'+p.id;voice.setAttribute('aria-label',p.label+' instrument');for(const [key,[label]] of Object.entries(library)){const o=new Option(label,key);voice.add(o)}voice.value=p.voice;line.append(voice);const art=document.createElement('select');art.id='bsArt_'+p.id;art.setAttribute('aria-label',p.label+' playing style');for(const [key,label] of Object.entries(articulations))art.add(new Option(label,key));art.value=p.art;line.append(art);const volume=document.createElement('input');volume.type='range';volume.id='bsVol_'+p.id;volume.min=0;volume.max=100;volume.value=Math.round(p.volume*100);volume.setAttribute('aria-label',p.label+' volume');line.append(volume);if(!['drums','bass','piano','keys'].includes(p.id)){const del=document.createElement('button');del.className='btn';del.textContent='Remove';del.onclick=()=>{parts.splice(parts.indexOf(p),1);drawParts();invalidate()};line.append(del)}tracks.append(line);for(const [el,update] of [
+  [check,()=>p.enabled=check.checked],
+  [voice,()=>p.voice=voice.value],
+  [art,()=>p.art=art.value],
+  [volume,()=>p.volume=Number(volume.value)/100]
+])el.addEventListener('input',()=>{update();invalidate()})}}drawParts();
 const addButton=document.createElement('button');addButton.className='btn';addButton.textContent='+ Add instrument track';addButton.style.marginTop='12px';addButton.onclick=()=>{if(parts.length>=12){status('Maximum 12 tracks to protect mobile memory.');return}parts.push({id:'extra'+nextPartId++,label:'Instrument '+nextPartId,volume:.4,voice:'cello',art:'sustain'});drawParts();invalidate()};tracks.after(addButton);
-function chord(s){const m=s.trim().match(/^([A-Ga-g])([#b]?)(maj7|m7|sus4|dim|m|7|6|9)?$/);if(!m)throw Error('Unrecognized chord: '+s);const root=pitch[m[1].toUpperCase()+m[2]],type=m[3]||'';const intervals=({m:[0,3,7],m7:[0,3,7,10],maj7:[0,4,7,11],7:[0,4,7,10],sus4:[0,5,7],dim:[0,3,6],6:[0,4,7,9],9:[0,4,7,10,14]})[type]||[0,4,7];return {root,intervals,label:s};}
+function chord(s){const m=s.trim().match(/^([A-Ga-g])([#b]?)(maj7|m7|sus4|dim|m|7|6|9)?$/);if(!m)throw Error('Unrecognized chord: '+s);const root=pitch[m[1].toUpperCase()+m[2]];if(root===undefined)throw Error('Unrecognized chord: '+s);const type=m[3]||'';const intervals=({m:[0,3,7],m7:[0,3,7,10],maj7:[0,4,7,11],7:[0,4,7,10],sus4:[0,5,7],dim:[0,3,6],6:[0,4,7,9],9:[0,4,7,10,14]})[type]||[0,4,7];return {root,intervals,label:s};}
 function parse(){const raw=$('bsChords').value.split(/[\s,|]+/).filter(Boolean);if(!raw.length)throw Error('Enter at least one chord.');return raw.map(chord)}
+const savedKey='grooveMachine.studio.progressions.v1';
+const savedSelect=$('bsSavedProgressions');
+const savedStatus=$('bsSavedStatus');
+let savedProgressions=[];
+function refreshSavedProgressions(selected=''){
+  savedSelect.replaceChildren(new Option(savedProgressions.length?'Choose a saved progression':'No saved progressions',''));
+  savedProgressions.forEach((entry,index)=>savedSelect.add(new Option(entry.name,String(index))));
+  savedSelect.value=selected;
+  $('bsLoadProgression').disabled=savedSelect.value==='';
+}
+try{
+  const stored=JSON.parse(localStorage.getItem(savedKey)||'[]');
+  if(Array.isArray(stored))savedProgressions=stored.filter(entry=>entry&&typeof entry.name==='string'&&typeof entry.chords==='string');
+}catch(e){savedStatus.textContent='Saved progressions could not be read: '+e.message}
+refreshSavedProgressions();
+savedSelect.onchange=()=>$('bsLoadProgression').disabled=savedSelect.value==='';
+$('bsSaveProgression').onclick=()=>{
+  try{
+    const name=$('bsProgressionName').value.trim();
+    if(!name)throw Error('Enter a name for this progression.');
+    const chords=parse().map(item=>item.label).join(' | ');
+    const updated=[...savedProgressions,{name,chords}];
+    localStorage.setItem(savedKey,JSON.stringify(updated));
+    savedProgressions=updated;
+    refreshSavedProgressions(String(updated.length-1));
+    $('bsProgressionName').value='';
+    savedStatus.textContent='Saved '+name+'.';
+  }catch(e){savedStatus.textContent=e.message}
+};
+$('bsLoadProgression').onclick=()=>{
+  if(savedSelect.value==='')return;
+  const entry=savedProgressions[Number(savedSelect.value)];
+  $('bsChords').value=entry.chords;
+  invalidate();
+  savedStatus.textContent='Loaded '+entry.name+'.';
+};
 function progression(type){const r=pitch[$('bsKey').value];const n=(degree,suffix='')=>names[(r+degree)%12]+suffix;if(type==='blues'){$('bsBars').value='12';$('bsStyle').value='blues';$('bsSwing').value='.32';$('bsChords').value=[0,0,0,0,5,5,0,0,7,5,0,7].map(x=>n(x,'7')).join(' | ')}if(type==='pop'){$('bsChords').value=[n(0),n(7),n(9,'m'),n(5)].join(' | ')}if(type==='soul'){$('bsChords').value=[n(0,'maj7'),n(9,'m7'),n(2,'m7'),n(7,'7')].join(' | ')}}
 // Curated functional-harmony patterns, not randomly generated duplicates.
 const progressionTemplates={
@@ -1203,16 +1257,30 @@ const progressionTemplates={
  jazz:[['ii7','V7'],['Imaj7','vi7'],['iii7','vi7'],['IVmaj7','iii7'],['ii7','V7','Imaj7'],['iii7','VI7','ii7'],['Imaj7','vi7','ii7','V7'],['ii7','V7','Imaj7','VI7'],['Imaj7','VI7','ii7','V7'],['iii7','VI7','ii7','V7'],['Imaj7','IVmaj7','iii7','vi7'],['ii7','V7','iii7','VI7'],['Imaj7','iii7','IVmaj7','ivm7'],['Imaj7','vi7','IVmaj7','V7'],['Imaj7','IVmaj7','ii7','V7'],['vi7','ii7','V7','Imaj7'],['Imaj7','iii7','vi7','ii7','V7'],['Imaj7','VI7','ii7','V7','Imaj7'],['iii7','VI7','ii7','V7','Imaj7'],['Imaj7','vi7','ii7','V7','iii7','VI7'],['Imaj7','IVmaj7','iii7','vi7','ii7','V7'],['Imaj7','VI7','ii7','V7','iii7','VI7','ii7','V7']],
  blues:[['I7','IV7'],['I7','V7'],['IV7','I7','V7'],['I7','IV7','V7'],['I7','IV7','I7','V7'],['I7','I7','IV7','I7'],['I7','IV7','I7','I7','V7'],['I7','I7','IV7','IV7','I7','V7'],['I7','IV7','I7','V7','IV7','I7'],['I7','I7','I7','I7','IV7','IV7','I7','I7'],['I7','IV7','I7','V7','IV7','I7','V7','IV7'],['I7','I7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'],['I7','IV7','I7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7'],['I7','I7','IV7','I7','IV7','IV7','I7','I7','V7','IV7','I7','V7']],
  folk:[['I','IV'],['I','V'],['I','vi'],['I','IV','I'],['I','IV','V'],['I','V','IV'],['I','IV','V','I'],['I','V','I','IV'],['I','vi','IV','V'],['I','IV','vi','V'],['I','IV','I','V'],['I','V','vi','IV'],['I','IV','V','IV','I'],['I','V','vi','IV','V'],['I','IV','I','V','I','IV'],['I','IV','V','I','vi','IV'],['I','V','vi','IV','I','V','I','IV']],
- cinematic:[['i','VI'],['i','III'],['i','iv','VI'],['i','VI','III','VII'],['i','VII','VI','iv'],['i','III','VI','VII'],['i','iv','VI','VII'],['i','VI','iv','VII'],['i','VII','III','VI'],['i','VI','III','VII','iv'],['i','iv','VI','III','VII'],['i','VII','VI','III','iv','V'],['i','VI','III','VII','i','iv'],['i','VII','VI','VII','i','III','iv','V']]
+ cinematic:[['i','VI'],['i','III'],['i','iv','VI'],['i','VI','III','VII'],['i','VII','VI','iv'],['i','III','VI','VII'],['i','iv','VI','VII'],['i','VI','iv','VII'],['i','VII','III','VI'],['i','VI','III','VII','iv'],['i','iv','VI','III','VII'],['i','VII','VI','III','iv','V'],['i','VI','III','VII','i','iv'],['i','VII','VI','VII','i','III','iv','V'],
+   ['i','iv'],['i','V'],['I','bVI'],['I','bIII'],['Imaj7','ivm7'],['i','bII'],
+   ['i','bII','V'],['i','VI','iv'],['i','VII','V'],['i','iv','III'],
+   ['I','bVII','IV'],['Imaj7','bVI','bVII'],['I','bIII','IV'],['I','IV','iv'],
+   ['i','bII','VI','V'],['i','iv','bII','V'],['i','III','iv','V7'],['i','VI','iv','i'],
+   ['i','VII','III','V'],['i','bII','III','VII'],['i','bII','iv','VII'],['i','v','iv','VI'],
+   ['I','bVII','bVI','V'],['I','bVI','bIII','bVII'],['I','bIII','IV','iv'],['Imaj7','vi7','IVmaj7','ivm7'],
+   ['Imaj7','IVmaj7','ivm7','Imaj7'],['i','VI','bII','V','i'],['i','III','VII','iv','V'],
+   ['I','bVII','bVI','IV','I'],['I','IV','iv','bVI','V'],['i','iv','bII','VI','V','i'],
+   ['i','III','VII','VI','iv','V'],['I','bIII','bVI','bVII','IV','I'],['Imaj7','vi7','IVmaj7','ivm7','V7','Imaj7'],
+   ['i','VI','III','VII','iv','bII','V'],['I','bVII','IV','iv','bVI','bVII','I'],
+   ['i','iv','VI','III','VII','bII','V'],['i','VI','III','VII','i','iv','bII','V'],
+   ['i','bII','i','iv','VI','III','VII','V'],['I','bIII','IV','bVI','I','bVII','iv','V'],
+   ['i','VI','III','VII','i','iv','VI','V','i','bII','V','i'],
+   ['I','bVII','IV','I','vi','bVI','IV','iv','I','bIII','V','I']]
 };
 const progressionEntries=Object.entries(progressionTemplates).flatMap(([category,seqs])=>seqs.map((degrees,index)=>({category,degrees,index:index+1,id:category+'-'+index})));
-const degreeMap={I:[0,''],ii:[2,'m'],iii:[4,'m'],IV:[5,''],V:[7,''],vi:[9,'m'],vii:[11,'dim'],i:[0,'m'],iv:[5,'m'],v:[7,'m'],VI:[8,''],VII:[10,''],III:[3,'']};
+const degreeMap={I:[0,''],ii:[2,'m'],iii:[4,'m'],IV:[5,''],V:[7,''],vi:[9,'m'],vii:[11,'dim'],i:[0,'m'],iv:[5,'m'],v:[7,'m'],VI:[8,''],VII:[10,''],III:[3,''],bII:[1,''],bIII:[3,''],bVI:[8,''],bVII:[10,'']};
 function degreeToChord(token){let suffix='';let base=token;if(token==='ivm7'){base='iv';suffix='m7'}else if(token.endsWith('maj7')){base=token.slice(0,-4);suffix='maj7'}else if(token.endsWith('7')){base=token.slice(0,-1);suffix='7'}const [interval,quality]=degreeMap[base]||[0,''];if(!suffix)suffix=quality;else if(suffix==='7'&&quality==='m')suffix='m7';const key=pitch[$('bsKey').value];return names[(key+interval)%12]+suffix;}
 function refreshProgressionLibrary(){const count=$('bsChordCount').value,cat=$('bsProgressionCategory').value,select=$('bsProgressionLibrary');const old=select.value;select.replaceChildren();const filtered=progressionEntries.filter(p=>(count==='all'||p.degrees.length===Number(count))&&(cat==='all'||p.category===cat));for(const p of filtered)select.add(new Option(`${p.category.toUpperCase()} ${String(p.index).padStart(2,'0')} · ${p.degrees.join(' – ')}`,p.id));if(filtered.some(p=>p.id===old))select.value=old;$('bsLibraryCount').textContent=`${filtered.length} / ${progressionEntries.length} CHOICES`;updateProgressionDescription();}
 function updateProgressionDescription(){const item=progressionEntries.find(p=>p.id===$('bsProgressionLibrary').value);$('bsProgressionDescription').textContent=item?`${item.degrees.length} chords · ${item.degrees.map(degreeToChord).join(' | ')} · ${item.category}`:'No progressions match these filters. Select another chord count or category.';}
 function applyProgression(){const item=progressionEntries.find(p=>p.id===$('bsProgressionLibrary').value);if(!item)return;$('bsChords').value=item.degrees.map(degreeToChord).join(' | ');const bars=$('bsBars');const length=item.degrees.length;if(length===12)bars.value='12';else if(length>8)bars.value='16';else if(length>4)bars.value='8';else bars.value='4';if(item.category==='blues')$('bsStyle').value='blues';else if(item.category==='jazz')$('bsStyle').value='soul';else if(item.category==='pop'||item.category==='folk')$('bsStyle').value='pop';invalidate();status(`Applied ${item.degrees.length}-chord progression. Generate arrangement to hear it.`);}
 $('bsChordCount').addEventListener('change',refreshProgressionLibrary);$('bsProgressionCategory').addEventListener('change',refreshProgressionLibrary);$('bsProgressionLibrary').addEventListener('change',updateProgressionDescription);$('bsApplyProgression').addEventListener('click',applyProgression);$('bsKey').addEventListener('change',updateProgressionDescription);refreshProgressionLibrary();
-$('bsPresetBlues').onclick=()=>progression('blues');$('bsPresetPop').onclick=()=>progression('pop');$('bsPresetSoul').onclick=()=>progression('soul');
+$('bsPresetBlues').onclick=()=>{progression('blues');invalidate()};$('bsPresetPop').onclick=()=>{progression('pop');invalidate()};$('bsPresetSoul').onclick=()=>{progression('soul');invalidate()};
 function getSettings(){const bpm=Number($('bsTempo').value),bars=Number($('bsBars').value);if(!Number.isFinite(bpm)||bpm<50||bpm>200)throw Error('Tempo must be 50–200 BPM.');return {bpm,bars,style:$('bsStyle').value,swing:Number($('bsSwing').value),chords:parse(),parts:parts.map(p=>({...p,voice:$('bsVoice_'+p.id).value,program:library[$('bsVoice_'+p.id).value][1],art:$('bsArt_'+p.id).value,enabled:$('bs_'+p.id).checked,volume:Number($('bsVol_'+p.id).value)/100}))}}
 function midiToName(midi){return names[((midi%12)+12)%12]+(Math.floor(midi/12)-1)}
 function addNote(events,part,midi,time,duration,velocity){events.push({part,midi,time:Math.max(0,time),duration,velocity})}
@@ -1229,12 +1297,89 @@ function drum(ctx,out,e,noiseBuf,level){const t=e.time+.05;if(e.part==='kick'){c
 async function render(cfg){if(!window.Soundfont)throw Error('Soundfont library did not load. Check internet access.');const {events,duration}=compose(cfg);const sr=44100;const ctx=new OfflineAudioContext(2,Math.ceil(duration*sr),sr);const master=ctx.createGain();master.gain.value=.76;master.connect(ctx.destination);const destinations={};const sampleInstruments={};for(const p of cfg.parts){if(!p.enabled)continue;const gain=ctx.createGain();gain.gain.value=p.volume;gain.connect(master);destinations[p.id]=gain;if(p.program){status('Loading sampled '+p.label+'…');sampleInstruments[p.id]=await Soundfont.instrument(ctx,p.program,{soundfont:'FluidR3_GM',destination:gain,gain:1});}}
 status('Arranging and rendering audio…');const noiseBuf=noise(ctx,.5);for(const e of events){if(e.part==='kick'||e.part==='snare'||e.part==='hat'){if(destinations.drums)drum(ctx,destinations.drums,e,noiseBuf,1);continue}const instrument=sampleInstruments[e.part];if(instrument){instrument.play(midiToName(e.midi),e.time+.05,{duration:e.duration,gain:e.velocity});}}
 return await ctx.startRendering()}
-function stop(){if(state.source){try{state.source.stop()}catch(e){}state.source.disconnect();state.source=null}$('bsPlay').textContent='▶ Play'}
-function invalidate(){stop();state.buffer=null;state.signature=null;$('bsPlay').disabled=true;$('bsStop').disabled=true;$('bsDownload').disabled=true;$('bsDownloadMp3').disabled=true;status('Settings changed. Generate again to preview or export.')}
-studio.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('change',invalidate));
-async function ensureAudio(){if(!state.context)state.context=new (window.AudioContext||window.webkitAudioContext)();await state.context.resume()}
-$('bsBuild').onclick=async()=>{if(state.building)return;stop();state.building=true;$('bsBuild').disabled=true;$('bsDownload').disabled=true;$('bsDownloadMp3').disabled=true;$('bsPlay').disabled=true;try{const cfg=getSettings();if(cfg.parts.every(p=>!p.enabled))throw Error('Enable at least one instrument.');const result=await render(cfg);state.buffer=result;status('Ready: '+cfg.bars+' bars, '+cfg.bpm+' BPM, '+result.duration.toFixed(1)+' seconds. Preview or download WAV / MP3.');$('bsPlay').disabled=false;$('bsStop').disabled=false;$('bsDownload').disabled=false;$('bsDownloadMp3').disabled=false}catch(e){console.error(e);status('Could not generate: '+(e.message||String(e)))}finally{state.building=false;$('bsBuild').disabled=false}};
-$('bsPlay').onclick=async()=>{if(!state.buffer)return;try{await ensureAudio();stop();const src=state.context.createBufferSource();src.buffer=state.buffer;src.connect(state.context.destination);src.onended=()=>{if(state.source===src){state.source=null;$('bsPlay').textContent='▶ Play'}};state.source=src;src.start();$('bsPlay').textContent='↻ Restart'}catch(e){status('Playback error: '+e.message)}};
+function updateTransport(){
+  $('bsPlay').textContent=state.source?'↻ Restart':'▶ Play';
+  $('bsStop').disabled=!state.source;
+}
+function stop(){
+  const source=state.source;
+  if(source){
+    state.source=null;
+    source.onended=null;
+    source.stop();
+    source.disconnect();
+  }
+  updateTransport();
+}
+function invalidate(){
+  stop();
+  state.revision++;
+  state.buffer=null;
+  $('bsPlay').disabled=true;
+  $('bsDownload').disabled=true;
+  $('bsDownloadMp3').disabled=true;
+  status('Settings changed. Generate again to preview or export.');
+}
+for(const id of ['bsTempo','bsStyle','bsBars','bsSwing','bsChords'])$(id).addEventListener('input',invalidate);
+$('bsLoop').onchange=()=>{
+  if(state.source)state.source.loop=$('bsLoop').checked;
+};
+async function ensureAudio(){
+  if(!state.context)state.context=new (window.AudioContext||window.webkitAudioContext)();
+  await state.context.resume();
+}
+$('bsBuild').onclick=async()=>{
+  if(state.building)return;
+  invalidate();
+  const revision=state.revision;
+  state.building=true;
+  $('bsBuild').disabled=true;
+  try{
+    const cfg=getSettings();
+    if(cfg.parts.every(p=>!p.enabled))throw Error('Enable at least one instrument.');
+    const result=await render(cfg);
+    if(state.revision!==revision){
+      status('Settings changed. Generate again to preview or export.');
+      return;
+    }
+    state.buffer=result;
+    state.loopEnd=cfg.bars*4*60/cfg.bpm;
+    status('Ready: '+cfg.bars+' bars, '+cfg.bpm+' BPM, '+result.duration.toFixed(1)+' seconds. Preview or download WAV / MP3.');
+    $('bsPlay').disabled=false;
+    $('bsDownload').disabled=false;
+    $('bsDownloadMp3').disabled=false;
+  }catch(e){
+    console.error(e);
+    status('Could not generate: '+(e.message||String(e)));
+  }finally{
+    state.building=false;
+    $('bsBuild').disabled=false;
+  }
+};
+$('bsPlay').onclick=async()=>{
+  const buffer=state.buffer;
+  if(!buffer)return;
+  try{
+    await ensureAudio();
+    if(state.buffer!==buffer||studio.hidden)return;
+    stop();
+    const source=state.context.createBufferSource();
+    source.buffer=buffer;
+    source.loop=$('bsLoop').checked;
+    source.loopEnd=state.loopEnd;
+    source.connect(state.context.destination);
+    source.onended=()=>{
+      source.disconnect();
+      if(state.source===source){
+        state.source=null;
+        updateTransport();
+      }
+    };
+    source.start();
+    state.source=source;
+    updateTransport();
+  }catch(e){status('Playback error: '+e.message)}
+};
 $('bsStop').onclick=stop;
 function toWav(buf){const channels=2,n=buf.length,bytes=44+n*channels*2,a=new ArrayBuffer(bytes),v=new DataView(a);const word=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};word(0,'RIFF');v.setUint32(4,bytes-8,true);word(8,'WAVE');word(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,2,true);v.setUint32(24,buf.sampleRate,true);v.setUint32(28,buf.sampleRate*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);word(36,'data');v.setUint32(40,bytes-44,true);const l=buf.getChannelData(0),r=buf.getChannelData(1);let pos=44;for(let i=0;i<n;i++){for(const val of [l[i],r[i]]){const x=Math.max(-1,Math.min(1,val));v.setInt16(pos,x<0?x*32768:x*32767,true);pos+=2}}return new Blob([a],{type:'audio/wav'})}
 function studioFilename(ext){return ($('bsTitle').value.trim().replace(/[^a-z0-9_-]+/gi,'_')||'GrooveMachine')+'_Backing.'+ext}
