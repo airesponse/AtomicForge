@@ -220,7 +220,9 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
   .studio-choices,.song-choices,.library-controls { gap:5px; }
 }
 </style>
-</head>
+<script src="practice/harmony.js"></script>
+<script src="practice/song-form.js"></script>
+<style>.form-field{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}.form-field input{font:inherit;font-size:15px;border:1px solid var(--border);border-radius:6px;background:#101b2b;color:white;padding:8px;min-width:0;width:100%}.form-section{background:#111e30;border:1px solid var(--border);border-radius:10px;padding:12px;margin:9px 0;display:grid;gap:8px}.form-section .form-field:first-child{flex:1}.form-field input[type=number]{width:64px}.form-section .btn{padding:5px 9px}.form-section input[name=chart]{font-family:monospace}#formEditor>.row{margin-top:12px}#songPosition{color:var(--cyan)}</style></head>
 
 <body>
 <header>
@@ -295,7 +297,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       </section>
 
       <section class="panel">
-        <div class="panel-head"><h3>03 / Arrangement · Beta 2</h3><span class="tag">MUSICAL SETUP</span></div>
+        <div class="panel-head"><h3>03 / Band settings</h3><span class="tag">MUSICAL SETUP</span></div>
         <div class="control-grid">
           <div class="control">
             <label for="bpm">Tempo <span class="value" id="bpmValue">100 BPM</span></label>
@@ -333,7 +335,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
         <div class="transport">
           <button class="btn primary" id="playBtn">▶ Play band</button>
           <button class="btn" id="stopBtn">■ Stop</button>
-          <div class="beat-leds" aria-label="Beat indicator">
+          <span id="songPosition" class="small"></span><div class="beat-leds" aria-label="Beat indicator">
             <span class="led"></span><span class="led"></span><span class="led"></span><span class="led"></span>
           </div>
         </div>
@@ -341,6 +343,23 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     </aside>
 
     <div>
+      <section class="panel" id="songFormPanel">
+        <div class="panel-head"><h3>Song form</h3><select class="choice" id="formMode" aria-label="Arrangement mode"><option value="song">Section chart</option><option value="quick">Quick loop</option></select></div>
+        <div id="formEditor">
+          <label class="form-field">Song title<input id="formTitle" placeholder="Untitled song"></label>
+          <p class="small">Separate bars with |. Enter one, two or four chords per bar. For example, Dm7 | G7 | Cmaj7 Am7 | Dm7 G7.</p>
+          <div class="row"><select class="choice" id="formSaved" aria-label="Saved songs"></select><button class="btn" id="formLoad">Load song</button><button class="btn" id="formSave">Save song</button></div>
+          <div id="formRows"></div>
+          <template id="formRow"><div class="form-section">
+            <div class="row"><label class="form-field">Section<input name="name" maxlength="60"></label><label class="form-field">Repeats<input type="number" name="repeat" min="1" max="16"></label></div>
+            <label class="form-field">Chord chart<input name="chart" spellcheck="false" autocapitalize="off"></label>
+            <div class="row"><button class="btn" data-action="up" aria-label="Move section up">↑</button><button class="btn" data-action="down" aria-label="Move section down">↓</button><button class="btn" data-action="copy">Duplicate</button><button class="btn" data-action="delete">Remove</button></div>
+          </div></template>
+          <div class="row"><select class="choice" id="formTemplate" aria-label="New section template"><option value="verse">Verse</option><option value="chorus">Chorus</option><option value="bridge">Bridge</option><option value="blues">12-bar blues in A</option><option value="jazz">Jazz turnaround in C</option><option value="outro">Outro</option></select><button class="btn" id="formAdd">+ Section</button><button class="btn" id="formDown" aria-label="Transpose down one semitone">Transpose −</button><button class="btn" id="formUp" aria-label="Transpose up one semitone">Transpose +</button></div>
+          <div class="row"><label class="form-field">Rehearse<select class="choice" id="formScope"></select></label><label class="small"><input type="checkbox" id="formLoop" checked> Loop playback</label><span class="small">Exports use the full song.</span></div>
+          <p class="small" id="formSummary" role="status"></p>
+        </div>
+      </section>
       <section class="panel">
         <div class="panel-head">
           <h3>04 / Backing band mixer</h3><span class="tag">LIVE LEVELS</span>
@@ -471,7 +490,6 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     volumes: { drums:.78, bass:.72, piano:.38, strings:.22 },
     started: false,
     scheduleIds: [],
-    beatTimer: null,
     exporting: false,
     paused: false,
     riffOffset: 0,
@@ -481,9 +499,34 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
 
   let backingBus, recordDestination, synths = {};
   let soundfontReady = false;
+  let samplesLoading;
   let audioContext = null;
-  let activeNotes = [];
-  let lastBeat = -1;
+  function captureBand() {
+    return {bpm:bpmInput.value,feel:$('feelSelect').value,style:state.style,loop:$('formLoop').checked,
+      volumes:{...state.volumes}, muted:{...state.muted}};
+  }
+  function restoreBand(band) {
+    bpmInput.value=band.bpm; $('bpmValue').textContent=bpmInput.value+' BPM';
+    $('feelSelect').value=band.feel; setStyle(band.style); $('formLoop').checked=band.loop;
+    for (const track of trackElements) {
+      const name=track.dataset.track;
+      track.querySelector('input').value=Math.round(100*band.volumes[name]);
+      const button=track.querySelector('.mute');
+      state.muted[name]=band.muted[name]; button.classList.toggle('off',state.muted[name]);
+      button.setAttribute('aria-pressed',String(state.muted[name])); button.textContent=state.muted[name]?'×':'M';
+    }
+    applyVolumes();
+  }
+  const songForm = createSongForm(stopIfPlaying,captureBand,restoreBand);
+  function stopIfPlaying() { if (state.started && !state.exporting) stopBand(); }
+  $('formLoop').onchange=stopIfPlaying;
+  function exportName() {
+    return (songForm.enabled() && $('formTitle').value.trim() || 'GrooveMachine_'+state.style).replace(/[^a-z0-9 _-]/gi,'_');
+  }
+  function lockExport(locked) {
+    $('gmSongWorkspace').inert = locked;
+    $('gmStudioTab').disabled = locked;
+  }
 
   const midiRoot = {
     "C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,
@@ -510,7 +553,13 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
 
   function setAnalysis(html) { $("analysisBox").innerHTML = html; }
 
+  let initializing;
   async function initAudio() {
+    if (initializing) return initializing;
+    initializing = startAudio();
+    try { await initializing; } finally { initializing=null; }
+  }
+  async function startAudio() {
     if (state.started) {
       await Tone.start();
       return;
@@ -523,8 +572,8 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     backingBus.toDestination();
 
     // Only this bus is captured by the export recorder.
-    recordDestination = audioContext.createMediaStreamDestination();
-    backingBus.connect(recordDestination);
+    recordDestination = audioContext.createMediaStreamDestination?.();
+    if (recordDestination) backingBus.connect(recordDestination);
 
     const drumsOut = new Tone.Gain(0.78).connect(backingBus);
     const bassOut = new Tone.Gain(0.72).connect(backingBus);
@@ -565,7 +614,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     synths.hat.volume.value = -19;
 
     state.started = true;
-    await loadSoundfonts();
+    samplesLoading = loadSoundfonts();
   }
 
   async function loadSoundfonts() {
@@ -586,6 +635,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
           gain:1
         });
         state.instruments[name] = inst;
+        applyVolumes();
         return name;
       })
     );
@@ -599,7 +649,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
         "Set your arrangement below and press Play band."
       );
     } else {
-      setAnalysis("<strong>Samples unavailable</strong><br>Only synthesized drums and bass are available. Check internet access for piano and strings.");
+      setAnalysis("<strong>Samples unavailable</strong><br>Using synthesized instruments for this session.");
     }
   }
 
@@ -617,15 +667,9 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     if (state.trackGains.bassSynth) state.trackGains.bassSynth.gain.value = state.muted.bass || state.instruments.bass ? 0 : state.volumes.bass;
   }
 
-  function rootMidi() { return 48 + midiRoot[keySelect.value]; }
 
   function noteName(midi) {
     return Tone.Frequency(midi, "midi").toNote();
-  }
-
-  function chordNotes(root) {
-    const third = state.style === "funk" ? 3 : 4;
-    return [root, root + third, root + 7, root + 12];
   }
 
   function styleConfig() {
@@ -647,23 +691,27 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     Tone.Transport.position = "0:0:0";
     Tone.Transport.cancel(0);
     state.paused = false;
-    if (state.beatTimer) clearInterval(state.beatTimer);
-    state.beatTimer = null;
     document.querySelectorAll(".led").forEach(led => led.classList.remove("on"));
-    lastBeat = -1;
+    silenceSongNotes();
+    $('songPosition').textContent='';
   }
 
+  const fallbackNotes = new Set();
+  function silenceSongNotes() {
+    for (const instrument of Object.values(state.instruments)) instrument.stop?.();
+    for (const osc of fallbackNotes) osc.stop();
+    fallbackNotes.clear();
+  }
   function playSoundfont(name, midi, time, duration, velocity=0.8) {
     if (state.muted[name] || state.volumes[name] <= 0) return;
     const instrument = state.instruments[name];
 
     if (instrument && typeof instrument.play === "function") {
       try {
-        const node = instrument.play(noteName(midi), time, {
+        instrument.play(noteName(midi), time, {
           duration,
           gain:velocity
         });
-        if (node) activeNotes.push(node);
         return;
       } catch (e) {
         console.warn("Soundfont note could not be played", e);
@@ -671,108 +719,96 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     }
 
     // Safe fallback if a sampled instrument did not load.
-    if (name === "bass" && synths.bass) {
+    if (name !== "bass") {
+      const osc=audioContext.createOscillator(), env=audioContext.createGain();
+      osc.type=name==='piano'?'triangle':'sine';
+      osc.frequency.value=440*2**((midi-69)/12);
+      env.gain.setValueAtTime(.0001,time);
+      env.gain.exponentialRampToValueAtTime(velocity*.36,time+Math.min(duration/2,name==='piano'?.008:.09));
+      env.gain.exponentialRampToValueAtTime(.0001,time+duration);
+      osc.connect(env).connect(state.trackGains[name]);
+      fallbackNotes.add(osc); osc.onended=()=>{fallbackNotes.delete(osc);osc.disconnect();env.disconnect()};
+      osc.start(time);osc.stop(time+duration);return;
+    }
+    if (synths.bass) {
       synths.bass.triggerAttackRelease(noteName(midi), duration, time, velocity);
     }
   }
 
+  function arrangementBars(full = false) {
+    if (songForm.enabled()) return songForm.bars(full);
+    const patterns = {one:['C'],pop:['C','G','Am','F'],blues:['C7','C7','C7','C7','F7','F7','C7','C7','G7','F7','C7','G7'],minor:['Cm','Ab','Eb','Bb'],jazz:['Dm7','G7','Cmaj7','Am7']};
+    const seq = patterns[$('progressionSelect').value];
+    return Array.from({length:Number($('barsSelect').value)}, (_,i) => {
+      const c = ForgeHarmony.chord(seq[i % seq.length]);
+      const symbol = ForgeHarmony.names[(c.root + midiRoot[keySelect.value]) % 12] + c.quality;
+      return {name:'Quick loop',bar:i+1, pass:1, chords:[ForgeHarmony.chord(symbol)]};
+    });
+  }
+
   function scheduleArrangement() {
+    const bars = arrangementBars(state.exporting);
     clearSchedule();
     applyVolumes();
-
-    const bpm = Number(bpmInput.value);
-    Tone.Transport.bpm.value = bpm;
-    Tone.Transport.swing = $("feelSelect").value === "shuffle" ? 0.18 : 0;
+    Tone.Transport.bpm.value = Number(bpmInput.value);
+    Tone.Transport.swing = 0;
     Tone.Transport.timeSignature = 4;
-
-    const pattern = styleConfig();
-    const bars = Number($("barsSelect").value);
-    const beat = 60 / bpm;
-    const barLength = beat * 4;
-    const root = rootMidi();
-    const halfTime = $("feelSelect").value === "half";
-
-    const repeatId = Tone.Transport.scheduleRepeat((time) => {
-      const barNumber = Math.floor(Tone.Transport.position.split(":")[0] || 0);
-      const mode = $("progressionSelect").value;
-      const progressions = {
-        one:[[0,"major"]], pop:[[0,"major"],[7,"major"],[9,"minor"],[5,"major"]],
-        blues:[[0,"dom"],[0,"dom"],[0,"dom"],[0,"dom"],[5,"dom"],[5,"dom"],[0,"dom"],[0,"dom"],[7,"dom"],[5,"dom"],[0,"dom"],[7,"dom"]],
-        minor:[[0,"minor"],[8,"major"],[3,"major"],[10,"major"]],
-        jazz:[[2,"minor"],[7,"dom"],[0,"major"],[9,"minor"]]
-      };
-      const sequence = progressions[mode] || progressions.one;
-      const [interval, quality] = sequence[barNumber % sequence.length];
-      const harmonyRoot = root + interval;
-      const chord = [harmonyRoot + 12, harmonyRoot + 12 + (quality === "minor" ? 3 : 4), harmonyRoot + 19, harmonyRoot + (quality === "dom" ? 22 : 24)];
-
-      for (const beatNo of pattern.kick) {
-        if (state.muted.drums) continue;
-        synths.kick.triggerAttackRelease(
-          state.style === "metal" ? "C1" : "C2",
-          "8n", time + beatNo * beat, 0.9
-        );
+    const groove = styleConfig();
+    const shuffle = $('feelSelect').value === 'shuffle';
+    const snares = $('feelSelect').value === 'half' ? [2] : groove.snare;
+    bars.forEach((bar, index) => {
+      for (let tick=0; tick<16; tick++) {
+        const offset = tick/4;
+        const slot = Math.floor(offset * bar.chords.length / 4);
+        const chord = bar.chords[slot];
+        const boundary = offset === slot * 4 / bar.chords.length;
+        const nextChange = (slot+1)*4/bar.chords.length;
+        const hits = {bass:groove.bass.includes(offset)||boundary, keys:groove.chord.includes(offset)||boundary,
+          kick:groove.kick.includes(offset), snare:snares.includes(offset), hat:groove.hat.includes(offset)};
+        if (!Object.values(hits).some(Boolean) && !Number.isInteger(offset)) continue;
+        const id = Tone.Transport.schedule(time => {
+          const beat = 60 / Tone.Transport.bpm.value;
+          const when = time + (shuffle && tick%4===2 ? beat/6 : 0);
+          if (hits.kick) synths.kick.triggerAttackRelease(state.style==='metal'?'C1':'C2','8n',when,.9);
+          if (hits.snare) synths.snare.triggerAttackRelease('16n',when,.65);
+          if (hits.hat) synths.hat.triggerAttackRelease('C6','32n',when,tick%4?.15:.23);
+          const bass = 36 + (chord.bass ?? chord.root);
+          if (hits.bass) playSoundfont('bass',bass + (offset===2 && !boundary && chord.bass===null && chord.tones.includes((chord.root+7)%12)?7:0),when,beat*Math.min(.72,nextChange-offset),.8);
+          const pitches = ForgeHarmony.types[chord.quality].map(n=>48+chord.root+n);
+          if (hits.keys) pitches.forEach(n=>playSoundfont('piano',n,when,beat*Math.min(.65,nextChange-offset),state.style==='lofi'?.34:.47));
+          if (boundary) pitches.forEach(n=>playSoundfont('strings',n+12,when,beat*(nextChange-offset)*.94,.24));
+          if (Number.isInteger(offset)) Tone.Draw.schedule(()=>{
+            if (Tone.Transport.state!=='started') return;
+            document.querySelectorAll('.led').forEach((led,i)=>led.classList.toggle('on',i===offset));
+            $('songPosition').textContent = bar.name+' · pass '+bar.pass+' · bar '+(index+1)+'/'+bars.length+' · '+chord.name;
+          },when);
+        }, index+':'+Math.floor(offset)+':'+(tick%4));
+        state.scheduleIds.push(id);
       }
-
-      for (const beatNo of pattern.snare) {
-        if (state.muted.drums) continue;
-        const actualBeat = halfTime ? beatNo === 1 ? 2 : beatNo === 3 ? 3 : beatNo : beatNo;
-        synths.snare.triggerAttackRelease("16n", time + actualBeat * beat, 0.65);
-      }
-
-      for (const beatNo of pattern.hat) {
-        if (state.muted.drums) continue;
-        synths.hat.triggerAttackRelease("C6", "32n", time + beatNo * beat, 0.22);
-      }
-
-      for (let i = 0; i < pattern.bass.length; i++) {
-        const beatNo = pattern.bass[i];
-        const midi = harmonyRoot + (i % 4 === 2 ? 7 : 0);
-        playSoundfont("bass", midi, time + beatNo * beat, beat * .72, .8);
-      }
-
-      for (const beatNo of pattern.chord) {
-        const chordVelocity = state.style === "lofi" ? .34 : .48;
-        for (let i = 0; i < chord.length; i++) {
-          playSoundfont("piano", chord[i], time + beatNo * beat, beat * .6, chordVelocity);
-        }
-      }
-
-      if (barNumber % 2 === 0) {
-        for (const midi of chord) {
-          playSoundfont("strings", midi + 12, time, barLength * 1.8, .28);
-        }
-      }
-    }, "1m", 0);
-
-    state.scheduleIds.push(repeatId);
-    Tone.Transport.loop = true;
+    });
+    Tone.Transport.loop = !state.exporting && (!songForm.enabled() || $('formLoop').checked);
+    if (!Tone.Transport.loop && !state.exporting) {
+      state.scheduleIds.push(Tone.Transport.schedule(time=>Tone.Draw.schedule(stopBand,time), bars.length+'m'));
+    }
     Tone.Transport.loopStart = 0;
-    Tone.Transport.loopEnd = bars + "m";
+    Tone.Transport.loopEnd = bars.length+'m';
+    return bars.length;
   }
 
-  function startBeatLights() {
-    if (state.beatTimer) clearInterval(state.beatTimer);
-    const beatMs = 60000 / Number(bpmInput.value);
-    const leds = [...document.querySelectorAll(".led")];
-    let index = 0;
-    state.beatTimer = setInterval(() => {
-      leds.forEach((led, i) => led.classList.toggle("on", i === index));
-      index = (index + 1) % 4;
-    }, beatMs);
-  }
-
+  let transportRequest = 0;
   async function startBand() {
+    const request = ++transportRequest;
     if (state.exporting) return;
     try {
       await initAudio();
+      if (request!==transportRequest || state.exporting || $('gmSongWorkspace').hidden) return;
       if (Tone.Transport.state === "started") {
         Tone.Transport.pause();
         state.paused = true;
         pauseRiff();
+        silenceSongNotes();
         setStatus("Band paused");
         $("playBtn").textContent = "▶ Resume band";
-        if (state.beatTimer) clearInterval(state.beatTimer);
         return;
       }
       if (state.paused) {
@@ -785,16 +821,18 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
         Tone.Transport.start("+0.05");
         if ($("syncRiff").checked && state.audioBuffer) playRiff(0);
       }
-      startBeatLights();
+
       setStatus("Backing band playing");
       $("playBtn").textContent = "Ⅱ Pause band";
     } catch (e) {
       console.error(e);
+      setStatus(e.message);
       notify("Audio could not start: " + e.message, "error");
     }
   }
 
   function stopBand() {
+    transportRequest++;
     clearSchedule();
     stopRiff();
     setStatus("Ready to create");
@@ -910,19 +948,21 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     const values = {rock:100,metal:125,funk:105,lofi:78};
     bpmInput.value = values[preset] || 100;
     $("bpmValue").textContent = bpmInput.value + " BPM";
+    songForm.refresh();
     keySelect.value = preset === "lofi" ? "A" : preset === "funk" ? "E" : "E";
     if (Tone.Transport.state === "started") {
       scheduleArrangement();
       Tone.Transport.start("+0.05");
-      startBeatLights();
+
     }
   }
 
   function updateTempo() {
+    songForm.refresh();
     $("bpmValue").textContent = bpmInput.value + " BPM";
     if (Tone.Transport.state === "started") {
       Tone.Transport.bpm.rampTo(Number(bpmInput.value), .08);
-      startBeatLights();
+
     }
   }
 
@@ -930,7 +970,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     if (state.exporting) return;
     hideNotice();
 
-    if (!window.MediaRecorder || !audioContext || !recordDestination) {
+    if (!audioContext || !recordDestination) {
       try { await initAudio(); }
       catch (e) {
         notify("Audio could not initialize. Try pressing Play band first, then export.", "error");
@@ -938,7 +978,8 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       }
     }
 
-    if (!window.MediaRecorder || !window.lamejs) {
+    if (state.exporting) return;
+    if (!recordDestination || !window.MediaRecorder || !window.lamejs) {
       notify("This browser is missing a required recording or MP3 encoder feature. Try an up-to-date version of Chrome or Edge.", "error");
       return;
     }
@@ -948,7 +989,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       return;
     }
 
-    state.exporting = true;
+    state.exporting = true; lockExport(true);
     $("exportBtn").disabled = true;
     $("exportBtn").textContent = "Rendering backing track…";
     updateProgress(0);
@@ -956,11 +997,12 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     let recorder, chunks = [];
     try {
       await initAudio();
+      await samplesLoading;
       applyVolumes();
       scheduleArrangement();
 
       const bpm = Number(bpmInput.value);
-      const bars = Number($("barsSelect").value);
+      const bars = arrangementBars(true).length;
       const countIn = $("includeCount").checked ? 1 : 0;
       const totalBars = bars + countIn;
       const durationMs = totalBars * 4 * (60000 / bpm);
@@ -993,7 +1035,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       }
 
       Tone.Transport.start("+" + (countIn * 4 * 60 / bpm + .05));
-      startBeatLights();
+
 
       const progressTimer = setInterval(() => {
         const elapsed = performance.now() - startedAt;
@@ -1062,7 +1104,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       const url = URL.createObjectURL(mp3);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `GrooveMachine_${state.style}_${bpm}BPM_${keySelect.value}.mp3`;
+      link.download = `${exportName()}_${bpm}BPM.mp3`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1082,7 +1124,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       updateProgress(0, false);
       setStatus("Export failed");
     } finally {
-      state.exporting = false;
+      state.exporting = false; lockExport(false);
       $("exportBtn").disabled = false;
       $("exportBtn").textContent = "⬇ Render & download backing MP3";
       if (Tone.Transport.state === "started") clearSchedule();
@@ -1116,11 +1158,12 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       notify("Stem export needs JSZip and MediaRecorder. Check your connection/browser.","error"); return;
     }
     const button=$("stemBtn"), oldMuted={...state.muted};
-    state.exporting=true; button.disabled=true; $("exportBtn").disabled=true;
+    state.exporting=true; lockExport(true); button.disabled=true; $("exportBtn").disabled=true;
     const zip=new JSZip();
     try {
       await initAudio();
-      const bpm=Number(bpmInput.value), bars=Number($("barsSelect").value);
+      await samplesLoading;
+      const bpm=Number(bpmInput.value), bars=arrangementBars(true).length;
       const durationMs=bars*4*60000/bpm;
       const names=["drums","bass","piano","strings"];
       for (let idx=0;idx<names.length;idx++) {
@@ -1147,7 +1190,7 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
       button.textContent="Creating ZIP…";
       const blob=await zip.generateAsync({type:"blob"});
       const url=URL.createObjectURL(blob), a=document.createElement("a");
-      a.href=url; a.download=`GrooveMachine_stems_${bpm}BPM.zip`;
+      a.href=url; a.download=`${exportName()}_stems_${bpm}BPM.zip`;
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),60000);
       updateProgress(100);
@@ -1155,10 +1198,11 @@ select.choice,#bsSavedProgressions { cursor:pointer; }
     } catch(e) { console.error(e);notify("Stem export failed: "+e.message,"error"); }
     finally {
       clearSchedule(); state.muted={...oldMuted};applyVolumes();
-      state.exporting=false;button.disabled=false;$("exportBtn").disabled=false;
+      state.exporting=false;lockExport(false);button.disabled=false;$("exportBtn").disabled=false;
       button.textContent="⬇ Download individual instrument WAV stems (ZIP)";
     }
   }
+  $("gmStudioTab").addEventListener("click", () => { if(state.started && !state.exporting) stopBand(); });
   $("stemBtn").addEventListener("click",exportStems);
 
   fileInput.addEventListener("change", e => loadAudioFile(e.target.files[0]));
