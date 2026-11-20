@@ -172,6 +172,53 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
   </style>
 <style>
 .gm-tabs{display:flex;gap:9px;margin:0 0 20px;flex-wrap:wrap}.gm-tab{background:#111c2d;color:#aabbd1;border:1px solid #304158;padding:13px 19px;border-radius:10px;font-weight:700}.gm-tab.active{background:#14384a;border-color:#49e3ff;color:#49e3ff}.studio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.studio-field{display:flex;flex-direction:column;gap:7px;color:#a9bad0;font-size:12px}.studio-field input,.studio-field select,.studio-field textarea{width:100%;background:#0b1320;border:1px solid #304158;color:#edf3ff;border-radius:8px;padding:11px;font:inherit}.studio-field textarea{min-height:82px;resize:vertical}.studio-wide{grid-column:1/-1}.studio-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.studio-help{font-size:12px;color:#a8b8cb;line-height:1.7}.studio-progress{margin-top:14px;color:#8df6b3;font-size:12px;min-height:20px}.studio-track{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #273449}.studio-track label{min-width:115px}.studio-track input[type=range]{max-width:230px}.studio-track select{background:#0b1320;color:#fff;border:1px solid #304158;border-radius:6px;padding:7px;max-width:200px}@media(max-width:600px){.studio-grid{grid-template-columns:1fr}}
+
+/* Compact selectors and switches share the same visual treatment in both workspaces. */
+header { min-height:64px; padding-block:11px; gap:10px; border:0; }
+.header-actions { display:flex; align-items:center; gap:8px; }
+.neon-strip { padding-inline:clamp(16px,4vw,48px); background:#080c14d9; border-bottom:1px solid var(--border); }
+.neon-strip canvas { width:100%; height:24px; display:block; }
+.neon-swatch { width:29px; height:29px; border:1px solid #ffffff80; border-radius:8px; background:#49e3ff; }
+.gm-tabs { margin-bottom:13px; gap:6px; }
+.gm-tab,.back { padding:6px 10px; font-size:12px; }
+.studio-intro { margin-bottom:12px; }
+.studio-intro h2 { margin:0; font-size:clamp(22px,3vw,29px); }
+.studio-intro p { margin-top:3px; }
+.studio-settings { padding:clamp(12px,2vw,18px); }
+.studio-choices,.song-choices,.library-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; }
+.studio-choices { margin-bottom:12px; }
+#gmStudioWorkspace .studio-choices input { width:auto; min-width:0; padding:5px 8px; font-size:12px; background:#0b1320; color:var(--text); border:1px solid #344861; border-radius:7px; min-height:30px; }
+#gmStudioWorkspace .studio-choices #bsTitle { width:min(15rem,100%); }
+#gmStudioWorkspace .studio-choices #bsTempo { width:4.6rem; }
+.studio-tempo { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); }
+#gmSongWorkspace select.choice,.studio-choices select.choice,.library-controls select.choice,
+#bsSavedProgressions,.studio-track select.choice,.chip,.control .chip {
+  display:inline-flex; align-items:center; width:auto; min-width:0; max-width:100%;
+  min-height:30px; margin:0; padding:4px 9px; border:1px solid #344861;
+  border-radius:7px; background:#142033; color:var(--text); font-size:12px; font-weight:600;
+}
+select.choice,#bsSavedProgressions { cursor:pointer; }
+#bsProgressionLibrary { flex:1 1 16rem; }
+.chip { position:relative; cursor:pointer; }
+.chip input { position:absolute; width:1px; height:1px; opacity:0; }
+.chip .when-on,.chip:has(input:checked) .when-off { display:none; }
+.chip:has(input:checked) .when-on { display:inline; }
+.chip:has(input:checked),.chip[aria-pressed="true"],.style-btn.active {
+  background:#14344a; border-color:var(--cyan); color:var(--cyan);
+}
+.chip:focus-within,select.choice:focus-visible,.neon-swatch:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.chip:hover,select.choice:hover { border-color:var(--cyan); }
+.studio-track select.choice { width:100%; }
+.style-buttons { display:flex; flex-wrap:wrap; }
+.style-btn { padding:5px 10px; min-height:30px; font-size:12px; }
+.studio-field textarea { min-height:56px; }
+.library-panel { padding:11px; border:1px solid #30445f; border-radius:10px; background:#0a1726; }
+.library-panel .panel-head { margin-bottom:8px; }
+.studio-field #bsProgressionName { width:min(15rem,100%); padding:6px 8px; }
+@media (max-width:480px) {
+  .header-actions .back { display:none; }
+  .studio-choices,.song-choices,.library-controls { gap:5px; }
+}
 </style>
 </head>
 
@@ -184,8 +231,12 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
       <div class="subtitle">ATOMIC FORGE / SONG BUILDER</div>
     </div>
   </div>
-  <a class="back" href="../">← Atomic Forge</a>
+  <div class="header-actions">
+    <button type="button" class="neon-swatch" id="gmNeonColor" aria-label="Neon wave color: Cyan. Change color." title="Neon wave color: Cyan"></button>
+    <a class="back" href="index.html">← Atomic Forge</a>
+  </div>
 </header>
+<div class="neon-strip"><canvas id="gmNeonWave" aria-hidden="true"></canvas></div>
 
 <main><nav class="gm-tabs" aria-label="Groove Machine workspaces"><button type="button" class="gm-tab active" id="gmSongTab">Song Builder</button><button type="button" class="gm-tab" id="gmStudioTab">Backing Track Studio</button></nav><div id="gmSongWorkspace">
   <div class="intro">
@@ -251,43 +302,33 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
             <label for="bpm">Tempo <span class="value" id="bpmValue">100 BPM</span></label>
             <input id="bpm" type="range" min="55" max="180" value="100">
           </div>
-          <div class="control">
-            <label for="keySelect">Root note</label>
-            <select id="keySelect">
+          <div class="song-choices">
+            <select class="choice" id="keySelect" aria-label="Root note">
               <option>C</option><option>C#</option><option>D</option><option>D#</option>
               <option>E</option><option>F</option><option>F#</option><option>G</option>
               <option>G#</option><option>A</option><option>A#</option><option>B</option>
             </select>
-          </div>
-          <div class="control">
-            <label for="feelSelect">Feel</label>
-            <select id="feelSelect">
+            <select class="choice" id="feelSelect" aria-label="Feel">
               <option value="straight">Straight</option>
               <option value="shuffle">Shuffle / swung</option>
               <option value="half">Half-time</option>
             </select>
-          </div>
-          <div class="control">
-            <label for="barsSelect">Arrangement length</label>
-            <select id="barsSelect">
+            <select class="choice" id="barsSelect" aria-label="Arrangement length">
               <option value="4">4 bars</option>
               <option value="8" selected>8 bars</option>
               <option value="16">16 bars</option>
               <option value="32">32 bars</option>
             </select>
+            <select class="choice" id="progressionSelect" aria-label="Chord progression"><option value="one">One chord / vamp</option><option value="pop" selected>I–V–vi–IV</option><option value="blues">12-bar blues (I–IV–V)</option><option value="minor">i–VI–III–VII</option><option value="jazz">ii–V–I–vi</option></select>
           </div>
         </div>
-        <div class="control-grid" style="margin-top:15px">
-          <div class="control"><label for="progressionSelect">Chord progression</label><select id="progressionSelect"><option value="one">One chord / vamp</option><option value="pop" selected>I–V–vi–IV</option><option value="blues">12-bar blues (I–IV–V)</option><option value="minor">i–VI–III–VII</option><option value="jazz">ii–V–I–vi</option></select></div>
-          <div class="control"><label for="syncRiff"><input id="syncRiff" type="checkbox" checked> Play uploaded recording with band</label><div class="small">Starts the original at bar one. Set tempo to match the recording.</div></div>
-        </div>
-        <div style="margin-top:17px">
-          <label class="small" style="display:block;margin-bottom:10px">Style</label>
-          <div class="style-buttons">
-            <button class="style-btn active" data-style="rock">Rock</button>
-            <button class="style-btn" data-style="metal">Heavy</button>
-            <button class="style-btn" data-style="funk">Funk</button>
-            <button class="style-btn" data-style="lofi">Lo-fi</button>
+        <div class="row" style="margin-top:10px">
+          <label class="chip"><input id="syncRiff" type="checkbox" aria-label="Play uploaded recording with band" checked><span class="when-on" aria-hidden="true">Riff on</span><span class="when-off" aria-hidden="true">Riff off</span></label>
+          <div class="style-buttons" role="group" aria-label="Style">
+            <button class="style-btn active" data-style="rock" aria-pressed="true">Rock</button>
+            <button class="style-btn" data-style="metal" aria-pressed="false">Heavy</button>
+            <button class="style-btn" data-style="funk" aria-pressed="false">Funk</button>
+            <button class="style-btn" data-style="lofi" aria-pressed="false">Lo-fi</button>
           </div>
         </div>
         <div class="transport">
@@ -312,25 +353,25 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
             <div class="track-icon">🥁</div>
             <div><div class="track-name">Drums</div><div class="track-sub">Kick · snare · hi-hat</div></div>
             <input aria-label="Drum volume" type="range" min="0" max="100" value="78">
-            <button class="mute" title="Mute drums">M</button>
+            <button class="mute" aria-pressed="false" aria-label="Mute drums" title="Mute drums">M</button>
           </div>
           <div class="track" data-track="bass">
             <div class="track-icon">🎸</div>
             <div><div class="track-name">Bass</div><div class="track-sub">Sampled bass when available</div></div>
             <input aria-label="Bass volume" type="range" min="0" max="100" value="72">
-            <button class="mute" title="Mute bass">M</button>
+            <button class="mute" aria-pressed="false" aria-label="Mute bass" title="Mute bass">M</button>
           </div>
           <div class="track" data-track="piano">
             <div class="track-icon">🎹</div>
             <div><div class="track-name">Keys / Piano</div><div class="track-sub">Chord accents</div></div>
             <input aria-label="Piano volume" type="range" min="0" max="100" value="38">
-            <button class="mute" title="Mute piano">M</button>
+            <button class="mute" aria-pressed="false" aria-label="Mute piano" title="Mute piano">M</button>
           </div>
           <div class="track" data-track="strings">
             <div class="track-icon">🎻</div>
             <div><div class="track-name">Strings / Pad</div><div class="track-sub">Sustained harmonic layer</div></div>
             <input aria-label="Strings volume" type="range" min="0" max="100" value="22">
-            <button class="mute" title="Mute strings">M</button>
+            <button class="mute" aria-pressed="false" aria-label="Mute strings" title="Mute strings">M</button>
           </div>
         </div>
         <div class="notice info show" style="margin-top:14px">
@@ -341,8 +382,8 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
       <section class="panel export-panel">
         <div class="export-title"><span>⬇</span><div><h3>05 / Export backing track</h3><div class="small">Download an accompaniment-only MP3</div></div></div>
         <div class="export-options">
-          <label class="checkline"><input type="checkbox" id="includeCount" checked> Include one-bar count-in</label>
-          <label class="checkline"><input type="checkbox" id="fadeOut" checked> Fade out at the end</label>
+          <label class="chip"><input type="checkbox" id="includeCount" checked aria-label="Include one-bar count-in"><span class="when-on" aria-hidden="true">Count-in on</span><span class="when-off" aria-hidden="true">Count-in off</span></label>
+          <label class="chip"><input type="checkbox" id="fadeOut" checked aria-label="Fade out at the end"><span class="when-on" aria-hidden="true">Fade-out on</span><span class="when-off" aria-hidden="true">Fade-out off</span></label>
           <span class="tag">MP3 · 192 KBPS</span>
         </div>
         <button class="btn primary full" id="exportBtn">⬇ Render & download backing MP3</button>
@@ -365,26 +406,35 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
     </div>
   </div>
 </div><div id="gmStudioWorkspace" hidden>
-<div class="intro"><div><div class="eyebrow">Independent composition workspace</div><h2>Backing Track <span style="color:var(--cyan)">Studio</span></h2><p>Build a chord-based accompaniment from scratch, preview it, and download high-quality WAV or MP3 audio. No uploaded audio required.</p></div></div>
-<section class="panel"><div class="panel-head"><h3>01 / Song settings</h3><span class="tag">STANDALONE</span></div>
+<div class="intro studio-intro"><div><h2>Backing Track <span style="color:var(--cyan)">Studio</span></h2><p>Build, preview, and export a chord-based backing track.</p></div></div>
+<section class="panel studio-settings">
+<div class="studio-choices">
+  <input id="bsTitle" aria-label="Song title" placeholder="Song title" value="New Song" maxlength="80">
+  <label class="studio-tempo"><input id="bsTempo" aria-label="Tempo (BPM)" type="number" min="50" max="200" value="100"> BPM</label>
+  <select id="bsKey" class="choice" aria-label="Key"><option>C</option><option>C#</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>Ab</option><option>A</option><option>Bb</option><option>B</option></select>
+  <select id="bsStyle" class="choice" aria-label="Style"><option value="rock">Classic rock</option><option value="blues">Blues / shuffle</option><option value="soul">Soul / R&amp;B</option><option value="pop">Pop / ballad</option><option value="funk">Funk</option></select>
+  <select id="bsBars" class="choice" aria-label="Bars"><option value="4">4 bars</option><option value="8" selected>8 bars</option><option value="12">12 bars</option><option value="16">16 bars</option><option value="24">24 bars</option><option value="32">32 bars</option></select>
+  <select id="bsSwing" class="choice" aria-label="Swing"><option value="0">Straight</option><option value="0.18">Light swing</option><option value="0.32">Shuffle</option></select>
+</div>
 <div class="studio-grid">
-<label class="studio-field">Song title<input id="bsTitle" value="New Song" maxlength="80"></label>
-<label class="studio-field">Tempo (BPM)<input id="bsTempo" type="number" min="50" max="200" value="100"></label>
-<label class="studio-field">Key<select id="bsKey"><option>C</option><option>C#</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>Ab</option><option>A</option><option>Bb</option><option>B</option></select></label>
-<label class="studio-field">Style<select id="bsStyle"><option value="rock">Classic rock</option><option value="blues">Blues / shuffle</option><option value="soul">Soul / R&amp;B</option><option value="pop">Pop / ballad</option><option value="funk">Funk</option></select></label>
-<label class="studio-field">Bars<select id="bsBars"><option>4</option><option selected>8</option><option>12</option><option>16</option><option>24</option><option>32</option></select></label>
-<label class="studio-field">Swing<select id="bsSwing"><option value="0">Straight</option><option value="0.18">Light swing</option><option value="0.32">Shuffle</option></select></label>
-<div class="studio-wide" style="padding:15px;border:1px solid #30445f;border-radius:12px;background:#0a1726"><div class="panel-head"><h3>Progression Library</h3><span class="tag" id="bsLibraryCount"></span></div><div class="studio-grid"><label class="studio-field">Number of chords<select id="bsChordCount"><option value="all">All lengths</option><option value="2">2 chords</option><option value="3">3 chords</option><option value="4" selected>4 chords</option><option value="5">5 chords</option><option value="6">6 chords</option><option value="7">7 chords</option><option value="8">8 chords</option><option value="12">12 chords</option></select></label><label class="studio-field">Progression category<select id="bsProgressionCategory"><option value="all">All categories</option><option value="pop">Pop / Rock</option><option value="minor">Minor / Moody</option><option value="jazz">Jazz / Soul</option><option value="blues">Blues</option><option value="folk">Folk / Singer-songwriter</option><option value="cinematic">Cinematic</option></select></label><label class="studio-field studio-wide">Choose progression<select id="bsProgressionLibrary" style="width:100%"></select></label></div><div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="bsApplyProgression">Apply progression</button><span class="small" id="bsProgressionDescription">Choose a progression; then apply it to the chord editor.</span></div></div>
+  <div class="studio-wide library-panel">
+    <div class="panel-head"><h3>Progression Library</h3><span class="tag" id="bsLibraryCount"></span></div>
+    <div class="library-controls">
+      <select id="bsChordCount" class="choice" aria-label="Number of chords"><option value="all">All lengths</option><option value="2">2 chords</option><option value="3">3 chords</option><option value="4" selected>4 chords</option><option value="5">5 chords</option><option value="6">6 chords</option><option value="7">7 chords</option><option value="8">8 chords</option><option value="12">12 chords</option></select>
+      <select id="bsProgressionCategory" class="choice" aria-label="Progression category"><option value="all">All categories</option><option value="pop">Pop / Rock</option><option value="minor">Minor / Moody</option><option value="jazz">Jazz / Soul</option><option value="blues">Blues</option><option value="folk">Folk / Singer-songwriter</option><option value="cinematic">Cinematic</option></select>
+      <select id="bsProgressionLibrary" class="choice" aria-label="Choose progression"></select>
+      <button type="button" class="btn primary" id="bsApplyProgression">Apply</button>
+    </div>
+    <p class="small" id="bsProgressionDescription"></p>
+  </div>
 <label class="studio-field studio-wide">Chord progression (one chord per bar; separate with spaces, commas or |)<textarea id="bsChords">C | Am | F | G</textarea></label>
 <div class="studio-field studio-wide">
-  <label for="bsSavedProgressions">Saved progressions</label>
   <div class="row">
-    <select id="bsSavedProgressions"></select>
+    <select id="bsSavedProgressions" aria-label="Saved progressions"></select>
     <button type="button" class="btn" id="bsLoadProgression" disabled>Load</button>
   </div>
-  <label for="bsProgressionName">Progression name</label>
   <div class="row">
-    <input id="bsProgressionName" maxlength="80" placeholder="e.g. Cinematic intro">
+    <input id="bsProgressionName" aria-label="Progression name" maxlength="80" placeholder="Progression name">
     <button type="button" class="btn" id="bsSaveProgression">Save progression</button>
   </div>
   <p class="small" id="bsSavedStatus" role="status">Progressions are saved in this browser. Loading one keeps your current mix.</p>
@@ -394,7 +444,7 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
 <section class="panel"><div class="panel-head"><h3>02 / Instrument ensemble &amp; playing styles</h3><span class="tag">SAMPLED SOUNDFONTS</span></div>
 <div id="bsTracks"></div><p class="studio-help">Choose each instrument and its note pattern independently. Soundfonts are General MIDI quality; playing styles change MIDI note timing and duration, not true recorded articulations. For genuine pizzicato strings, select Pizzicato strings. Synth drums remain basic. First render requires internet.</p></section>
 <section class="panel export-panel"><div class="panel-head"><h3>03 / Preview and export</h3><span class="tag">WAV / MP3</span></div>
-<div class="studio-actions"><button class="btn primary" id="bsBuild">Generate arrangement</button><div class="row"><button class="btn" id="bsPlay" disabled>▶ Play</button><button class="btn" id="bsStop" disabled>■ Stop</button><label class="checkline"><input type="checkbox" id="bsLoop"> Loop</label></div><button class="btn primary" id="bsDownload" disabled>⬇ Download WAV</button><button class="btn primary" id="bsDownloadMp3" disabled>⬇ Download MP3 (320 kbps)</button></div>
+<div class="studio-actions"><button class="btn primary" id="bsBuild">Generate arrangement</button><div class="row"><button class="btn" id="bsPlay" disabled>▶ Play</button><button class="btn" id="bsStop" disabled>■ Stop</button><button type="button" class="chip" id="bsLoop" aria-label="Loop playback" aria-pressed="false">Loop off</button></div><button class="btn primary" id="bsDownload" disabled>⬇ Download WAV</button><button class="btn primary" id="bsDownloadMp3" disabled>⬇ Download MP3 (320 kbps)</button></div>
 <div class="studio-progress" id="bsStatus" role="status">Ready. Select your chords and generate.</div><p class="studio-help">Export as uncompressed stereo WAV or stereo MP3 at 320 kbps. Generating a long arrangement may take time and memory, especially on an iPhone. This workspace is independent of Song Builder.</p></section>
 </div></main>
 
@@ -849,7 +899,11 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
 
   function setStyle(style) {
     state.style = style;
-    styleButtons.forEach(button => button.classList.toggle("active", button.dataset.style === style));
+    styleButtons.forEach(button => {
+      const selected = button.dataset.style === style;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
   }
 
   function usePreset(preset) {
@@ -1139,6 +1193,7 @@ footer { text-align:center;color:#62718a;font-size:10px;line-height:1.7;padding:
     track.querySelector(".mute").addEventListener("click", event => {
       state.muted[name] = !state.muted[name];
       event.currentTarget.classList.toggle("off", state.muted[name]);
+      event.currentTarget.setAttribute("aria-pressed", String(state.muted[name]));
       event.currentTarget.textContent = state.muted[name] ? "×" : "M";
       applyVolumes();
     });
@@ -1204,7 +1259,7 @@ const articulations={groove:'Rhythmic groove',walking:'Walking / moving bass',ro
 const state={buffer:null,context:null,source:null,building:false,revision:0,loopEnd:0};
 const status=t=>$('bsStatus').textContent=t;
 const tracks=$('bsTracks');
-function drawParts(){tracks.replaceChildren();for(const p of parts){const line=document.createElement('div');line.className='studio-track';line.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #273449';const enabled=document.createElement('label');const check=document.createElement('input');check.type='checkbox';check.id='bs_'+p.id;check.checked=p.enabled!==false;enabled.append(check,' '+p.label);line.append(enabled);const voice=document.createElement('select');voice.id='bsVoice_'+p.id;voice.setAttribute('aria-label',p.label+' instrument');for(const [key,[label]] of Object.entries(library)){const o=new Option(label,key);voice.add(o)}voice.value=p.voice;line.append(voice);const art=document.createElement('select');art.id='bsArt_'+p.id;art.setAttribute('aria-label',p.label+' playing style');for(const [key,label] of Object.entries(articulations))art.add(new Option(label,key));art.value=p.art;line.append(art);const volume=document.createElement('input');volume.type='range';volume.id='bsVol_'+p.id;volume.min=0;volume.max=100;volume.value=Math.round(p.volume*100);volume.setAttribute('aria-label',p.label+' volume');line.append(volume);if(!['drums','bass','piano','keys'].includes(p.id)){const del=document.createElement('button');del.className='btn';del.textContent='Remove';del.onclick=()=>{parts.splice(parts.indexOf(p),1);drawParts();invalidate()};line.append(del)}tracks.append(line);for(const [el,update] of [
+function drawParts(){tracks.replaceChildren();for(const p of parts){const line=document.createElement('div');line.className='studio-track';line.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #273449';const enabled=document.createElement('label');enabled.className='chip';const check=document.createElement('input');check.type='checkbox';check.id='bs_'+p.id;check.checked=p.enabled!==false;check.setAttribute('aria-label','Enable '+p.label);enabled.append(check,p.label);line.append(enabled);const voice=document.createElement('select');voice.id='bsVoice_'+p.id;voice.className='choice';voice.setAttribute('aria-label',p.label+' instrument');for(const [key,[label]] of Object.entries(library)){const o=new Option(label,key);voice.add(o)}voice.value=p.voice;line.append(voice);const art=document.createElement('select');art.id='bsArt_'+p.id;art.className='choice';art.setAttribute('aria-label',p.label+' playing style');for(const [key,label] of Object.entries(articulations))art.add(new Option(label,key));art.value=p.art;line.append(art);const volume=document.createElement('input');volume.type='range';volume.id='bsVol_'+p.id;volume.min=0;volume.max=100;volume.value=Math.round(p.volume*100);volume.setAttribute('aria-label',p.label+' volume');line.append(volume);if(!['drums','bass','piano','keys'].includes(p.id)){const del=document.createElement('button');del.className='btn';del.textContent='Remove';del.onclick=()=>{parts.splice(parts.indexOf(p),1);drawParts();invalidate()};line.append(del)}tracks.append(line);for(const [el,update] of [
   [check,()=>p.enabled=check.checked],
   [voice,()=>p.voice=voice.value],
   [art,()=>p.art=art.value],
@@ -1321,8 +1376,13 @@ function invalidate(){
   status('Settings changed. Generate again to preview or export.');
 }
 for(const id of ['bsTempo','bsStyle','bsBars','bsSwing','bsChords'])$(id).addEventListener('input',invalidate);
-$('bsLoop').onchange=()=>{
-  if(state.source)state.source.loop=$('bsLoop').checked;
+const loopButton=$('bsLoop');
+let looping=false;
+loopButton.onclick=()=>{
+  looping=!looping;
+  loopButton.setAttribute('aria-pressed',String(looping));
+  loopButton.textContent=looping?'Loop on':'Loop off';
+  if(state.source)state.source.loop=looping;
 };
 async function ensureAudio(){
   if(!state.context)state.context=new (window.AudioContext||window.webkitAudioContext)();
@@ -1365,7 +1425,7 @@ $('bsPlay').onclick=async()=>{
     stop();
     const source=state.context.createBufferSource();
     source.buffer=buffer;
-    source.loop=$('bsLoop').checked;
+    source.loop=looping;
     source.loopEnd=state.loopEnd;
     source.connect(state.context.destination);
     source.onended=()=>{
@@ -1399,6 +1459,92 @@ $('bsDownloadMp3').onclick=async()=>{
   }catch(e){console.error(e);status('MP3 export error: '+(e.message||String(e)))}finally{button.disabled=!state.buffer}
 };
 $('bsDownload').onclick=()=>{if(!state.buffer)return;try{status('Preparing uncompressed WAV…');const blob=toWav(state.buffer),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=($('bsTitle').value.trim().replace(/[^a-z0-9_-]+/gi,'_')||'GrooveMachine')+'_Backing.wav';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status('WAV prepared ('+(blob.size/1048576).toFixed(1)+' MB). Check your downloads.')}catch(e){status('Export error: '+e.message)}};
+})();
+</script>
+<script>
+(() => {
+  const canvas = document.getElementById('gmNeonWave');
+  const swatch = document.getElementById('gmNeonColor');
+  const ctx = canvas.getContext('2d');
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const colors = [
+    ['Cyan', '#49e3ff'], ['Violet', '#ae83ff'], ['Pink', '#ff59b8'],
+    ['Amber', '#ffbb56'], ['Lime', '#a7f85e'], ['Ice', '#92bfff']
+  ];
+  const storageKey = 'grooveMachine.waveColor';
+  let colorIndex = 0;
+  try {
+    const saved = colors.findIndex(([name]) => name === localStorage.getItem(storageKey));
+    if (saved >= 0) colorIndex = saved;
+  } catch {}
+  let width = 0;
+  let height = 0;
+  let frame;
+
+  function draw(time) {
+    if (!ctx || !width || !height) return;
+    ctx.clearRect(0, 0, width, height);
+    ctx.beginPath();
+    for (let x = 0; x <= width; x += 2) {
+      const y = height / 2 + Math.sin(x * .018 + time * .003) * 3;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    const color = colors[colorIndex][1];
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 9;
+    ctx.stroke();
+    ctx.strokeStyle = '#f4faff';
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+  }
+
+  function applyColor() {
+    const [name, color] = colors[colorIndex];
+    swatch.style.backgroundColor = color;
+    swatch.title = 'Neon wave color: ' + name;
+    swatch.setAttribute('aria-label', swatch.title + '. Change color.');
+    if (motion.matches) draw(0);
+  }
+
+  swatch.onclick = () => {
+    colorIndex = (colorIndex + 1) % colors.length;
+    applyColor();
+    try { localStorage.setItem(storageKey, colors[colorIndex][0]); } catch {}
+  };
+  applyColor();
+  if (!ctx) return;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    width = rect.width;
+    height = rect.height;
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    draw(motion.matches ? 0 : performance.now());
+  }
+
+  function animate(time) {
+    draw(time);
+    frame = requestAnimationFrame(animate);
+  }
+
+  function syncMotion() {
+    cancelAnimationFrame(frame);
+    if (motion.matches) draw(0);
+    else frame = requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resize);
+  if (motion.addEventListener) motion.addEventListener('change', syncMotion);
+  else motion.addListener(syncMotion);
+  resize();
+  syncMotion();
 })();
 </script>
 </body>
