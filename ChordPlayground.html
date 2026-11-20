@@ -114,6 +114,10 @@
       gap: 16px;
     }
 
+    #build-open-strings { align-self: flex-start; }
+    #build-open-strings::before { content: ""; width: 24px; height: 14px; border-radius: 10px; background: radial-gradient(circle at 7px 7px, white 4px, transparent 5px), #475569; }
+    #build-open-strings[aria-pressed="true"]::before { background: radial-gradient(circle at 17px 7px, #082f49 4px, transparent 5px), var(--accent); }
+
     /* Tab Switcher Navigation */
     .tab-nav {
       display: flex;
@@ -1130,6 +1134,7 @@
           </div>
 
           <div class="builder-field">
+            <button type="button" class="btn" id="build-open-strings" aria-pressed="true" onclick="toggleBuilderOpenStrings(this)">Open strings</button>
             <div class="modifier-category-title">Modifiers & Extensions</div>
             <div class="modifier-grid" id="modifier-toggles-container"></div>
           </div>
@@ -1724,6 +1729,15 @@
       "B7":   [ {s:0, f:-1}, {s:1, f:2}, {s:2, f:1}, {s:3, f:2}, {s:4, f:0}, {s:5, f:2} ]
     };
 
+    function toggleBuilderOpenStrings(button) {
+      const allow = button.getAttribute("aria-pressed") !== "true";
+      button.setAttribute("aria-pressed", String(allow));
+      const rootFret = document.getElementById("build-root-fret");
+      if (!allow && rootFret.value === "0") rootFret.value = "";
+      rootFret.querySelector('option[value="0"]').disabled = !allow;
+      updateChordBuilder();
+    }
+
     function renderGuitarChordBox(rootNote, bassNote, chordNotes) {
       const container = document.getElementById("guitar-chord-box");
       container.innerHTML = "";
@@ -1733,7 +1747,8 @@
       const chord={root,tones,quality:'',bass:bassNote ? Tonal.Note.chroma(bassNote) : null};
       const fret = document.getElementById("build-root-fret").value;
       const target = Number(fret);
-      const options = {low:0, high:fret === '' ? 15 : Math.min(22,target+3),span:3,open:true,strings:[0,1,2,3,4,5],minNotes:2,maxNotes:6};
+      const open = document.getElementById("build-open-strings").getAttribute("aria-pressed") === "true";
+      const options = {low:0, high:fret === '' ? 15 : Math.min(22,target+3),span:3,open,strings:[0,1,2,3,4,5],minNotes:2,maxNotes:6};
       const shapes = ForgeHarmony.shapes(chord,tune,options);
       const shape = fret === '' ? shapes[0] : shapes.find(s => s.frets.some((f,i) => f === target && (tune[i]+f)%12 === root));
       if(!shape){container.textContent='No fingering fits this root fret and tuning.';return null}
