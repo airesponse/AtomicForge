@@ -49,6 +49,7 @@ jobs:
       - name: Assemble Pages site
         run: |
           mkdir -p _site/ChordCraft
+          cp -R practice _site/
           cp -R ChordCraft/dist/. _site/ChordCraft/
           for file in *.html; do
             cp "$file" _site/

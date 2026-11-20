@@ -1087,6 +1087,7 @@
   <style>
     .atomic-forge-mark { display: block; flex: none; object-fit: contain; border-radius: 22%; }
   </style>
+<link rel="stylesheet" href="practice/labs.css"><script src="practice/harmony.js"></script>
 </head>
 <body>
 
@@ -1116,7 +1117,8 @@
 
       <!-- Tab Switcher Navigation -->
       <div class="tab-nav">
-        <button class="tab-btn active" onclick="switchTab('chords')"><i data-lucide="layers"></i> Chord Playground</button>
+        <button class="tab-btn active" onclick="switchTab('dictionary')">Fingering dictionary</button>
+        <button class="tab-btn" onclick="switchTab('chords')"><i data-lucide="layers"></i> Chord Playground</button>
         <button class="tab-btn" onclick="switchTab('scales')"><i data-lucide="compass"></i> Scale Explorer</button>
       </div>
     </div>
@@ -1161,7 +1163,8 @@
   </div>
 
   <!-- ==================== TAB 1: CHORD PLAYGROUND VIEW ==================== -->
-  <div id="view-chords" class="app-view active">
+  <div id="view-dictionary" class="app-view active"><section class="forge-lab"><h2>Fingering dictionary</h2><div class="lab-row"><label>Root<select id="dictRoot"></select></label><label>Chord<select id="dictQuality"></select></label><label>Bass note<select id="dictBass"><option value="">Any inversion</option></select></label><label>Tuning<select id="dictTune"></select></label><label>Open pitches · low to high<input id="dictCustom" disabled></label></div><div class="lab-row"><label>First fret<select id="dictLow"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><label>Last fret<select id="dictHigh"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12" selected>12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option></select></label><label>Maximum fret difference<select id="dictSpan"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label>Minimum strings<select id="dictMin"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label><span><input id="dictOpen" type="checkbox" checked> Allow open strings</span></label></div><div class="lab-cards" id="dictCards"></div><p class="lab-msg" id="dictStatus" role="status"></p><div class="lab-row"><button type="button" id="dictPrev">Previous</button><button type="button" id="dictNext">Next</button><button type="button" id="dictHear">Strum</button><button type="button" id="dictSave">Save fingering</button><button type="button" id="dictAdd">Add to progression</button><label>Library<select id="dictSaved"></select></label></div><h2>Reverse search</h2><div class="lab-row"><label>Find<select id="dictReverse"><option value="chords">Chords</option><option value="scales">Scales</option></select></label><button type="button" id="dictHearReverse">Hear selection</button><button type="button" id="dictClear">Clear neck</button></div><div id="dictNeck" class="lab-neck"></div><div class="lab-row" id="dictMatches"></div></section></div>
+  <div id="view-chords" class="app-view">
     
     <!-- SECTION 1: Chord Builder & Tester -->
     <div class="section-card">
@@ -1488,9 +1491,14 @@
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".app-view").forEach(v => v.classList.remove("active"));
 
-      if (tabName === 'chords') {
+      ForgeHarmony.silence();
+      if (tabName === 'dictionary') {
+        document.querySelector("button[onclick=\"switchTab('dictionary')\"]").classList.add("active");
+        document.getElementById("view-dictionary").classList.add("active");
+      } else if (tabName === 'chords') {
         document.querySelector("button[onclick=\"switchTab('chords')\"]").classList.add("active");
         document.getElementById("view-chords").classList.add("active");
+        updateChordBuilder();
       } else {
         document.querySelector("button[onclick=\"switchTab('scales')\"]").classList.add("active");
         document.getElementById("view-scales").classList.add("active");
@@ -1813,71 +1821,12 @@
       const container = document.getElementById("guitar-chord-box");
       container.innerHTML = "";
 
-      let voicing = chordShapeLibrary[chordSymbol];
-
-      // Intelligent transposition fallback if exact chord symbol isn't in library
-      if (!voicing) {
-        // Try matching base root + modifier family or fallback to C shape transposed
-        let baseKey = rootNote;
-        let modType = chordSymbol.substring(rootNote.length);
-        if (modType.includes("m") && !modType.includes("maj")) baseKey += "m";
-        else if (modType.includes("7")) baseKey += "7";
-
-        voicing = chordShapeLibrary[baseKey] || chordShapeLibrary["C"];
-      }
-
-      // Header row with string indicators (O / X)
-      const headerRow = document.createElement("div");
-      headerRow.className = "chord-box-header";
-      voicing.forEach(v => {
-        const span = document.createElement("span");
-        if (v.f === -1) span.textContent = "×";
-        else if (v.f === 0) span.textContent = "o";
-        else span.textContent = "";
-        headerRow.appendChild(span);
-      });
-      container.appendChild(headerRow);
-
-      // Frets container (Frets 1 to 4)
-      const fretsContainer = document.createElement("div");
-      fretsContainer.className = "chord-box-frets";
-
-      for (let fret = 1; fret <= 4; fret++) {
-        const fretRow = document.createElement("div");
-        fretRow.className = "chord-fret-row";
-
-        voicing.forEach((v, sIdx) => {
-          const slot = document.createElement("div");
-          slot.className = "chord-string-slot";
-
-          const stringLine = document.createElement("div");
-          stringLine.className = "chord-string-line";
-          slot.appendChild(stringLine);
-
-          if (v.f === fret) {
-            const dot = document.createElement("div");
-            dot.className = "chord-finger-dot";
-            const openMidi = [40, 45, 50, 55, 59, 64][sIdx]; // E2, A2, D3, G3, B3, E4
-            const noteOnFret = Tonal.Note.fromMidi(openMidi + fret);
-            const pc = Tonal.Note.pitchClass(noteOnFret);
-            dot.textContent = pc;
-            
-            if (Tonal.Note.chroma(pc) === Tonal.Note.chroma(rootNote)) {
-              dot.classList.add("root");
-              dot.title = `${pc} (Root)`;
-            } else {
-              dot.title = `${pc} (Chord Tone)`;
-            }
-            slot.appendChild(dot);
-          }
-
-          fretRow.appendChild(slot);
-        });
-
-        fretsContainer.appendChild(fretRow);
-      }
-
-      container.appendChild(fretsContainer);
+      const tune=guitarStrings.map(str=>Tonal.Note.midi(str.note+str.octave)).reverse();
+      const root=Tonal.Note.chroma(rootNote),tones=[...new Set(chordNotes.map(n=>Tonal.Note.chroma(n)))];
+      const chord={root,tones,quality:'',bass:null};
+      const shapes=ForgeHarmony.shapes(chord,tune,{low:0,high:15,span:3,open:true,strings:[0,1,2,3,4,5],minNotes:3,maxNotes:6});
+      if(!shapes.length){container.textContent='No matching fingering in this range.';return}
+      container.innerHTML=ForgeHarmony.diagram(shapes[0],tune);
     }
 
     /* ==========================================================================
@@ -2830,5 +2779,6 @@
       loadInstrumentSoundfont("acoustic_grand_piano");
     });
   </script>
+<script src="practice/dictionary.js"></script>
 </body>
 </html>
