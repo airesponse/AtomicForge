@@ -96,14 +96,12 @@ input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%)
     <div class="board-scroll"><svg id="fretboard" class="board-svg" role="img" aria-label="Editable fretboard diagram"></svg></div>
     <div class="board-caption"><div class="board-tools"><button class="button small" type="button" id="captureBtn" aria-pressed="false">Capture area</button><button class="button small" type="button" id="saveCopy">Save as copy</button></div><span id="boardSummary">Standard tuning · 6 strings</span><span>Color dots carry across into exports and song sheets.</span></div>
   </section>
-  <aside class="stack side">
-    <section class="card"><div class="card-head"><div><h3>Saved diagrams</h3><p>Your local chord, scale, and fingering library.</p></div><span class="statline"><span id="savedCount">0 saved</span></span></div><div class="card-body"><div class="list" id="savedList"></div></div></section>
-  </aside>
 </div>
 <section class="card slate-card" aria-label="Chord slate">
 <div class="card-head"><h2>Chord slate</h2><div class="board-tools"><button class="button small primary" id="slatePdf">Download PDF</button><button class="button small" id="slateCopy">Copy image</button><button class="button small" id="slatePrint">Print slate</button><button class="button small" id="slateClear">Clear slate</button></div></div>
 <div class="card-body"><div id="slateList"></div><label class="field-label" for="slateNotes">Slate notes</label><textarea id="slateNotes" rows="2" placeholder="Progression, fingerings, or practice notes"></textarea></div>
 </section>
+<section class="card sheet-card"><div class="card-head"><div><h2>Saved diagrams</h2><p>Your local chord, scale, and fingering library.</p></div><span class="statline"><span id="savedCount">0 saved</span></span></div><div class="card-body"><div class="list" id="savedList"></div></div></section>
 <section class="card sheet-card"><div class="card-head"><div><h2>Song sheet</h2><p>Add saved shapes in song order, label each chord, and export a print-ready PDF.</p></div><div class="board-tools"><button class="button small" id="addCurrentToSheet" type="button">＋ Add current diagram</button><button class="button small primary" id="sheetPrintBtn" type="button">Print song sheet</button></div></div><div class="card-body sheet-grid"><div><label class="field-label" for="songNotes">Lyrics, structure, or performance notes</label><textarea class="song-notes" id="songNotes" placeholder="Verse: ...&#10;Chorus: ..."></textarea><p class="sheet-hint" style="margin-top:8px">Saved on this device. Export a project JSON file to back up or move the song to another browser.</p></div><div><div id="sheetList" class="sheet-list"></div><div id="sheetEmpty" class="empty">No diagrams on the song sheet yet. Save a shape, then add it here.</div></div></div></section>
 </main>
 <footer class="board-caption" style="justify-content:center;padding:22px 0 28px">Fretboard Art · Offline-first workspace · Your song sketches stay in this browser</footer>
