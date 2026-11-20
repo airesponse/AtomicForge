@@ -56,7 +56,7 @@ jobs:
           cp *.png _site/
           cp *.svg _site/
           cp TriadMachineSoundfont.js _site/
-          cp fretboard-sw.js fretboard-neck.js _site/
+          cp fretboard-sw.js fretboard-neck.js fake-maker-catalog.json _site/
           cp TriadMachineSoundfont.LICENSE _site/
           touch _site/.nojekyll
 

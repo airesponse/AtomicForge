@@ -99,6 +99,13 @@ details.about{margin-top:26px;color:var(--mute);font-size:13px}
 details.about summary{cursor:pointer;color:var(--text)}
 footer{margin-top:36px;color:var(--mute);font-size:12px;text-align:center}
 @media(max-width:640px){.paper{padding:20px 14px}.prog .rn{min-width:0}.bar{font-size:16px}}
+
+.fm-wave{position:relative;height:44px;overflow:hidden;border:1px solid var(--line);border-radius:10px;background:#101523}.fm-wave canvas{display:block;width:100%;height:100%}
+input.wave-swatch{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:28px;height:21px;padding:1px;border:1px solid #ffffff66;border-radius:5px;background:#181822;cursor:pointer}
+#findSong,#sourceChart{margin-bottom:14px}#findSong .row:first-child{margin-top:0}#findSong input{min-width:0}input[type=url]{background:#120e0b;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font:inherit}
+#songChoices{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow:auto}#lookupMessage:empty{display:none}.rec-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.rec-head h2,#chartHeading{margin:0}
+#chartBody{width:100%;min-height:14rem;font:15px/1.65 monospace;resize:vertical}#chartPrint{display:none}
+@media print{body:has(#sourceChart:not([hidden])) .wrap>*:not(#sourceChart),#sourceChart button,#sourceChart label{display:none!important}#sourceChart{background:white;color:black;border:0}#sourceChart .hint,#sourceChart a{color:#444}#chartPrint{display:block;white-space:pre-wrap;font:11pt/1.4 monospace}.wrap{padding:0}}
 </style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
@@ -112,21 +119,33 @@ footer{margin-top:36px;color:var(--mute);font-size:12px;text-align:center}
     <a class="brand" id="brandLink" href="./"><img class="atomic-forge-mark" src="atomic-forge-logo.png" width="32" height="32" alt="">Atomic Forge</a>
     <a class="back" id="backLink" href="./">&larr; Back to the Forge</a>
   </div>
+  <div class="fm-wave"><canvas id="fakeWave" aria-hidden="true"></canvas><input class="wave-swatch" id="waveColour" type="color" value="#38bdf8" title="Change wave colour" aria-label="Wave colour"></div>
   <h1><span>Fake</span> Maker</h1>
-  <p class="lede">Drop in any song. Fake Maker listens, then forges a fake sheet: tempo, key, chords, progressions, song map, lyrics, scales and the main licks as real tab images, on screen and as a printable PDF. Everything runs in your browser, so your audio never leaves your machine.</p>
-
+  <p class="lede">Find a guitar chart by performer and song, or build one from a recording.</p>
+  <form class="card" id="findSong">
+    <div class="row"><label class="f">Performer<input id="inArtist" type="text" placeholder="James Brown"></label>
+    <label class="f">Song title<input id="inTitle" type="text" placeholder="I Don’t Mind"></label></div>
+    <div class="row"><label class="f">Performance link<input id="songLink" type="url" placeholder="YouTube, Internet Archive, or an audio URL"></label>
+    <button class="primary" id="lookupButton">Find fake sheet</button></div>
+    <p id="lookupMessage" class="hint" role="status" aria-live="polite"></p><div id="songChoices"></div><a id="openPerformance" class="hint" target="_blank" rel="noopener noreferrer" hidden>Open performance in another tab ↗</a>
+  </form>
+  <section class="card" id="sourceChart" hidden>
+    <div class="toolbar"><button id="chartPdf" class="primary">Download PDF</button><button onclick="window.print()">Print chart</button></div>
+    <h2 id="chartHeading"></h2><div id="chartArtist"></div>
+    <p class="hint">Catalog arrangement · <a href="https://ddmal.ca/research/The_McGill_Billboard_Project_%28Chord_Analysis_Dataset%29/" target="_blank" rel="noopener">McGill Billboard Project</a> · Burgoyne, Wild &amp; Fujinaga (2011), CC0</p>
+    <label class="f">Editable chord chart · Each pair of bar lines encloses one measure. A dot holds the previous chord.
+    <textarea id="chartBody" rows="18" spellcheck="false"></textarea></label><pre id="chartPrint"></pre>
+  </section>
   <div class="card">
+    <div class="rec-head"><h2>Analyze a recording</h2><button type="button" class="small" id="tabCapture">Capture tab audio</button></div>
+    <p class="hint">For a video performance, open it in another tab, choose Capture tab audio, and share that tab with audio enabled.</p>
     <div id="drop" tabindex="0">
       <strong id="dropTitle">Drop an audio file here, or click to choose</strong>
       <small>MP3, WAV, M4A, OGG, FLAC &middot; whatever your browser can decode &middot; best under ~8 minutes</small>
       <input id="file" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.oga,.flac,.opus,.webm" hidden>
     </div>
     <div class="row">
-      <label class="f">Song title<input type="text" id="inTitle" placeholder="(from file name)"></label>
-      <label class="f">Artist<input type="text" id="inArtist" placeholder="optional"></label>
-    </div>
-    <div class="row">
-      <label class="chk"><input type="checkbox" id="chkLyrics" checked> Transcribe lyrics</label>
+      <label class="chk"><input type="checkbox" id="chkLyrics"> Transcribe lyrics</label>
       <select id="selModel" title="Speech model (downloaded once, then cached by your browser)">
         <option value="Xenova/whisper-tiny.en">Tiny &middot; fast &middot; ~40 MB</option>
         <option value="Xenova/whisper-base.en" selected>Base &middot; balanced &middot; ~75 MB</option>
@@ -161,7 +180,7 @@ footer{margin-top:36px;color:var(--mute);font-size:12px;text-align:center}
       <div class="tl-wrap" id="tlWrap"><canvas id="tl"></canvas><div id="playhead"></div></div>
       <div class="now-strip"><span class="big" id="nowChord">&ndash;</span><span class="nx" id="nowNext">Press play to follow along</span></div>
     </div>
-    <div class="paper" id="paper"></div>
+    <p class="hint">Audio estimate · Check the chords, meter, and section boundaries against the performance.</p><div class="paper" id="paper"></div>
     <details class="about">
       <summary>How this works &amp; what to expect</summary>
       <p>Fake Maker uses signal processing in your browser: an onset-based beat tracker for tempo, a pitch-class (chroma) analysis with template matching for chords, a self-similarity map for song structure, and a pitch tracker that finds repeated melodic phrases and fingers them on a standard-tuned guitar. Lyrics use a small Whisper speech model running locally.</p>
@@ -299,6 +318,7 @@ async function analyzeAudio(x,progress){
   /* pass 2: chroma + bands */
   const N2=4096,H2=1024,fft2=new FFT(N2),win2=hann(N2);
   const nF2=Math.floor((x.length-N2)/H2)+1;
+  const bassChroma=new Float32Array(nF2*12);
   const c36=new Float32Array(nF2*36),bands=new Float32Array(nF2*NB);
   const binBand=new Int8Array(N2/2).fill(-1);
   for(let k=1;k<N2/2;k++){const f=k*sr/N2;if(f<80||f>=8000)continue;binBand[k]=Math.min(NB-1,Math.floor(Math.log(f/80)/Math.log(100)*NB))}
@@ -313,6 +333,8 @@ async function analyzeAudio(x,progress){
       if(m>thr&&m>mg[k-1]&&m>=mg[k+1]){
         const a=mg[k-1],c=mg[k+1],d=a-2*m+c,dl=d?0.5*(a-c)/d:0,fq=(k+dl)*sr/N2;
         const midi=69+12*Math.log2(fq/440);let idx=Math.round(midi*3)%36;if(idx<0)idx+=36;
+        // Sonic Scope separates low-register root support from full-band chord tones.
+        if(midi>=35&&midi<=59)bassChroma[f*12+(Math.round(midi)%12)]+=Math.sqrt(m/mx)/Math.pow(fq/110,.14);
         c36[base+idx]+=Math.pow(m/mx,0.6)*(fq>1600?0.5:1);
       }}
     const bb=f*NB;for(let k=1;k<N2/2;k++){const b=binBand[k];if(b>=0)bands[bb+b]+=mg[k]*mg[k]}
@@ -324,7 +346,8 @@ async function analyzeAudio(x,progress){
   const chroma=new Float32Array(nF2*12),g=new Float64Array(12);
   for(let f=0;f<nF2;f++){let tot=0;for(let c=0;c<12;c++){let s=0;for(let d=-1;d<=1;d++)s+=c36[f*36+((3*c+bt+d)%36+36)%36];chroma[f*12+c]=s;tot+=s}
     if(tot>0)for(let c=0;c<12;c++)g[c]+=chroma[f*12+c]/tot}
-  Object.assign(ctx,{N2,H2,nF2,chroma,bands,tuning:bt});
+  Object.assign(ctx,{N2,H2,nF2,chroma,bassChroma,bands,tuning:bt});
+  if(!g.some(value=>value>0))throw Error('No pitched audio was detected. Check the recording or shared-tab audio.');
   ctx.keyGuess=keyScores(Array.from(g))[0];
   progress('harmony',1);await tick();
   /* pass 3: pitch track for licks */
@@ -419,7 +442,7 @@ function buildSong(ctx,opts){
   const bdur=i=>i+1<nBeat?B[i+1]-B[i]:B[i]-B[i-1];
   const meanBeat=60/bpm;
   /* beat-synchronous chroma / bands / energy */
-  const bc=[],bb=[],brms=new Float32Array(nBeat),bon=new Float32Array(nBeat);
+  const bc=[],bb=[],bassBeats=[],brms=new Float32Array(nBeat),bon=new Float32Array(nBeat);
   const frameOf2=t=>Math.round((t*sr-ctx.N2/2)/ctx.H2);
   for(let b=0;b<nBeat;b++){
     const t0=B[b],dt=bdur(b);
@@ -429,6 +452,10 @@ function buildSong(ctx,opts){
     f0=cl(f0);f1=cl(f1);
     const c=new Float64Array(12),bd=new Float64Array(NB);let cnt=0;
     for(let f=f0;f<=f1;f++){let tot=0;for(let i=0;i<12;i++)tot+=ctx.chroma[f*12+i];if(tot<=0)continue;for(let i=0;i<12;i++)c[i]+=ctx.chroma[f*12+i]/tot;for(let i=0;i<NB;i++)bd[i]+=ctx.bands[f*NB+i];cnt++}
+    const bass=new Float32Array(12);
+    for(let f=f0;f<=f1;f++)for(let i=0;i<12;i++)bass[i]+=ctx.bassChroma[f*12+i];
+    const totalBass=bass.reduce((a,b)=>a+b,0);
+    bassBeats.push(totalBass?bass.map(x=>x/totalBass):bass);
     let n=0;for(let i=0;i<12;i++)n+=c[i]*c[i];n=Math.sqrt(n);
     bc.push(n>0?c.map(v=>v/n):c);bb.push(cnt?bd.map(v=>v/cnt):bd);
     const r0=Math.max(0,Math.floor(t0*sr/H1)),r1=Math.min(ctx.nF1-1,Math.max(r0,Math.floor((t0+dt)*sr/H1)));
@@ -459,7 +486,7 @@ function buildSong(ctx,opts){
   /* Viterbi */
   const emit=new Float32Array(nBeat*NS);
   for(let b=0;b<nBeat;b++){if(silent[b])continue;
-    for(let s=0;s<NS;s++){let d=0;const t=TEMPL[s];for(let i=0;i<12;i++)d+=bc[b][i]*t[i];emit[b*NS+s]=d-CHORD_TYPES[stType(s)].pen+bonus[s]}}
+    for(let s=0;s<NS;s++){let d=0;const t=TEMPL[s];for(let i=0;i<12;i++)d+=bc[b][i]*t[i];emit[b*NS+s]=d+0.12*bassBeats[b][stRoot(s)]-CHORD_TYPES[stType(s)].pen+bonus[s]}}
   const back=new Uint8Array(nBeat*NS);let cur=new Float64Array(NS),nxt=new Float64Array(NS);
   for(let s=0;s<NS;s++)cur[s]=emit[s];
   for(let b=1;b<nBeat;b++){
@@ -883,6 +910,234 @@ const PAL=['#e8590c','#1c7ed6','#2f9e44','#ae3ec9','#d9480f','#0c8599','#c2255c'
 const fmt=t=>{t=Math.max(0,t);return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
 const S={file:null,ctx:null,song:null,title:'',artist:'',lyrics:[],lyricSegs:[],lyricsEdited:false,tempoScale:1,meter:0,img:null,peaks:null,url:null,events:[],duration:0};
 
+/* ---------- find a chart or a performance ---------- */
+const findForm=$('#findSong'), message=$('#lookupMessage'), choices=$('#songChoices'), chart=$('#sourceChart');
+const sourceHome='https://ddmal.ca/research/The_McGill_Billboard_Project_%28Chord_Analysis_Dataset%29/';
+let catalog, searchId=0, chartSong=null, recorder=null;
+const normalize=text=>String(text||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/['’]/g,'').replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').trim();
+const wordsMatch=(haystack,needle)=>needle.split(' ').every(word=>haystack.split(' ').includes(word));
+function chartMatches(rows,title,artist){
+  const t=normalize(title),a=normalize(artist),seen=new Set();
+  return rows.map(row=>{
+    const rt=normalize(row.title),ra=normalize(row.artist);
+    if(!t||!wordsMatch(rt,t)||a&&!wordsMatch(ra,a))return null;
+    return {row,rank:(rt===t?4:0)+(ra===a?2:0)};
+  }).filter(Boolean).sort((x,y)=>y.rank-x.rank).map(x=>x.row).filter(row=>{
+    const key=normalize(row.artist)+'|'+normalize(row.title);
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
+}
+function guitarSymbol(token){
+  if(token==='N')return 'N.C.';
+  if(token==='&pause')return 'pause';
+  const m=/^([A-G])([b#]*)(?::([^/]+))?(?:\/([b#]*)(\d+))?$/.exec(token);
+  if(!m)return token;
+  const [,letter,accidental,quality='',alter,degree]=m,root=letter+accidental;
+  let suffix=quality==='maj'?'':quality.replace(/^min/,'m');
+  if(quality==='1')suffix='(bass)';
+  if(!degree)return root+suffix;
+  const letters='CDEFGAB',natural=[0,2,4,5,7,9,11],index=letters.indexOf(letter),steps=(Number(degree)-1)%7;
+  const shift=s=>[...s].reduce((n,c)=>n+(c==='#'?1:-1),0);
+  const bass=(index+steps)%7,pc=natural[index]+shift(accidental)+natural[steps]+shift(alter);
+  const delta=((pc-natural[bass]+18)%12)-6;
+  return root+suffix+'/'+letters[bass]+(delta<0?'b':'#').repeat(Math.abs(delta));
+}
+function chartText(row){
+  const lines=[];
+  for(const raw of row.annotation.split(/\r?\n/)){
+    const meta=/^# (metre|tonic):\s*(.*)/i.exec(raw);
+    if(meta){lines.push((meta[1].toLowerCase()==='metre'?'Meter':'Tonic')+' '+meta[2]);continue}
+    const timed=/^\s*[\d.eE+-]+\s+(.+)$/.exec(raw);
+    if(!timed)continue;
+    const fields=timed[1].split('|');
+    const section=fields.shift().replace(/[,\s]+$/,'').trim();
+    if(section&&!['end','silence'].includes(section.toLowerCase()))lines.push('',section);
+    if(!fields.length)continue;
+    const tail=fields.pop().trim();
+    const bars=fields.map(bar=>bar.trim().split(/\s+/).map(token=>{
+      if(token==='.')return '·';
+      if(/^\([\d/]+\)$/.test(token))return token;
+      return guitarSymbol(token);
+    }).join(' '));
+    if(bars.length)lines.push('| '+bars.join(' | ')+' |'+(/^(x\s*\d+|->)/i.exec(tail)?.[0]?' '+tail.match(/^(x\s*\d+|->)/i)[0]:''));
+  }
+  return lines.join('\n').trim();
+}
+function openChart(row){
+  chartSong=row;$('#chartHeading').textContent=row.title;$('#chartArtist').textContent=row.artist;
+  $('#chartBody').value=chartText(row);$('#audio').pause();chart.hidden=false;$('#results').style.display='none';
+  message.textContent='Catalog arrangement selected. To chart the exact performance, analyze its audio below.';
+  chart.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function option(label,fn){
+  const b=document.createElement('button');b.type='button';b.className='small';b.textContent=label;b.onclick=fn;choices.append(b);
+}
+function webUrl(raw){
+  let u;try{u=new URL(raw)}catch{throw Error('Enter a complete https:// link.')}
+  if(!['https:','http:'].includes(u.protocol)||u.username||u.password)throw Error('Use a public HTTP or HTTPS link.');
+  return u;
+}
+function youtubeLink(u){
+  return ['youtu.be','youtube.com','www.youtube.com','m.youtube.com','music.youtube.com','www.youtube-nocookie.com'].includes(u.hostname);
+}
+async function request(url,timeout=15000){
+  const res=await fetch(url,{signal:AbortSignal.timeout(timeout),credentials:'omit'});
+  if(!res.ok)throw Error('Source returned '+res.status);
+  return res;
+}
+function fieldsFromTitle(text,author){
+  const cleaned=String(text||'').replace(/\s*[([](?:official|live\b|lyrics?\b|audio\b|remaster|HD\b|HQ\b).*?[)\]]/gi,'').replace(/\s*\|\s*official.*$/i,'').trim();
+  const m=/^(.+?)\s+[-–—]\s+(.+)$/.exec(cleaned);
+  return {artist:m?m[1]:String(author||'').replace(/\s*-\s*Topic$|VEVO$/i,'').trim(),title:m?m[2]:cleaned};
+}
+async function linkMetadata(u){
+  const endpoints=youtubeLink(u)?['https://www.youtube.com/oembed?format=json&url=','https://noembed.com/embed?url=']:['https://noembed.com/embed?url='];
+  for(const base of endpoints){
+    try{const json=await (await request(base+encodeURIComponent(u.href),7000)).json();
+      if(json.title)return fieldsFromTitle(json.title,json.author_name);
+    }catch{}
+  }
+  if(!youtubeLink(u)){
+    try{
+      const response=await request(u.href,7000),type=response.headers.get('content-type')||'';
+      if(/^(audio|video)\//i.test(type)){await response.body?.cancel();return {media:u.href}}
+      if(type.includes('text/html')&&Number(response.headers.get('content-length')||0)<3000000){
+        const doc=new DOMParser().parseFromString(await response.text(),'text/html');
+        const rawTitle=doc.querySelector('meta[property="og:title"]')?.content||doc.title;
+        const info=fieldsFromTitle(rawTitle,doc.querySelector('meta[name="author"]')?.content);
+        const media=doc.querySelector('meta[property="og:audio"],meta[property="og:audio:url"]')?.content||doc.querySelector('audio[src],audio source[src]')?.getAttribute('src');
+        if(media)info.media=webUrl(new URL(media,response.url).href).href;
+        return info;
+      }
+      await response.body?.cancel();
+    }catch{}
+  }
+  return {};
+}
+async function startAudio(url,name,artist,id){
+  message.textContent='Loading the recording…';
+  const res=await request(url,90000);
+  const type=res.headers.get('content-type')||'';
+  if(/text\/html|application\/json/i.test(type)){await res.body?.cancel();throw Error('This link opens a web page. Use tab audio or choose an audio file below.')}
+  if(Number(res.headers.get('content-length'))>150*1048576){await res.body?.cancel();throw Error('Choose a single-song audio file under 150 MB.')}
+  const blob=await res.blob();if(id!==searchId)return;
+  if(blob.size>150*1048576)throw Error('Choose a smaller recording.');
+  installAudio(new File([blob],name||'Performance',{type:blob.type}),name,artist);
+  message.textContent='Building an estimated sheet from the recording.';
+  await run();
+}
+function installAudio(file,title,artist){
+  setFile(file);if(title)$('#inTitle').value=title;if(artist)$('#inArtist').value=artist;
+}
+async function archiveTracks(identifier,id,title,artist){
+  message.textContent='Looking up playable tracks…';
+  const meta=await (await request('https://archive.org/metadata/'+encodeURIComponent(identifier))).json();
+  if(id!==searchId)return;
+  const files=(meta.files||[]).filter(f=>/\.mp3$/i.test(f.name));
+  const candidates=files.length?files:(meta.files||[]).filter(f=>/\.(ogg|m4a|flac|wav)$/i.test(f.name));
+  const ranked=candidates.slice().sort((x,y)=>Number(wordsMatch(normalize(y.title||y.name),normalize(title)))-Number(wordsMatch(normalize(x.title||x.name),normalize(title))));
+  choices.replaceChildren();
+  message.textContent=ranked.length?'Choose the track to analyze.':'This archive item has no downloadable audio track. Choose a file or capture tab audio.';
+  for(const f of ranked){
+    option(f.title||f.name,()=>safeLookup(()=>startAudio('https://archive.org/download/'+encodeURIComponent(identifier)+'/'+f.name.split('/').map(encodeURIComponent).join('/'),f.title||title||f.name,artist||[].concat(meta.metadata?.creator||'').join(', '),id)));
+  }
+}
+async function archiveSearch(title,artist,id){
+  const quote=v=>'"'+v.replace(/["\\]/g,' ')+'"';
+  const q='mediatype:audio AND (title:'+quote(title)+(artist?' OR description:'+quote(title):'')+')'+(artist?' AND creator:'+quote(artist):'');
+  const params=new URLSearchParams({q,output:'json',rows:'12','fl[]':'identifier,title,creator'});
+  message.textContent='Searching Internet Archive recordings…';
+  const json=await (await request('https://archive.org/advancedsearch.php?'+params)).json();
+  if(id!==searchId)return;
+  const docs=json.response?.docs||[];choices.replaceChildren();
+  message.textContent=docs.length?'Choose a recording, then a track.':'No recording found. Add a performance link, capture tab audio, or choose a file.';
+  docs.forEach(d=>option([d.title,[].concat(d.creator||[]).join(', ')].filter(Boolean).join(' — '),()=>safeLookup(()=>archiveTracks(d.identifier,id,title,artist))));
+}
+let lookupBusy=false, analyzing=false;
+async function safeLookup(fn){
+  if(lookupBusy||analyzing||recorder)return;
+  lookupBusy=true;$('#lookupButton').disabled=true;
+  try{await fn()}catch(err){message.textContent=err.message+' You can also choose a recording below.'}
+  finally{lookupBusy=false;$('#lookupButton').disabled=false}
+}
+findForm.onsubmit=e=>{e.preventDefault();safeLookup(async()=>{
+  const id=++searchId;choices.replaceChildren();chart.hidden=true;$('#results').style.display='none';
+  const raw=$('#songLink').value.trim(),u=raw?webUrl(raw):null;
+  let title=$('#inTitle').value.trim(),artist=$('#inArtist').value.trim();
+  const open=$('#openPerformance');open.hidden=!u;if(u)open.href=u.href;
+  if(u&&/\.(mp3|m4a|aac|ogg|oga|flac|wav|webm|mp4)$/i.test(u.pathname)){
+    await startAudio(u.href,title||decodeURIComponent(u.pathname.split('/').pop()),artist,id);return;
+  }
+  if(u&&/^(www\.)?archive\.org$/.test(u.hostname)&&u.pathname.startsWith('/details/')){
+    await archiveTracks(u.pathname.split('/')[2],id,title,artist);return;
+  }
+  if(u&&(!artist||!title)){
+    message.textContent='Reading the performance title…';
+    const found=await linkMetadata(u);title=title||found.title||'';artist=artist||found.artist||'';
+    if(found.media){await startAudio(found.media,title||'Performance',artist,id);return}
+    $('#inTitle').value=title;$('#inArtist').value=artist;
+  }
+  if(!title&&u&&!youtubeLink(u))option('Analyze link as audio',()=>safeLookup(()=>startAudio(u.href,'Performance',artist,id)));
+  if(!title){message.textContent=u?'Enter the song title and performer, or capture this performance using tab audio below.':'Enter a song title or a performance link.';return}
+  message.textContent='Searching the McGill Billboard chord catalog…';
+  if(!catalog)catalog=await (await request('./fake-maker-catalog.json')).json();
+  const matches=chartMatches(catalog,title,artist);
+  if(!matches.length){
+    await archiveSearch(title,artist,id);
+    if(u&&!youtubeLink(u))option('Analyze linked audio',()=>safeLookup(()=>startAudio(u.href,title,artist,id)));
+    return;
+  }
+  if(matches.length===1&&normalize(matches[0].title)===normalize(title)&&normalize(matches[0].artist)===normalize(artist))openChart(matches[0]);
+  else{
+    message.textContent=matches.length?'Select the matching catalog arrangement.':'No matching catalog chart. Search for a recording or analyze the performance below.';
+    matches.slice(0,30).forEach(row=>option(row.artist+' — '+row.title,()=>openChart(row)));
+  }
+  option('Search Internet Archive recordings',()=>safeLookup(()=>archiveSearch(title,artist,id)));
+  if(u&&!youtubeLink(u))option('Try link as direct audio',()=>safeLookup(()=>startAudio(u.href,title,artist,id)));
+})};
+$('#chartPdf').onclick=()=>{
+  if(!chartSong)return;
+  if(!window.jspdf){window.print();return}
+  const doc=new window.jspdf.jsPDF({unit:'pt',format:'letter'});let y=42;
+  function write(text,size,bold=false){
+    doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);
+    for(const line of doc.splitTextToSize(text||' ',528)){
+      if(y>747){doc.addPage();y=42}doc.text(line,42,y);y+=size+5;
+    }
+  }
+  write(chartSong.title,22,true);write(chartSong.artist,14);write('McGill Billboard Project | annotation '+chartSong.id,9);
+  for(const line of $('#chartBody').value.split('\n'))write(line.replace(/·/g,'.'),11,!line.startsWith('|'));
+  write('Source: Burgoyne, Wild & Fujinaga (ISMIR 2011). McGill Billboard Project, CC0.',8);
+  doc.save(chartSong.title.replace(/[^\w-]+/g,'-')+'-fake-sheet.pdf');
+};
+window.addEventListener('beforeprint',()=>{$('#chartPrint').textContent=$('#chartBody').value});
+$('#tabCapture').onclick=async()=>{
+  if(recorder?.state==='recording'){recorder.stop();return}
+  if(lookupBusy||analyzing)return;
+  if(!navigator.mediaDevices?.getDisplayMedia||!window.MediaRecorder){message.textContent='Tab audio capture is unavailable here. Use a direct audio link or choose an audio file.';return}
+  let stream;const btn=$('#tabCapture');btn.disabled=true;
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:true,selfBrowserSurface:'exclude',systemAudio:'exclude'});
+    const tracks=stream.getAudioTracks();
+    if(!tracks.length)throw Error('No audio was shared. Choose the performance tab and enable Share tab audio.');
+    const rec=new MediaRecorder(new MediaStream(tracks)),chunks=[];
+    const title=$('#inTitle').value.trim(),artist=$('#inArtist').value.trim();
+    const stop=()=>{if(rec.state==='recording')rec.stop()};
+    let timer;
+    rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+    rec.onstop=async()=>{
+      clearTimeout(timer);stream.getTracks().forEach(t=>t.stop());recorder=null;btn.textContent='Capture tab audio';
+      if(!chunks.length){message.textContent='No audio captured. Try again or choose a file.';return}
+      const file=new File(chunks,'Tab performance',{type:rec.mimeType});
+      installAudio(file,title,artist);message.textContent='Analyzing the captured performance…';await run();
+    };
+    stream.getTracks().forEach(t=>t.addEventListener('ended',stop,{once:true}));
+    rec.start(1000);recorder=rec;timer=setTimeout(stop,14.9*60000);btn.textContent='Stop and build sheet';
+    message.textContent='Play the song in the shared tab. Choose Stop and build sheet when it ends.';
+  }catch(err){stream?.getTracks().forEach(t=>t.stop());message.textContent=err.name==='NotAllowedError'?'Tab capture cancelled.':err.message}
+  finally{btn.disabled=false}
+};
+
 /* ---------- file picking ---------- */
 const drop=$('#drop'),fileIn=$('#file');
 drop.addEventListener('click',()=>fileIn.click());
@@ -892,10 +1147,12 @@ drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDe
 drop.addEventListener('drop',e=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)setFile(f)});
 fileIn.addEventListener('change',()=>{if(fileIn.files[0])setFile(fileIn.files[0])});
 function setFile(f){
+  if(analyzing)return;
+  const first=!S.file,typedTitle=$('#inTitle').value.trim(),typedArtist=$('#inArtist').value.trim();
   S.file=f;$('#dropTitle').textContent=f.name+'  ('+(f.size/1048576).toFixed(1)+' MB)';
   let t=f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').replace(/^\s*\d{1,3}\s*[-.)]\s*/,'').trim();
   let a='';const m=t.match(/^(.+?)\s+-\s+(.+)$/);if(m){a=m[1];t=m[2]}
-  $('#inTitle').value=t;$('#inArtist').value=a;$('#go').disabled=false;showErr('');
+  $('#inTitle').value=first&&typedTitle?typedTitle:t;$('#inArtist').value=first&&typedArtist?typedArtist:a;$('#go').disabled=false;showErr('');
 }
 function showErr(m){const e=$('#err');e.style.display=m?'block':'none';e.textContent=m||''}
 
@@ -933,7 +1190,8 @@ function setProg(stage,p,msg){
 /* ---------- main pipeline ---------- */
 $('#go').addEventListener('click',run);
 async function run(){
-  if(!S.file)return;
+  if(!S.file||analyzing||recorder)return;
+  analyzing=true;chart.hidden=true;
   const useLyrics=$('#chkLyrics').checked;
   $('#go').disabled=true;showErr('');$('#progress').style.display='block';$('#results').style.display='none';
   S.title=$('#inTitle').value.trim()||'Untitled';S.artist=$('#inArtist').value.trim();
@@ -942,6 +1200,7 @@ async function run(){
   try{
     setProg('decode',0,'Decoding audio…');
     const buf=await decodeFile(S.file);
+    if(buf.duration<6)throw Error('Choose at least six seconds of audio');
     if(buf.duration>900)throw new Error('That file is over 15 minutes. Please use a single song.');
     const mono=await resample(buf,E.SR);
     S.duration=mono.length/E.SR;S.peaks=peaksOf(mono,1400);
@@ -964,7 +1223,7 @@ async function run(){
   }catch(err){
     console.error(err);showErr('Something went wrong: '+(err&&err.message?err.message:err)+'. Try a different file or format (MP3/WAV are safest).');
     $('#progress').style.display='none';
-  }finally{$('#go').disabled=false}
+  }finally{analyzing=false;$('#go').disabled=false}
 }
 
 /* ---------- lyrics (Whisper in the browser) ---------- */
@@ -1132,6 +1391,7 @@ function makePdf(){
   const H2=t=>{need(40);y+=14;doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(194,65,12);doc.text(clean(t).toUpperCase(),M,y);doc.setDrawColor(27,27,27);doc.setLineWidth(1.4);doc.line(M,y+5,PW-M,y+5);y+=20};
   const ink=()=>doc.setTextColor(27,27,27);
   /* title */
+  doc.setFontSize(9);doc.text('Audio-derived chord estimate',M,y);y+=14;
   doc.setFont('helvetica','bold');doc.setFontSize(26);ink();
   const tl=doc.splitTextToSize(title,CW);doc.text(tl,M,y+22);y+=22+(tl.length-1)*28;
   if(S.artist){doc.setFont('helvetica','normal');doc.setFontSize(13);doc.setTextColor(110,110,110);doc.text(clean(S.artist),M,y+20);y+=22}
@@ -1205,6 +1465,20 @@ function makePdf(){
   doc.save(fn);
 }
 })();
+</script>
+<script>
+(()=>{const canvas=document.getElementById('fakeWave'),ctx=canvas.getContext('2d'),reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');const picker = document.getElementById('waveColour');
+      const storageKey = 'atomicforge.fakemaker.waveColour';
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (/^#[0-9a-f]{6}$/i.test(saved)) picker.value = saved;
+      } catch {}
+      picker.addEventListener('change', () => {
+        try { localStorage.setItem(storageKey, picker.value); } catch {}
+      });
+      picker.addEventListener('input', () => draw(reducedMotion.matches ? 0 : performance.now()));
+      let width=0,height=0,frame=0;function draw(time){if(!width||!height)return;ctx.clearRect(0,0,width,height);ctx.beginPath();ctx.lineWidth=2;ctx.strokeStyle = picker.value;const centerY=height/2,phase=time*.003;for(let x=0;x<width;x++){const y=centerY+Math.sin(x*.01+phase)*3;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}function animate(time){draw(time);frame=requestAnimationFrame(animate)}function resize(){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;width=rect.width;height=rect.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw(reducedMotion.matches?0:performance.now())}function motionChange(){cancelAnimationFrame(frame);frame=0;draw(reducedMotion.matches?0:performance.now());if(!reducedMotion.matches)frame=requestAnimationFrame(animate)}window.addEventListener('resize',resize);if(reducedMotion.addEventListener)reducedMotion.addEventListener('change',motionChange);else reducedMotion.addListener(motionChange);resize();if(!reducedMotion.matches)frame=requestAnimationFrame(animate)})();
+
 </script>
 </body>
 </html>
