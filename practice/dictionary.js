@@ -37,10 +37,27 @@
     message('Fingering '+(index+1)+' of '+results.length+' · low to high: '+shape.frets.map(n=>n<0?'×':n).join(' '));
  }
  function drawNeck(){
-    const neck=d('Neck');neck.replaceChildren();
-    for(let i=5;i>=0;i--){const row=document.createElement('div');for(let f=0;f<=15;f++){
-      const b=document.createElement('button');b.type='button';b.textContent=f===0?H.note(tune[i]):String(f);b.setAttribute('aria-label','String '+(6-i)+', fret '+f+', '+H.note(tune[i]+f));b.setAttribute('aria-pressed',String(selected[i]===f));b.onclick=()=>{selected[i]=selected[i]===f?-1:f;drawNeck()};row.append(b)
-    }neck.append(row)}
+    const g=ForgeNeck.layout(),parts=[],labels=[...tune].reverse().map(n=>H.names[n%12]);
+    ForgeNeck.draw(ForgeNeck.svg(parts,String),g,labels,15);
+    for(let i=0;i<6;i++)for(let fret=0;fret<=15;fret++){
+      const y=g.top+(5-i)*g.spacing,x=fret?g.left+(fret-.5)*g.cell:g.left/2;
+      const active=selected[i]===fret,pitch=H.note(tune[i]+fret);
+      if(active)parts.push(`<circle cx="${x}" cy="${y}" r="13" fill="#83ddbd"/><text x="${x}" y="${y+4}" text-anchor="middle" fill="#10281e" font-size="12">${H.names[(tune[i]+fret)%12]}</text>`);
+      const width=fret?g.cell:g.left;
+      parts.push(`<rect role="button" tabindex="0" aria-label="String ${6-i}, ${fret?'fret '+fret:'open'}, ${pitch}" aria-pressed="${active}" data-string="${i}" data-fret="${fret}" x="${x-width/2}" y="${y-g.spacing/2}" width="${width}" height="${g.spacing}" fill="transparent"/>`);
+    }
+    d('Neck').innerHTML=`<svg role="group" aria-label="Reverse search fretboard" viewBox="0 0 ${g.width} ${g.height}">${parts.join('')}</svg>`;
+    d('Go').disabled=selected.every(f=>f<0);
+    d('Matches').textContent=d('Go').disabled?'Select a string at the nut or a fret to place a note.':'Press Go! to identify the selection.';
+ }
+ function pick(event){
+    const hit=event.target.closest('rect[data-string]');if(!hit)return;
+    const i=Number(hit.dataset.string),f=Number(hit.dataset.fret);selected[i]=selected[i]===f?-1:f;
+    drawNeck();d('Neck').querySelector(`[data-string="${i}"][data-fret="${f}"]`).focus({preventScroll:true});
+ }
+ d('Neck').onclick=pick;
+ d('Neck').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(e)}};
+ d('Go').onclick=function identify(){
     const pitches=tune.flatMap((p,i)=>selected[i]<0?[]:[p+selected[i]]),pcs=[...new Set(pitches.map(p=>p%12))];
     const matches=d('Matches');matches.replaceChildren();if(!pcs.length){matches.textContent='Tap the strings you play. Tap a selected position again to mute it.';return}
     const bass=Math.min(...pitches)%12,ranked=[];
@@ -48,7 +65,7 @@
     for(let r=0;r<12;r++)for(const [q,steps] of Object.entries(formulas)){const tones=steps.map(s=>(r+s)%12);if(!pcs.every(p=>tones.includes(p)))continue;
       ranked.push({r,q,missing:tones.length-pcs.length,bass:r===bass?0:1})}
     ranked.sort((a,b)=>a.missing-b.missing||a.bass-b.bass);
-    for(const m of ranked.slice(0,10)){const text=H.names[m.r]+m.q+(m.missing?' (+'+m.missing+' tones)':'');if(d('Reverse').value==='scales'){const item=document.createElement('span');item.textContent=text;matches.append(item);continue}
+    for(const m of ranked.slice(0,10)){const text=H.names[m.r]+m.q+(d('Reverse').value==='chords'&&m.r!==bass?'/'+H.names[bass]:'')+(m.missing?' (+'+m.missing+' tones)':'');if(d('Reverse').value==='scales'){const item=document.createElement('span');item.textContent=text;matches.append(item);continue}
       const b=document.createElement('button');b.textContent=text;b.onclick=()=>{d('Root').value=m.r;d('Quality').value=m.q;d('Bass').value=m.r===bass?'':bass;search()};matches.append(b)}
     if(!ranked.length)matches.textContent='No matching formula in this dictionary.';
  }

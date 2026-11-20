@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chord Playground & Scale Explorer - Atomic Forge</title>
+  <title>Chord Playground - Atomic Forge</title>
   
   <!-- Soundfont Player, Tonal JS & jsPDF Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.min.js"></script>
@@ -112,74 +112,6 @@
       display: flex;
       align-items: center;
       gap: 16px;
-    }
-
-    /* Archived Versions Dropdown */
-    .archive-dropdown-container {
-      position: relative;
-      display: inline-block;
-    }
-
-    .archive-dropdown-btn {
-      background: rgba(30, 41, 59, 0.8);
-      color: var(--text-muted);
-      border: 1px solid var(--panel-border);
-      font-weight: 700;
-      font-size: 0.85rem;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-
-    .archive-dropdown-btn:hover {
-      color: var(--text-main);
-      border-color: var(--accent);
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    .archive-dropdown-menu {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: calc(100% + 6px);
-      background: #0f172a;
-      border: 1px solid var(--panel-border);
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-      min-width: 210px;
-      z-index: 1000;
-      overflow: hidden;
-      flex-direction: column;
-    }
-
-    .archive-dropdown-menu.show {
-      display: flex;
-    }
-
-    .archive-dropdown-menu a {
-      color: var(--text-main);
-      padding: 10px 16px;
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: all 0.2s;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .archive-dropdown-menu a:last-child {
-      border-bottom: none;
-    }
-
-    .archive-dropdown-menu a:hover {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
     }
 
     /* Tab Switcher Navigation */
@@ -1098,23 +1030,12 @@
         <img class="atomic-forge-mark" src="atomic-forge-logo.png" width="34" height="34" alt="">
       </a>
       <div class="title-area">
-        <h1>Chord Playground & Scale Explorer</h1>
+        <h1>Chord Playground</h1>
       </div>
     </div>
 
-    <!-- Header Right Tools: Archived Versions Dropdown & Tabs -->
+    <!-- Tool tabs -->
     <div class="header-right-tools">
-      <!-- Archived Versions Dropdown Menu -->
-      <div class="archive-dropdown-container">
-        <button class="archive-dropdown-btn" onclick="toggleArchiveDropdown(event)">
-          <i data-lucide="archive"></i> Archived Versions <i data-lucide="chevron-down" style="width:14px; height:14px;"></i>
-        </button>
-        <div class="archive-dropdown-menu" id="archive-dropdown-menu">
-          <a href="ChordCraft.html"><i data-lucide="music" style="width:14px; height:14px;"></i> Chord Craft</a>
-          <a href="ProgressionStudio.html"><i data-lucide="layers" style="width:14px; height:14px;"></i> Progression Studio</a>
-        </div>
-      </div>
-
       <!-- Tab Switcher Navigation -->
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('dictionary')">Fingering dictionary</button>
@@ -1163,7 +1084,7 @@
   </div>
 
   <!-- ==================== TAB 1: CHORD PLAYGROUND VIEW ==================== -->
-  <div id="view-dictionary" class="app-view active"><section class="forge-lab"><h2>Fingering dictionary</h2><div class="lab-row"><label>Root<select id="dictRoot"></select></label><label>Chord<select id="dictQuality"></select></label><label>Bass note<select id="dictBass"><option value="">Any inversion</option></select></label><label>Tuning<select id="dictTune"></select></label><label>Open pitches · low to high<input id="dictCustom" disabled></label></div><div class="lab-row"><label>First fret<select id="dictLow"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><label>Last fret<select id="dictHigh"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12" selected>12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option></select></label><label>Maximum fret difference<select id="dictSpan"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label>Minimum strings<select id="dictMin"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label><span><input id="dictOpen" type="checkbox" checked> Allow open strings</span></label></div><div class="lab-cards" id="dictCards"></div><p class="lab-msg" id="dictStatus" role="status"></p><div class="lab-row"><button type="button" id="dictPrev">Previous</button><button type="button" id="dictNext">Next</button><button type="button" id="dictHear">Strum</button><button type="button" id="dictSave">Save fingering</button><button type="button" id="dictAdd">Add to progression</button><label>Library<select id="dictSaved"></select></label></div><h2>Reverse search</h2><div class="lab-row"><label>Find<select id="dictReverse"><option value="chords">Chords</option><option value="scales">Scales</option></select></label><button type="button" id="dictHearReverse">Hear selection</button><button type="button" id="dictClear">Clear neck</button></div><div id="dictNeck" class="lab-neck"></div><div class="lab-row" id="dictMatches"></div></section></div>
+  <div id="view-dictionary" class="app-view active"><section class="forge-lab"><h2>Fingering dictionary</h2><div class="lab-row"><label>Root<select id="dictRoot"></select></label><label>Chord<select id="dictQuality"></select></label><label>Bass note<select id="dictBass"><option value="">Any inversion</option></select></label><label>Tuning<select id="dictTune"></select></label><label>Open pitches · low to high<input id="dictCustom" disabled></label></div><div class="lab-row"><label>First fret<select id="dictLow"><option value="0" selected>0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select></label><label>Last fret<select id="dictHigh"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12" selected>12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option></select></label><label>Maximum fret difference<select id="dictSpan"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label>Minimum strings<select id="dictMin"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><label><span><input id="dictOpen" type="checkbox" checked> Allow open strings</span></label></div><div class="lab-cards" id="dictCards"></div><p class="lab-msg" id="dictStatus" role="status"></p><div class="lab-row"><button type="button" id="dictPrev">Previous</button><button type="button" id="dictNext">Next</button><button type="button" id="dictHear">Strum</button><button type="button" id="dictSave">Save fingering</button><button type="button" id="dictAdd">Add to progression</button><label>Library<select id="dictSaved"></select></label></div><h2>Reverse search</h2><div class="lab-row"><label>Find<select id="dictReverse"><option value="chords">Chords</option><option value="scales">Scales</option></select></label><button type="button" id="dictGo">Go!</button><button type="button" id="dictHearReverse">Hear selection</button><button type="button" id="dictClear">Clear neck</button></div><div id="dictNeck" class="lab-neck"></div><div class="lab-row" role="status" id="dictMatches"></div></section></div>
   <div id="view-chords" class="app-view">
     
     <!-- SECTION 1: Chord Builder & Tester -->
@@ -1188,7 +1109,7 @@
             </div>
 
             <div class="builder-field">
-              <label>Octave</label>
+              <label for="build-root-fret">Root fret</label><select id="build-root-fret" onchange="updateChordBuilder()"><option value="">Anywhere</option><option value="0">Open</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option></select></div><div class="builder-field"><label>Octave</label>
               <select id="build-octave" onchange="updateChordBuilder()">
                 <option value="3">3 (Low)</option>
                 <option value="4" selected>4 (Med)</option>
@@ -1472,20 +1393,6 @@
         }
       }
     };
-
-    function toggleArchiveDropdown(event) {
-      event.stopPropagation();
-      const menu = document.getElementById("archive-dropdown-menu");
-      menu.classList.toggle("show");
-    }
-
-    // Close dropdown when clicking outside
-    window.addEventListener("click", () => {
-      const menu = document.getElementById("archive-dropdown-menu");
-      if (menu && menu.classList.contains("show")) {
-        menu.classList.remove("show");
-      }
-    });
 
     function switchTab(tabName) {
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -1824,9 +1731,14 @@
       const tune=guitarStrings.map(str=>Tonal.Note.midi(str.note+str.octave)).reverse();
       const root=Tonal.Note.chroma(rootNote),tones=[...new Set(chordNotes.map(n=>Tonal.Note.chroma(n)))];
       const chord={root,tones,quality:'',bass:bassNote ? Tonal.Note.chroma(bassNote) : null};
-      const shapes=ForgeHarmony.shapes(chord,tune,{low:0,high:15,span:3,open:true,strings:[0,1,2,3,4,5],minNotes:3,maxNotes:6});
-      if(!shapes.length){container.textContent='No matching fingering in this range.';return}
-      container.innerHTML=ForgeHarmony.diagram(shapes[0],tune);
+      const fret = document.getElementById("build-root-fret").value;
+      const target = Number(fret);
+      const options = {low:0, high:fret === '' ? 15 : Math.min(22,target+3),span:3,open:true,strings:[0,1,2,3,4,5],minNotes:2,maxNotes:6};
+      const shapes = ForgeHarmony.shapes(chord,tune,options);
+      const shape = fret === '' ? shapes[0] : shapes.find(s => s.frets.some((f,i) => f === target && (tune[i]+f)%12 === root));
+      if(!shape){container.textContent='No fingering fits this root fret and tuning.';return null}
+      container.innerHTML=ForgeHarmony.diagram(shape,tune);
+      return shape;
     }
 
     /* ==========================================================================
@@ -2266,17 +2178,21 @@
 
       if (bass && !notes.includes(bass)) octaveNotes.unshift(bass + (parseInt(octave) - 1));
 
+      const shape = renderGuitarChordBox(root, bass, notes);
+      const anchored = document.getElementById('build-root-fret').value !== '';
+      if (anchored) octaveNotes = shape ? shape.pitches.map(ForgeHarmony.note) : [];
+      document.getElementById('build-octave').disabled = anchored;
       document.getElementById("builder-chord-name").textContent = chordSymbol || root;
       document.getElementById("builder-chord-notes").textContent = "Notes: " + octaveNotes.join(" - ");
       document.getElementById("drag-card-title").textContent = chordSymbol || root;
       document.getElementById("drag-card-notes").textContent = octaveNotes.join(", ");
       
       const dragCard = document.getElementById("builder-draggable-card");
+      dragCard.draggable = octaveNotes.length > 0;
       dragCard.dataset.chordName = chordSymbol || root;
       dragCard.dataset.chordNotes = JSON.stringify(octaveNotes);
 
       renderPianoRoll(notes);
-      renderGuitarChordBox(root, bass, notes);
     }
 
     function renderPianoRoll(activeNotes) {
@@ -2779,6 +2695,6 @@
       loadInstrumentSoundfont("acoustic_grand_piano");
     });
   </script>
-<script src="practice/dictionary.js"></script>
+<script src="fretboard-neck.js"></script><script src="practice/dictionary.js"></script>
 </body>
 </html>

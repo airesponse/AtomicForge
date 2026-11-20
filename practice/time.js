@@ -25,6 +25,7 @@ function setBounds(a,b){
   el('a').value=a.toFixed(2);el('b').value=b.toFixed(2);
 }
 for(const id of ['a','b'])el(id).onchange=()=>{stop();setBounds(...limits());phaseText('Loop updated.')};
+el('clearLoop').onclick=()=>{if(ready()){stop();setBounds(0,audio.duration);phaseText('Loop points cleared. The full recording is selected.')}};
 el('setA').onclick=()=>{if(ready()){const t=audio.currentTime;setBounds(t,limits()[1]>t+.1?limits()[1]:audio.duration);phaseText('A set at '+stamps(limits()[0]))}};
 el('setB').onclick=()=>{if(ready()){if(audio.currentTime<=limits()[0]+.1){phaseText('Place B after A.');return}setBounds(limits()[0],audio.currentTime);phaseText('B set at '+stamps(limits()[1]))}};
 async function listen(id,seek){
@@ -60,9 +61,10 @@ el('restart').onclick=()=>start(true);
 function load(file,settings={}){
   stop();loadId++;source=file;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);
   el('track').textContent=file.name||settings.filename||'Recording';el('seek').disabled=true;
+  el('clearLoop').disabled=true;
   audio.onloadedmetadata=()=>{
     if(!ready()){phaseText('This recording has no usable duration.');return}
-    el('seek').max=audio.duration;el('seek').disabled=false;
+    el('clearLoop').disabled=false;el('seek').max=audio.duration;el('seek').disabled=false;
     setBounds(settings.a??0,settings.b??audio.duration);
     for(const k of ['notes','name','mode','reply','step','count','bpm'])if(k in settings)el(k).value=settings[k];
     setRate(settings.speed??100);audio.currentTime=limits()[0];positions();phaseText('Ready · '+stamps(limits()[0])+' to '+stamps(limits()[1]));
