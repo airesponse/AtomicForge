@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expression Master · Atomic Forge</title><link rel="icon" href="atomic-forge-favicon.png"><link rel="apple-touch-icon" href="atomic-forge-apple-touch-icon.png"><link rel="stylesheet" href="practice/practice.css">
+<style>
+:root{--accent:#c4a1ff}.wave{height:42px}.modes{display:flex;gap:6px;margin-top:16px}.modes [aria-pressed=true]{background:#422e60;border-color:var(--accent)}[hidden]{display:none!important}
+#goal{font-size:clamp(24px,5vw,40px);margin:0;letter-spacing:-.035em}#instruction{margin:6px 0 15px;color:var(--sub)}.trace{width:100%;height:165px;display:block;background:#0d1722;border-radius:8px;margin:12px 0}.metrics{display:flex;gap:10px 30px;flex-wrap:wrap}.metrics div{display:grid}.metrics b{font-size:21px;font-variant-numeric:tabular-nums}.metrics small{font-size:12px}.panel label{min-width:64px}
+</style></head><body><main><header><a href="index.html"><img src="atomic-forge-logo.png" alt="">Atomic Forge</a></header><h1>Expression Master</h1>
+<div class="wavebox"><canvas class="wave" id="wave" aria-hidden="true"></canvas><input id="waveColour" type="color" aria-label="Wave colour" title="Change wave colour"></div>
+<div class="modes" role="group" aria-label="Exercise"><button id="bend" aria-pressed="true">Bend trainer</button><button id="vibrato" aria-pressed="false">Vibrato trainer</button></div>
+<section class="panel"><h2 id="goal"></h2><p id="instruction"></p>
+<div class="row"><label>Starting note<select id="note"></select></label><label>Octave<select id="octave"><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+<label class="bend-field">Bend size<select id="interval"><option value="50">¼ step</option><option value="100">½ step</option><option value="200">Whole step</option><option value="300">1½ steps</option><option value="400">2 steps</option></select></label>
+<label class="bend-field">Tolerance<select id="tolerance"><option value="5">±5 cents</option><option value="10">±10 cents</option><option value="15">±15 cents</option><option value="25">±25 cents</option></select></label>
+<label class="bend-field">Hold<select id="hold"><option value=".25">¼ second</option><option value=".5">½ second</option><option value="1">1 second</option></select></label>
+<label class="vib-field">Width · peak to peak<select id="width"><option>25</option><option>50</option><option>75</option><option>100</option><option>150</option></select></label>
+<label class="vib-field">Rate · Hz<select id="rate"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+</div></section>
+<section class="panel"><div class="row"><label>Audio input<select id="device"><option value="">System default</option></select></label><button class="primary" id="listen">Start listening</button><button id="reference">Hear target</button><button id="demo">Try demo</button></div>
+<p id="status" class="status" role="status">Choose Start listening to use your microphone or guitar interface.</p>
+<canvas id="trace" class="trace" aria-label="Pitch trace in cents above the starting note over four seconds"></canvas>
+<div class="metrics"><div><small>Detected note</small><b id="detected">—</b></div><div><small id="measureLabel"></small><b id="measure">—</b></div><div><small id="secondLabel"></small><b id="second">—</b></div></div>
+<p id="feedback"></p></section>
+</main><script src="practice/common.js"></script><script src="practice/expression-pitch.js"></script><script src="practice/expression.js"></script></body></html>
