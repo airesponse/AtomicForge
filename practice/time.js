@@ -14,6 +14,43 @@ function setRate(pct){
   speed.value=String(pct);audio.playbackRate=pct/100;
 }
 speed.onchange=()=>setRate(Number(speed.value));
+const track=el('timelineTrack'), view=el('timelineView'), rail=el('timelineRail');
+const marks={a:false,b:false};
+function drawMarkers(){
+  for(const id of ['a','b']){
+    const marker=el('marker'+id.toUpperCase());
+    marker.hidden=!marks[id];
+    if(marks[id]) marker.style.left=100*Number(el(id).value)/audio.duration+'%';
+  }
+}
+el('zoom').oninput=()=>{
+  const factor=Number(el('zoom').value);
+  const center=(view.scrollLeft+view.clientWidth/2-22)/rail.clientWidth;
+  const playhead=audio.currentTime/audio.duration;
+  const anchor=playhead*rail.clientWidth+22-view.scrollLeft;
+  const usePlayhead=anchor>=0 && anchor<=view.clientWidth;
+  track.style.width='calc('+factor*100+'% - 44px)';
+  view.scrollLeft=22+(usePlayhead?playhead:center)*rail.clientWidth-(usePlayhead?anchor:view.clientWidth/2);
+  el('zoomValue').textContent=factor+'×';
+};
+for(const id of ['a','b']){
+  const grip=el('marker'+id.toUpperCase()).firstElementChild;
+  let offset=0;
+  grip.onpointerdown=e=>{
+    if(!e.isPrimary || e.button!==0)return;
+    stop();grip.setPointerCapture(e.pointerId);
+    offset=e.clientX-(grip.getBoundingClientRect().left+grip.offsetWidth/2);
+  };
+  grip.onpointermove=e=>{
+    if(!grip.hasPointerCapture(e.pointerId))return;
+    const rect=rail.getBoundingClientRect();
+    const time=(e.clientX-offset-rect.left)*audio.duration/rect.width;
+    const [a,b]=limits();
+    if(id==='a')setBounds(Math.min(time,b-.1),b);
+    else setBounds(a,time);
+    phaseText(id.toUpperCase()+' · '+stamps(Number(el(id).value)));
+  };
+}
 function positions(){
   const t=audio.currentTime||0;el('position').textContent=stamps(t);el('seek').value=t;
 }
@@ -22,12 +59,12 @@ el('seek').oninput=()=>{if(ready()){stop();audio.currentTime=Number(el('seek').v
 function setBounds(a,b){
   if(!ready())return;
   a=Math.min(audio.duration-.1,Math.max(0,a));b=Math.min(audio.duration,Math.max(a+.1,b));
-  el('a').value=a.toFixed(2);el('b').value=b.toFixed(2);
+  el('a').value=a.toFixed(2);el('b').value=b.toFixed(2);drawMarkers();
 }
-for(const id of ['a','b'])el(id).onchange=()=>{stop();setBounds(...limits());phaseText('Loop updated.')};
-el('clearLoop').onclick=()=>{if(ready()){stop();setBounds(0,audio.duration);phaseText('Loop points cleared. The full recording is selected.')}};
-el('setA').onclick=()=>{if(ready()){const t=audio.currentTime;setBounds(t,limits()[1]>t+.1?limits()[1]:audio.duration);phaseText('A set at '+stamps(limits()[0]))}};
-el('setB').onclick=()=>{if(ready()){if(audio.currentTime<=limits()[0]+.1){phaseText('Place B after A.');return}setBounds(limits()[0],audio.currentTime);phaseText('B set at '+stamps(limits()[1]))}};
+for(const id of ['a','b'])el(id).onchange=()=>{stop();marks[id]=true;setBounds(...limits());phaseText('Loop updated.')};
+el('clearLoop').onclick=()=>{if(ready()){stop();marks.a=marks.b=false;setBounds(0,audio.duration);phaseText('Loop points cleared. The full recording is selected.')}};
+el('setA').onclick=()=>{if(ready()){const t=audio.currentTime;marks.a=true;setBounds(t,limits()[1]>t+.1?limits()[1]:audio.duration);phaseText('A set at '+stamps(limits()[0]))}};
+el('setB').onclick=()=>{if(ready()){if(audio.currentTime<=limits()[0]+.1){phaseText('Place B after A.');return}marks.b=true;setBounds(limits()[0],audio.currentTime);phaseText('B set at '+stamps(limits()[1]))}};
 async function listen(id,seek){
   if(id!==serial)return;
   phase='listen';if(seek)audio.currentTime=limits()[0];
@@ -59,12 +96,16 @@ function start(rewind){
 el('play').onclick=()=>{if(phase==='stopped')start(false);else{stop();phaseText('Paused')}};
 el('restart').onclick=()=>start(true);
 function load(file,settings={}){
-  stop();loadId++;source=file;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);
+  stop();marks.a=marks.b=false;drawMarkers();
+  el('zoom').disabled=true;el('zoom').value=1;track.style.width='';el('zoomValue').textContent='1×';view.scrollLeft=0;
+  loadId++;source=file;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);
   el('track').textContent=file.name||settings.filename||'Recording';el('seek').disabled=true;
   el('clearLoop').disabled=true;
   audio.onloadedmetadata=()=>{
     if(!ready()){phaseText('This recording has no usable duration.');return}
     el('clearLoop').disabled=false;el('seek').max=audio.duration;el('seek').disabled=false;
+    marks.a=settings.marks?.a??('a' in settings);marks.b=settings.marks?.b??('b' in settings);
+    el('zoom').disabled=false;
     setBounds(settings.a??0,settings.b??audio.duration);
     for(const k of ['notes','name','mode','reply','step','count','bpm'])if(k in settings)el(k).value=settings[k];
     setRate(settings.speed??100);audio.currentTime=limits()[0];positions();phaseText('Ready · '+stamps(limits()[0])+' to '+stamps(limits()[1]));
@@ -81,7 +122,7 @@ el('save').onclick=async()=>{
   if(!ready()||!source)return phaseText('Choose a recording first.');
   const name=el('name').value.trim();if(!name)return phaseText('Name the phrase first.');
   if([...el('library').options].some(o=>o.value===name)&&el('library').value!==name&&!confirm('Replace the saved phrase with this name?'))return;
-  const [a,b]=limits(),item={id:name,name,a,b,file:source,filename:el('track').textContent};
+  const [a,b]=limits(),item={id:name,name,a,b,marks:{...marks},file:source,filename:el('track').textContent};
   for(const k of ['mode','reply','count','bpm','step','speed','notes'])item[k]=el(k).value;
   try{await store('put',item);await refresh(name);phaseText('Phrase and recording saved.')}catch{phaseText('Could not save the recording. Check browser storage space.')}
 };
