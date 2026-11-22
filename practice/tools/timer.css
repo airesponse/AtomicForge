@@ -1,0 +1,22 @@
+body{background:radial-gradient(ellipse at 50% 22%,#172537,transparent 54%),repeating-linear-gradient(90deg,#101722 0 1px,transparent 1px 34px),#090d14;color:#edf7ff;color-scheme:dark}
+.timer{max-width:460px;padding-bottom:40px}
+.timer h1{font:800 clamp(32px,8vw,46px)/1 system-ui;letter-spacing:-.055em;text-shadow:0 0 24px #65dfff45}
+.mode-switch,.sound-bank{background:#101927;border:1px solid #375364;box-shadow:inset 0 1px #7ae5ff18}
+.mode-switch [aria-pressed=true]{background:#9df3fb;color:#071c24;box-shadow:0 0 16px #49d7ff44}
+.dial{--hue:40;--light:hsl(var(--hue) 100% 60%);position:relative;margin:30px auto 26px;width:clamp(165px,29vh,275px);padding:9px;border:2px solid #63452c;background:conic-gradient(var(--light) var(--arc,360deg),#28303a 0);box-shadow:0 0 10px var(--light),0 0 40px hsl(var(--hue) 100% 46%/.42),0 0 85px hsl(var(--hue) 100% 46%/.15)}
+.dial::after{content:"";position:absolute;inset:-9px;border:2px dashed #dcad7855;border-radius:50%;pointer-events:none}
+.face{background:radial-gradient(circle,#1c2331,#080c13 78%);box-shadow:inset 0 0 16px #000;gap:2px}
+.digits{font-family:ui-monospace,monospace;text-shadow:0 0 12px hsl(var(--hue) 90% 65%/.48);line-height:.94}
+.face small{color:var(--light);font-family:ui-monospace,monospace;letter-spacing:.17em}
+.controls button,.presets button,.icon-key,.secondary{border-radius:7px}
+.controls button{color:#062627;background:#86ece5;box-shadow:0 0 16px #62f4ec33}
+.controls button+button{color:#ffc3bb;background:#371d26;border:1px solid #a25960;box-shadow:none}
+.preset-head{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
+.preset-head h2,.sound-bank summary{font-size:15px;letter-spacing:.07em}
+.icon-key{min-width:44px;height:44px;font-size:24px;background:#162636;color:#9beef6;border:1px solid #416675}
+.icon-key[aria-pressed=true]{background:#9deaf2;color:#112a35}
+.presets{margin-top:4px}.presets button{border-color:#446274;background:linear-gradient(140deg,#253444,#101821);color:#c8f5fc;font-family:ui-monospace,monospace}
+.presets button[aria-pressed=true]{border-color:#ffb45b;box-shadow:inset 0 0 16px #ff9a341c,0 0 12px #ff932122}
+#status{font:13px ui-monospace,monospace;color:#ffd29c}
+.sound-bank{padding:12px 15px;border-radius:9px}.sound-bank summary{cursor:pointer;font-weight:700}.sound-bank label{display:block;margin-top:12px}.sound-bank select{width:100%;padding:10px;border-radius:6px;font:inherit}.sound-bank small{display:block;color:#b7c8d6}.sound-bank button{margin:4px 0}
+@media(prefers-reduced-motion:no-preference){.urgent::after{animation:surge 1.3s ease-in-out infinite alternate}@keyframes surge{to{border-color:#ff9866;box-shadow:0 0 20px #ff662c77}}}
