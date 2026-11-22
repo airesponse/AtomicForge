@@ -74,5 +74,4 @@ jobs:
         uses: actions/deploy-pages@v4
 
 
-        - name: OpenAI Codex Security
-  uses: openai/codex-security@npm-v0.10.1
+      
