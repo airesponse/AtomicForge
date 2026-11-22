@@ -346,6 +346,11 @@
         scroll-behavior: auto !important;
       }
     }
+    .site-header .logo-menu { margin: 0; }
+    .site-header .logo-menu button { display: block; padding: 0; border: 0; background: transparent; }
+    .site-header .logo-menu button::after { content: none; }
+    .logo-menu img { display: block; }
+    .site-header .logo-menu div { left: 0; right: auto; }
   </style>
   <link rel="icon" type="image/png" sizes="32x32" href="atomic-forge-favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="atomic-forge-apple-touch-icon.png">
@@ -354,11 +359,15 @@
 
 <body>
   <header class="site-header">
-    <img
-      src="atomic-forge-logo.png"
-      alt="Atomic Forge icon"
-      class="header-logo"
-    >
+    <nav class="tool-nav logo-menu" aria-label="Tools">
+      <button type="button" aria-label="Open tools menu" aria-expanded="false" aria-controls="tool-links">
+        <img src="atomic-forge-logo.png" alt="" class="header-logo">
+      </button>
+      <div id="tool-links" hidden>
+        <a href="practice/tools/Oxalate.html">Oxalate</a>
+        <a href="practice/tools/Timer.html">Timer</a>
+      </div>
+    </nav>
 
     <div>
       <h1>
@@ -371,7 +380,7 @@
         Songwriting, guitar tools and creative inspiration.
       </div>
     </div>
-<nav class="tool-nav" aria-label="Tools"><button type="button" aria-expanded="false" aria-controls="tool-links">Tool</button><div id="tool-links" hidden><a href="practice/tools/Oxalate.html">Oxalate</a><a href="practice/tools/Timer.html">Timer</a></div></nav>
+
   </header>
 
   <main>
