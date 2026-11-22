@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Timer · Atomic Forge</title><link rel="icon" href="../../atomic-forge-favicon.png"><link rel="stylesheet" href="pages.css"><link rel="stylesheet" href="menu.css"><script defer src="menu.js"></script><script defer src="timer.js"></script></head>
+<body><header><a class="brand" href="../../index.html"><img src="../../atomic-forge-logo.png" alt="">Atomic Forge</a><nav class="tool-nav" aria-label="Tools"><button type="button" aria-expanded="false" aria-controls="tool-links">Tool</button><div id="tool-links" hidden><a href="Oxalate.html">Oxalate</a><a href="Timer.html">Timer</a></div></nav></header><main class="timer"><h1 id="mode-title">Timer</h1>
+<nav class="mode-switch" aria-label="Clock mode"><button id="timer-tab" aria-pressed="true">Timer</button><button id="watch-tab" aria-pressed="false">Stopwatch</button></nav>
+<section id="countdown"><div class="dial"><div class="face" role="timer" aria-label="Time remaining"><span class="digits" id="minutes">05</span><span class="digits" id="seconds">00</span><small>MIN / SEC</small></div></div><div class="controls"><button id="toggle">Start</button><button id="cancel" disabled>Cancel</button></div><div class="presets" aria-label="Timer presets"></div><p id="status" role="status"></p><button class="secondary" id="edit">Edit presets</button>
+<dialog id="editor"><form id="preset-form"><h2 id="edit-title">Edit preset</h2>
+<label>Minutes<input id="preset-min" type="number" min="0" max="999" step="1" required></label>
+<label>Seconds<input id="preset-sec" type="number" min="0" max="59" step="1" required></label>
+<div class="controls"><button>Save</button><button type="button" id="dismiss">Cancel</button></div></form></dialog>
+<p id="save-note" role="status"></p></section>
+<section id="stopwatch" hidden><div class="dial"><div class="face" role="timer" aria-label="Elapsed time"><span class="digits" id="elapsed-min">00</span><span class="digits" id="elapsed-sec">00.0</span><small>MIN / SEC</small></div></div>
+<div class="controls"><button id="watch-toggle">Start</button><button id="watch-reset" disabled>Reset</button></div></section></main></body></html>

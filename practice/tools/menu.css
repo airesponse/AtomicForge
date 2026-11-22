@@ -1,0 +1,6 @@
+.tool-nav{position:relative;flex:none;margin-left:auto;z-index:5;font:600 16px system-ui}
+.tool-nav button,.tool-nav a{box-sizing:border-box;color:#fff;background:#20232b;border:1px solid #454955;border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer}
+.tool-nav button::after{content:" ▾";color:#ffb646}
+.tool-nav div{position:absolute;right:0;top:100%;min-width:145px;padding:5px;background:#20232b;border:1px solid #545862;border-radius:12px;box-shadow:0 8px 20px #0006}
+.tool-nav a{display:block;text-decoration:none;border:0}
+.tool-nav a:hover,.tool-nav a:focus-visible{background:#383d47}
